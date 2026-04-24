@@ -24,12 +24,12 @@ int main(int argc, char **argv) {
         ctx.cache() = std::getenv("HOME") + std::string("/.carton");
 
     try {
+        ctx.build_dep();
         ctx.build();
     } catch (std::exception &e) {
         spdlog::error("Failed to build: {}", e.what());
-        exit(1);
+        return 1;
     }
 
-    std::cout << cpx::json::yy_json::dump(ctx, YYJSON_WRITE_PRETTY_TWO_SPACES) << '\n';
     return 0;
 }

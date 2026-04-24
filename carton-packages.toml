@@ -69,7 +69,7 @@ edition = 11
 git = "https://github.com/ibireme/yyjson"
 tag = "{version}"
 src = ["src/yyjson.c"]
-inc = ["src"]
+inc = ["public:src"]
 
 
 #

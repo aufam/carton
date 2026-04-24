@@ -198,9 +198,9 @@ static bool needs_rebuild(
     return false; // signature matches => up-to-date
 }
 
-void compile_multi(const std::string &name, const std::vector<CompileCommand> &commands) {
+bool compile_multi(const std::string &name, const std::vector<CompileCommand> &commands) {
     if (commands.empty())
-        return;
+        return false;
 
     auto &dir = commands[0].directory();
     for (const auto &cmd : commands)
@@ -217,7 +217,7 @@ void compile_multi(const std::string &name, const std::vector<CompileCommand> &c
             needs_rebuild_ptrs.push_back(&cmd);
 
     if (needs_rebuild_ptrs.empty())
-        return; // all up-to-date
+        return false; // all up-to-date
 
     fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Compiling");
     fmt::println("{} ({} files)", name, needs_rebuild_ptrs.size());
@@ -242,4 +242,6 @@ void compile_multi(const std::string &name, const std::vector<CompileCommand> &c
 
         toml_dump(sig_map, sig_path);
     }
+
+    return true;
 }

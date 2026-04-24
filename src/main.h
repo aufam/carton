@@ -9,24 +9,29 @@
 
 struct CompileCommand;
 
-struct Target {
-    cpx::Tag<std::string> id  = "toml,json:`id`";
-    cpx::Tag<std::string> cpp = {"toml,json:`c++,skipmissing`", "c++"};
-    cpx::Tag<std::string> c   = {"toml,json:`c,skipmissing`", "c"};
+struct Profile {
+    cpx::Tag<std::string>              id         = "toml,json:`id`";
+    cpx::Tag<std::string>              cxx        = {"toml,json:`cxx,skipmissing`", "c++"};
+    cpx::Tag<std::string>              c          = {"toml,json:`c,skipmissing`", "c"};
+    cpx::Tag<std::vector<std::string>> flags      = "toml,json:`flags,skipmissing,omitempty`";
+    cpx::Tag<std::vector<std::string>> link_flags = "toml:`link-flags,skipmissing,omitempty`"
+                                                    "json:`linkFlags,skipmissing,omitempty`";
 
-    static Target Release() {
-        Target t;
-        t.id()  = "release";
-        t.cpp() = "c++ -O3 -DNDEBUG -fPIC";
-        t.c()   = "cc -O3 -DNDEBUG -fPIC";
+    static Profile Release() {
+        Profile t;
+        t.id()    = "release";
+        t.cxx()   = "c++";
+        t.c()     = "cc";
+        t.flags() = {"-O3", "-DNDEBUG", "-fPIC"};
         return t;
     }
 
-    static Target Debug() {
-        Target t;
-        t.id()  = "debug";
-        t.cpp() = "c++ -g -fPIC";
-        t.c()   = "cc -g -fPIC";
+    static Profile Debug() {
+        Profile t;
+        t.id()    = "debug";
+        t.cxx()   = "c++";
+        t.c()     = "cc";
+        t.flags() = {"-g", "-fPIC"};
         return t;
     }
 };
@@ -80,16 +85,16 @@ struct CompileCommand {
     cpx::Tag<std::string> output    = "json:`output`";
     cpx::Tag<std::string> depfile   = "";
 };
-void compile_multi(const std::string &name, const std::vector<CompileCommand> &commands);
+bool compile_multi(const std::string &name, const std::vector<CompileCommand> &commands);
 
 struct Project {
     using Dep = std::variant<std::string, Dependency>;
 
-    struct Targets {
-        cpx::Tag<Target> release = {"toml,json:`release,skipmissing`", Target::Release()};
-        cpx::Tag<Target> debug   = {"toml,json:`debug,skipmissing`", Target::Debug()};
+    struct Profiles {
+        cpx::Tag<Profile> release = {"toml,json:`release,skipmissing`", Profile::Release()};
+        cpx::Tag<Profile> debug   = {"toml,json:`debug,skipmissing`", Profile::Debug()};
     };
-    cpx::Tag<Targets> targets = "toml,json:`targets,skipmissing`";
+    cpx::Tag<Profiles> profiles = "toml,json:`profiles,skipmissing`";
 
     cpx::Tag<std::unordered_map<std::string, Project>> packages = "toml:`packages,skipmissing,omitempty`";
     cpx::Tag<Package>                                  package  = "toml,json:`package`";
@@ -118,7 +123,8 @@ struct Project {
 
     std::unordered_map<std::string, Project> *ppackages = nullptr;
 
-    void build(const std::vector<std::string> &features = {}, bool subpackage = false);
+    void build_dep(const std::vector<std::string> &features = {}, bool subpackage = false);
+    void build();
 
 private:
     void apply_package_placeholders();

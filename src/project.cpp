@@ -1,6 +1,7 @@
 #include "main.h"
 #include <algorithm>
 #include <fmt/ranges.h>
+#include <fmt/color.h>
 #include <spdlog/spdlog.h>
 #include <filesystem>
 #include <cpx/toml/toruniina_toml.h>
@@ -30,7 +31,7 @@ static void find_requested_features(
     }
 }
 
-void Project::build(const std::vector<std::string> &features, bool subpackage) {
+void Project::build_dep(const std::vector<std::string> &features, bool subpackage) {
     if (package().name().empty())
         throw ferr("Error building {:?}: name is required", package().name());
 
@@ -135,10 +136,10 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
         p.ppackages             = &packages();
         p.cache()               = cache();
         p.no_default_features() = !d.default_features().value_or(true);
-        p.targets()             = targets();
+        p.profiles()            = profiles();
         p.vars()                = vars();
         try {
-            p.build(d.features(), true);
+            p.build_dep(d.features(), true);
         } catch (const std::exception &e) {
             throw ferr("Error building dependency package={} `{}`: {}", p.package().name(), name, e.what());
         }
@@ -215,9 +216,12 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
     if (d.inc().empty() && fs::is_directory(working_dir / "include"))
         d.inc() = {"public:include"};
 
-    auto    &target    = targets().release();
-    fs::path cache     = this->cache();
-    fs::path build_dir = cache / "build" / target.id() /
+    const auto &profile   = profiles().release();
+    const auto  flags_    = fmt::format("{}", fmt::join(profile.flags(), " "));
+    const auto  CXX       = profile.cxx() + (flags_.empty() ? "" : " " + flags_);
+    const auto  C         = profile.c() + (flags_.empty() ? "" : " " + flags_);
+    fs::path    cache     = this->cache();
+    fs::path    build_dir = cache / "build" / profile.id() /
                          (name + "-" +
                           (d.branch().empty() && d.tag().empty() ? d.version()
                            : d.branch().empty()                  ? d.tag()
@@ -266,25 +270,20 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
 
                 cc.command() =
                     f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
-                      target.cpp(),
+                      CXX,
                       cpp_standard,
                       fmt::join(flags, " "),
                       cc.output(),
                       cc.file(),
                       cc.depfile());
 
-                push_unique(lib().link_flags(), (working_dir / cc.output()).string());
+                push_unique(lib().link_flags(), (build_dir / cc.output()).string());
                 compile_commands().push_back(cc);
                 ccs.push_back(cc);
             } else if (ext == ".c") {
                 cc.command() =
-                    f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
-                      target.c(),
-                      fmt::join(flags, " "),
-                      cc.output(),
-                      cc.file(),
-                      cc.depfile());
-                push_unique(lib().link_flags(), (working_dir / cc.output()).string());
+                    f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
+                push_unique(lib().link_flags(), (build_dir / cc.output()).string());
                 compile_commands().push_back(cc);
                 ccs.push_back(cc);
             }
@@ -292,5 +291,108 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
         compile_multi(fmt::format("{} v{}", d.name(), d.version()), ccs);
     } catch (std::exception &e) {
         throw ferr("Cannot resolve dep={:?}, src={}: {}", name, d.src(), e.what());
+    }
+}
+
+void Project::build() {
+    const auto &d = lib();
+
+    [[maybe_unused]]
+    auto lib = 1;
+
+    const auto cpp_standard = d.cpp_standard.value_or(package().edition());
+
+    const std::string feature_name = "-";
+
+    fs::path working_dir = fs::path(d.path()) / d.subdir();
+    if (working_dir.empty())
+        throw ferr("path and subdir is empty for dep={}", d.name());
+
+    if (!d.pre().empty()) {
+        spdlog::info("running pre command for package={:?} dep={:?} pre={:?}", package().name(), d.name(), d.pre());
+        std::string cmd = fmt::format("cd '{}' && ({}) > /dev/null 2>&1", working_dir.string(), d.pre());
+        if (std::system(cmd.c_str()) != 0)
+            throw ferr("pre command failed for dep={}: {}", d.name(), d.pre());
+    }
+
+    const auto &profile     = profiles().debug();
+    const auto  flags_      = fmt::format("{}", fmt::join(profile.flags(), " "));
+    const auto  link_flags_ = fmt::format("{}", fmt::join(profile.link_flags(), " "));
+    const auto  CXX         = profile.cxx() + (flags_.empty() ? "" : " " + flags_);
+    const auto  C           = profile.c() + (flags_.empty() ? "" : " " + flags_);
+    const auto  LINK        = profile.cxx() + (link_flags_.empty() ? "" : " " + link_flags_);
+    fs::path    cache       = this->cache();
+    fs::path    build_dir   = cache / "build" / profile.id() / (d.name() + "-" + d.version()) / feature_name;
+
+    std::vector<std::string> link_flags;
+    std::vector<std::string> flags;
+    for (auto &str : d.flags()) {
+        if (str.rfind("public:", 0) == 0) {
+            auto f = str.substr(std::string("public:").size());
+            push_unique(flags, f);
+        } else {
+            push_unique(flags, str);
+        }
+    }
+    for (auto &str : d.inc()) {
+        if (str.rfind("public:", 0) == 0) {
+            auto inc = "-I" + (working_dir / str.substr(std::string("public:").size())).string();
+            push_unique(flags, inc);
+        } else {
+            push_unique(flags, "-I" + (working_dir / str).string());
+        }
+    }
+    for (auto &str : d.lib()) {
+        push_unique(link_flags, (working_dir / str).string());
+    }
+    for (auto &str : d.link_flags()) {
+        push_unique(link_flags, str);
+    }
+
+    auto expanded = expand_path(working_dir.string(), d.src());
+
+    std::vector<CompileCommand> ccs;
+    for (fs::path entry : expanded) {
+        CompileCommand cc;
+        cc.directory() = build_dir.string();
+        cc.output()    = entry.string() + ".o";
+        cc.depfile()   = entry.string() + ".d";
+        cc.file()      = (working_dir / entry).string();
+        if (auto ext = entry.extension(); ext == ".cpp" || ext == ".cxx" || ext == ".cc" || ext == ".cppm") {
+            if (ext == ".cppm" && cpp_standard < 20)
+                throw ferr("C++ modules are not supported in std=c++{}, but std=c++{} is used", cpp_standard, entry.string());
+
+            cc.command() =
+                f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
+                  CXX,
+                  cpp_standard,
+                  fmt::join(flags, " "),
+                  cc.output(),
+                  cc.file(),
+                  cc.depfile());
+
+            push_unique(link_flags, (build_dir / cc.output()).string());
+            compile_commands().push_back(cc);
+            ccs.push_back(cc);
+        } else if (ext == ".c") {
+            cc.command() =
+                f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
+            push_unique(link_flags, (build_dir / cc.output()).string());
+            compile_commands().push_back(cc);
+            ccs.push_back(cc);
+        }
+    }
+
+    bool compiled = compile_multi(fmt::format("{} v{}", d.name(), d.version()), ccs);
+    auto output   = cache / "bin" / d.name();
+    fs::create_directories(output.parent_path());
+    if (compiled || !fs::exists(output)) {
+        fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Linking");
+        fmt::println("{} v{}", d.name(), d.version());
+
+        auto link_cmd = f("{} -o '{}' {}", LINK, output.string(), fmt::join(link_flags, " "));
+        spdlog::debug("linking cmd={}", link_cmd);
+        if (std::system(link_cmd.c_str()) != 0)
+            throw ferr("linking failed: cmd={}", d.name(), link_cmd);
     }
 }
