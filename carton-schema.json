@@ -30,7 +30,8 @@
           "items": { "type": "string" }
         },
         "description": { "type": "string" },
-        "license": { "type": "string" }
+        "license": { "type": "string" },
+        "vars": { "type": "object", "additionalProperties": { "type": "string" } }
       }
     },
 

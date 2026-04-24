@@ -10,13 +10,28 @@
 #define ferr(...) std::runtime_error(fmt::format(__VA_ARGS__))
 namespace fs = std::filesystem;
 
+static void find_requested_features(
+    const Project &p, const std::string &feat, std::vector<std::string> &required_features, bool dep = false
+) {
+    // TODO: support "feat1/feat2" syntax for features of dependencies
+    if (feat.rfind("dep:", 0) == 0)
+        return find_requested_features(p, feat.substr(4), required_features, true);
+
+    if (auto it = p.features().find(feat); dep || it == p.features().end()) {
+        auto d = p.dependencies().find(feat);
+        if (d == p.dependencies().end())
+            throw ferr(
+                "Error building {:?}: feature `{}` is not defined in the package or dependencies", p.package().name(), feat
+            );
+        else
+            push_unique(required_features, feat);
+    } else {
+        for (auto &dep : it->second)
+            find_requested_features(p, dep, required_features, dep == feat);
+    }
+}
+
 void Project::build(const std::vector<std::string> &features, bool subpackage) {
-    if (no_default_features() && features.empty())
-        throw ferr("Error building {:?}: no features specified, but `no-default-features` is set", package().name());
-
-    if (features.empty())
-        return build({"default"}, subpackage);
-
     if (package().name().empty())
         throw ferr("Error building {:?}: name is required", package().name());
 
@@ -51,14 +66,33 @@ void Project::build(const std::vector<std::string> &features, bool subpackage) {
             lib().inc() = {"public:include"};
     }
 
+    std::vector<std::string> required_features;
+    if (!no_default_features())
+        try {
+            find_requested_features(*this, "default", required_features);
+        } catch (const std::exception &e) {
+            std::ignore = e;
+        }
+    else
+        try {
+            find_requested_features(*this, "nodefault", required_features);
+        } catch (const std::exception &e) {
+            std::ignore = e;
+        }
+    for (auto &feat : features)
+        find_requested_features(*this, feat, required_features);
+    spdlog::debug("resolving: name={:?} required_features={}", package().name(), required_features);
+
     std::vector<std::string> resolved;
     for (auto &[name, dep] : dependencies()) {
         auto &d = convert_dep(dep);
         if (d.name().empty())
             d.name() = name;
-        if (name == "default" && no_default_features())
+        if (no_default_features() && name == "default")
             continue;
-        if (d.optional() && std::find(features.begin(), features.end(), name) == features.end())
+        if (!no_default_features() && name == "nodefault")
+            continue;
+        if (d.optional() && std::find(required_features.begin(), required_features.end(), name) == required_features.end())
             continue;
 
         try {
@@ -79,10 +113,11 @@ void Project::build(const std::vector<std::string> &features, bool subpackage) {
             throw ferr("Error collecting meta of dependency `{}` of package `{}`: {}", name, package().name(), e.what());
         }
     }
-    lib().name()       = package().name();
-    lib().version()    = package().version();
-    lib().cpp_standard = package().edition();
-    lib().features()   = features;
+    lib().name()             = package().name();
+    lib().version()          = package().version();
+    lib().cpp_standard       = package().edition();
+    lib().features()         = features;
+    lib().default_features() = !no_default_features();
 }
 
 void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
@@ -132,13 +167,14 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
         spdlog::info("resolving dep={:?} version={:?}", name, d.version());
         auto &packages = ppackages ? *ppackages : this->packages();
 
-        auto it = packages.find(d.name().empty() ? name : d.name());
+        auto &name_ = d.name().empty() ? name : d.name();
+        auto  it    = packages.find(name_);
         if (it == packages.end())
-            throw std::runtime_error("Cannot find `" + name + "` in the package list");
+            throw std::runtime_error("Cannot find `" + name_ + "` in the package registry");
 
         auto p = it->second;
         if (p.lib().empty())
-            throw std::runtime_error("The package `" + name + "` does not have a library target");
+            throw std::runtime_error("The package `" + name_ + "` does not have a library target");
 
         p.package().version() = d.version();
         auto &lib             = build_subpackage(p);
@@ -159,8 +195,8 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
 
     std::sort(d.features().begin(), d.features().end());
     std::string feature_name = fmt::format("{}", fmt::join(d.features(), "-"));
-    if (d.default_features().value_or(true))
-        feature_name = "default-" + feature_name;
+    if (!d.default_features().value_or(true))
+        feature_name = feature_name + (feature_name.empty() ? "nodefault" : "-nodefault");
     if (feature_name.empty())
         feature_name = "-";
 

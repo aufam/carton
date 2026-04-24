@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
     constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
 
     Project ctx;
-    cpx::cli::cli11::parse("c++ plusplus", argc, argv, ctx);
+    cpx::cli::cli11::parse("C++ package manager", argc, argv, ctx);
     spdlog::set_level(spdlog::level::level_enum(ctx.log_level()));
 
     cpx::toml::toruniina_toml::parse_from_file("./carton-packages.toml", ctx.packages(), toml_version);

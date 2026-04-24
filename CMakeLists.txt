@@ -87,9 +87,9 @@ target_compile_options(carton PRIVATE
     -fmacro-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=carton
     $<$<COMPILE_LANGUAGE:CXX>:-Wno-redundant-move>
     $<$<CONFIG:Debug>:-fsanitize=address,undefined>
-    $<$<CONFIG:Release>:-static-libgcc -static-libstdc++>
 )
 
 target_link_options(carton PRIVATE
     $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+    $<$<CONFIG:Release>:-static>
 )

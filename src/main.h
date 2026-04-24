@@ -101,7 +101,7 @@ struct Project {
     cpx::Tag<Lib>                                  lib          = "toml,json:`lib,skipmissing`";
     cpx::Tag<std::unordered_map<std::string, std::vector<std::string>>> features = "toml,json:`features,skipmissing,omitempty`";
 
-    cpx::Tag<std::string> cache               = "opt:`cache,env=CARTON_CACHE`";
+    cpx::Tag<std::string> cache               = "opt:`cache,env=CARTON_CACHE,skipmissing`";
     cpx::Tag<bool>        no_default_features = "opt:`no-default-features,help=Disable default features`";
 
     enum class LogLevel {
