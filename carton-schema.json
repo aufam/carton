@@ -31,7 +31,10 @@
         },
         "description": { "type": "string" },
         "license": { "type": "string" },
-        "vars": { "type": "object", "additionalProperties": { "type": "string" } }
+        "readme": { "type": "string" },
+        "repository": { "type": "string" },
+        "homepage": { "type": "string" },
+        "documentation": { "type": "string" },
       }
     },
 
@@ -122,6 +125,8 @@
         "type": "array",
         "items": { "type": "string" }
       }
-    }
+    },
+
+    "vars": { "type": "object", "additionalProperties": { "type": "string" } }
   }
 }

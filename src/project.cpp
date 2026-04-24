@@ -136,7 +136,7 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
         p.cache()               = cache();
         p.no_default_features() = !d.default_features().value_or(true);
         p.targets()             = targets();
-        p.package().vars()      = package().vars();
+        p.vars()                = vars();
         try {
             p.build(d.features(), true);
         } catch (const std::exception &e) {

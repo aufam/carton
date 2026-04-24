@@ -81,62 +81,62 @@ void Project::apply_package_placeholders() {
     auto  edition = std::to_string(package().edition());
 
     auto apply_dep = [&](Dependency &d) {
-        string_replace(d.version(), "version", version, package().vars());
-        string_replace(d.path(), "version", version, package().vars());
-        string_replace(d.url(), "version", version, package().vars());
-        string_replace(d.git(), "version", version, package().vars());
-        string_replace(d.branch(), "version", version, package().vars());
-        string_replace(d.tag(), "version", version, package().vars());
-        string_replace(d.subdir(), "version", version, package().vars());
+        string_replace(d.version(), "version", version, vars());
+        string_replace(d.path(), "version", version, vars());
+        string_replace(d.url(), "version", version, vars());
+        string_replace(d.git(), "version", version, vars());
+        string_replace(d.branch(), "version", version, vars());
+        string_replace(d.tag(), "version", version, vars());
+        string_replace(d.subdir(), "version", version, vars());
         for (auto &str : d.features())
-            string_replace(str, "version", version, package().vars());
+            string_replace(str, "version", version, vars());
         for (auto &str : d.src())
-            string_replace(str, "version", version, package().vars());
+            string_replace(str, "version", version, vars());
         for (auto &str : d.inc())
-            string_replace(str, "version", version, package().vars());
+            string_replace(str, "version", version, vars());
         for (auto &str : d.flags())
-            string_replace(str, "version", version, package().vars());
+            string_replace(str, "version", version, vars());
         for (auto &str : d.link_flags())
-            string_replace(str, "version", version, package().vars());
-        string_replace(d.pre(), "version", version, package().vars());
+            string_replace(str, "version", version, vars());
+        string_replace(d.pre(), "version", version, vars());
 
-        string_replace(d.version(), "name", name, package().vars());
-        string_replace(d.path(), "name", name, package().vars());
-        string_replace(d.url(), "name", name, package().vars());
-        string_replace(d.git(), "name", name, package().vars());
-        string_replace(d.branch(), "name", name, package().vars());
-        string_replace(d.tag(), "name", name, package().vars());
-        string_replace(d.subdir(), "name", name, package().vars());
+        string_replace(d.version(), "name", name, vars());
+        string_replace(d.path(), "name", name, vars());
+        string_replace(d.url(), "name", name, vars());
+        string_replace(d.git(), "name", name, vars());
+        string_replace(d.branch(), "name", name, vars());
+        string_replace(d.tag(), "name", name, vars());
+        string_replace(d.subdir(), "name", name, vars());
         for (auto &str : d.features())
-            string_replace(str, "name", name, package().vars());
+            string_replace(str, "name", name, vars());
         for (auto &str : d.src())
-            string_replace(str, "name", name, package().vars());
+            string_replace(str, "name", name, vars());
         for (auto &str : d.inc())
-            string_replace(str, "name", name, package().vars());
+            string_replace(str, "name", name, vars());
         for (auto &str : d.flags())
-            string_replace(str, "name", name, package().vars());
+            string_replace(str, "name", name, vars());
         for (auto &str : d.link_flags())
-            string_replace(str, "name", name, package().vars());
-        string_replace(d.pre(), "name", name, package().vars());
+            string_replace(str, "name", name, vars());
+        string_replace(d.pre(), "name", name, vars());
 
-        string_replace(d.version(), "edition", edition, package().vars());
-        string_replace(d.path(), "edition", edition, package().vars());
-        string_replace(d.url(), "edition", edition, package().vars());
-        string_replace(d.git(), "edition", edition, package().vars());
-        string_replace(d.branch(), "edition", edition, package().vars());
-        string_replace(d.tag(), "edition", edition, package().vars());
-        string_replace(d.subdir(), "edition", edition, package().vars());
+        string_replace(d.version(), "edition", edition, vars());
+        string_replace(d.path(), "edition", edition, vars());
+        string_replace(d.url(), "edition", edition, vars());
+        string_replace(d.git(), "edition", edition, vars());
+        string_replace(d.branch(), "edition", edition, vars());
+        string_replace(d.tag(), "edition", edition, vars());
+        string_replace(d.subdir(), "edition", edition, vars());
         for (auto &str : d.features())
-            string_replace(str, "edition", edition, package().vars());
+            string_replace(str, "edition", edition, vars());
         for (auto &str : d.src())
-            string_replace(str, "edition", edition, package().vars());
+            string_replace(str, "edition", edition, vars());
         for (auto &str : d.inc())
-            string_replace(str, "edition", edition, package().vars());
+            string_replace(str, "edition", edition, vars());
         for (auto &str : d.flags())
-            string_replace(str, "edition", edition, package().vars());
+            string_replace(str, "edition", edition, vars());
         for (auto &str : d.link_flags())
-            string_replace(str, "edition", edition, package().vars());
-        string_replace(d.pre(), "edition", edition, package().vars());
+            string_replace(str, "edition", edition, vars());
+        string_replace(d.pre(), "edition", edition, vars());
     };
     apply_dep(lib());
 
@@ -146,9 +146,9 @@ void Project::apply_package_placeholders() {
 
     for (auto &[_, feats] : features()) {
         for (auto &feat : feats) {
-            string_replace(feat, "name", name, package().vars());
-            string_replace(feat, "version", version, package().vars());
-            string_replace(feat, "edition", edition, package().vars());
+            string_replace(feat, "name", name, vars());
+            string_replace(feat, "version", version, vars());
+            string_replace(feat, "edition", edition, vars());
         }
     }
 }

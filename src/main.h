@@ -38,8 +38,6 @@ struct Package {
     cpx::Tag<std::vector<std::string>> authors     = "toml,json:`authors,skipmissing,omitempty`";
     cpx::Tag<std::string>              description = "toml,json:`description,skipmissing,omitempty`";
     cpx::Tag<std::string>              license     = "toml,json:`license,skipmissing,omitempty`";
-
-    cpx::Tag<std::unordered_map<std::string, std::string>> vars = "toml,json:`vars,skipmissing,omitempty`";
 };
 
 struct Dependency {
@@ -99,6 +97,8 @@ struct Project {
     cpx::Tag<std::unordered_map<std::string, Dep>> dependencies = "toml,json:`dependencies,skipmissing,omitempty`";
     cpx::Tag<Lib>                                  lib          = "toml,json:`lib,skipmissing`";
     cpx::Tag<std::unordered_map<std::string, std::vector<std::string>>> features = "toml,json:`features,skipmissing,omitempty`";
+
+    cpx::Tag<std::unordered_map<std::string, std::string>> vars = "toml,json:`vars,skipmissing,omitempty`";
 
     cpx::Tag<std::string> cache               = "opt:`cache,env=CARTON_CACHE,skipmissing`";
     cpx::Tag<bool>        no_default_features = "opt:`no-default-features,help=Disable default features`";
