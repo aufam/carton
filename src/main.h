@@ -81,16 +81,15 @@ struct CompileCommand {
     cpx::Tag<std::string> command   = "json:`command`";
     cpx::Tag<std::string> output    = "json:`output`";
     cpx::Tag<std::string> depfile   = "";
-
-    void compile() const;
 };
+void compile_multi(const std::string &name, const std::vector<CompileCommand> &commands);
 
 struct Project {
     using Dep = std::variant<std::string, Dependency>;
 
     struct Targets {
         cpx::Tag<Target> release = {"toml,json:`release,skipmissing`", Target::Release()};
-        cpx::Tag<Target> debug   = {"toml,json:`debug,skipmissing", Target::Debug()};
+        cpx::Tag<Target> debug   = {"toml,json:`debug,skipmissing`", Target::Debug()};
     };
     cpx::Tag<Targets> targets = "toml,json:`targets,skipmissing`";
 
@@ -113,7 +112,7 @@ struct Project {
         critical,
         off,
     };
-    cpx::Tag<LogLevel> log_level = {"opt:`log-level,skipmissing`", LogLevel::err};
+    cpx::Tag<LogLevel> log_level = {"opt:`log-level,skipmissing`", LogLevel::warn};
 
     cpx::Tag<std::vector<CompileCommand>> compile_commands = "json:`compile_commands`";
 

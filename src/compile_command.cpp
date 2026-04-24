@@ -1,6 +1,7 @@
 #include "main.h"
 
-#include <fmt/format.h>
+#include <fmt/ranges.h>
+#include <fmt/color.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -162,11 +163,12 @@ make_signature(const fs::path &directory, const fs::path &output, const fs::path
 }
 
 static bool needs_rebuild(
-    const fs::path    &directory,
-    const fs::path    &output,
-    const fs::path    &depfile,
-    const std::string &command_string,
-    const std::string &file_key /* CompileCommand::file() */
+    const std::unordered_map<std::string, Signature> &sig_map,
+    const fs::path                                   &directory,
+    const fs::path                                   &output,
+    const fs::path                                   &depfile,
+    const std::string                                &command_string,
+    const std::string                                &file_key /* CompileCommand::file() */
 ) {
     const auto out_abs = (output.is_absolute() ? output : (directory / output)).lexically_normal();
     const auto dep_abs = (depfile.is_absolute() ? depfile : (directory / depfile)).lexically_normal();
@@ -175,11 +177,9 @@ static bool needs_rebuild(
     if (!fs::exists(out_abs) || !fs::exists(dep_abs))
         return true;
 
-    const fs::path sig_path = signature_path_for(directory);
 
     // Load prior signatures; if none, rebuild.
-    std::unordered_map<std::string, Signature> sig_map = toml_parse(sig_path);
-    auto                                       it      = sig_map.find(file_key);
+    auto it = sig_map.find(file_key);
     if (it == sig_map.end())
         return true;
 
@@ -198,31 +198,48 @@ static bool needs_rebuild(
     return false; // signature matches => up-to-date
 }
 
-void CompileCommand::compile() const {
-    const fs::path dir = fs::path(directory());
-    const fs::path out = fs::path(output());
-    const fs::path dep = fs::path(depfile());
+void compile_multi(const std::string &name, const std::vector<CompileCommand> &commands) {
+    if (commands.empty())
+        return;
 
-    if (!needs_rebuild(dir, out, dep, command(), file())) {
-        return; // up-to-date for this (file())
-    }
+    auto &dir = commands[0].directory();
+    for (const auto &cmd : commands)
+        if (dir != cmd.directory())
+            throw std::runtime_error("All CompileCommands in compile_multi must have the same directory");
 
-    const std::string cmd = fmt::format(
-        "mkdir -p \"{0}\" && cd \"{0}\" && "
-        "(mkdir -p \"{1}\" && {2})",
-        directory(),
-        fs::path(output()).parent_path().string(),
-        command()
-    );
-
-    spdlog::debug("compiling: cmd={:?}", cmd);
-    if (std::system(cmd.c_str()) != 0) {
-        throw std::runtime_error(fmt::format("Failed to compile {}: command={:?}", file(), cmd));
-    }
-
-    // On success, update this file() entry in the directory-level signature TOML.
     const fs::path sig_path = signature_path_for(dir);
-    auto           sig_map  = toml_parse(sig_path);
-    sig_map[file()]         = make_signature(dir, out, dep, command());
-    toml_dump(sig_map, sig_path);
+
+    std::unordered_map<std::string, Signature> sig_map = toml_parse(sig_path);
+
+    std::vector<const CompileCommand *> needs_rebuild_ptrs;
+    for (const auto &cmd : commands)
+        if (needs_rebuild(sig_map, cmd.directory(), cmd.output(), cmd.depfile(), cmd.command(), cmd.file()))
+            needs_rebuild_ptrs.push_back(&cmd);
+
+    if (needs_rebuild_ptrs.empty())
+        return; // all up-to-date
+
+    fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Compiling");
+    fmt::println("{} ({} files)", name, needs_rebuild_ptrs.size());
+    // TODO: parallelize this
+    for (const auto *cmd : needs_rebuild_ptrs) {
+        const std::string full_cmd = fmt::format(
+            "mkdir -p \"{0}\" && cd \"{0}\" && "
+            "(mkdir -p \"{1}\" && {2})",
+            cmd->directory(),
+            fs::path(cmd->output()).parent_path().string(),
+            cmd->command()
+        );
+
+        spdlog::info("compiling: cmd={:?}", full_cmd);
+        if (std::system(full_cmd.c_str()) != 0) {
+            throw std::runtime_error(fmt::format("Failed to compile {}: command={:?}", cmd->file(), full_cmd));
+        }
+
+        // On success, update this file() entry in the directory-level signature TOML.
+        sig_map[cmd->file()] =
+            make_signature(fs::path(cmd->directory()), fs::path(cmd->output()), fs::path(cmd->depfile()), cmd->command());
+
+        toml_dump(sig_map, sig_path);
+    }
 }

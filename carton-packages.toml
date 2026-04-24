@@ -94,6 +94,7 @@ edition = 17
 ['toml++'.lib]
 git = "https://github.com/marzer/tomlplusplus"
 tag = "v{version}"
+flags = ["public:-DTOML_HEADER_ONLY=0", "-DTOML_IMPLEMENTATION"]
 
 
 #
@@ -106,6 +107,7 @@ edition = 11
 [toml11.lib]
 git = "https://github.com/ToruNiina/toml11"
 tag = "v{version}"
+flags = ["public:-DTOML11_COMPILE_SOURCES"]
 
 
 #
@@ -154,6 +156,7 @@ edition = 11
 [CLI11.lib]
 git = "https://github.com/CLIUtils/CLI11"
 tag = "v{version}"
+flags = ["public:-DCLI11_PRECOMPILE"]
 
 
 #

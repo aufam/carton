@@ -39,7 +39,7 @@ CPMAddPackage(
     NAME            toml11
     GIT_REPOSITORY  "https://github.com/ToruNiina/toml11"
     GIT_TAG         v4.4.0
-    OPTIONS         "TOML11_INSTALL OFF"
+    OPTIONS         "TOML11_INSTALL OFF" "TOML11_PRECOMPILE ON"
 )
 
 CPMAddPackage(
@@ -60,6 +60,7 @@ CPMAddPackage(
     NAME            CLI11
     GIT_REPOSITORY  "https://github.com/CLIUtils/CLI11"
     GIT_TAG         v2.6.1
+    OPTIONS         "CLI11_PRECOMPILED ON"
 )
 
 # only setup the exeternal libraries

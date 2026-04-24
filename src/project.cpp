@@ -1,7 +1,6 @@
 #include "main.h"
 #include <algorithm>
 #include <fmt/ranges.h>
-#include <fmt/color.h>
 #include <spdlog/spdlog.h>
 #include <filesystem>
 #include <cpx/toml/toruniina_toml.h>
@@ -108,7 +107,7 @@ void Project::build(const std::vector<std::string> &features, bool subpackage) {
         if (d.empty())
             continue;
         try {
-            collect_meta(name, d);
+            collect_meta(d.name().empty() ? name : d.name(), d);
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of dependency `{}` of package `{}`: {}", name, package().name(), e.what());
         }
@@ -253,11 +252,8 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
 
     try {
         auto expanded = expand_path(working_dir.string(), d.src());
-        if (expanded.empty())
-            return;
 
-        fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Compiling");
-        fmt::println("{} v{}", d.name(), d.version());
+        std::vector<CompileCommand> ccs;
         for (fs::path entry : expanded) {
             CompileCommand cc;
             cc.directory() = build_dir.string();
@@ -277,9 +273,9 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
                       cc.file(),
                       cc.depfile());
 
-                cc.compile();
                 push_unique(lib().link_flags(), (working_dir / cc.output()).string());
                 compile_commands().push_back(cc);
+                ccs.push_back(cc);
             } else if (ext == ".c") {
                 cc.command() =
                     f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
@@ -288,11 +284,12 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
                       cc.output(),
                       cc.file(),
                       cc.depfile());
-                cc.compile();
                 push_unique(lib().link_flags(), (working_dir / cc.output()).string());
                 compile_commands().push_back(cc);
+                ccs.push_back(cc);
             }
         }
+        compile_multi(fmt::format("{} v{}", d.name(), d.version()), ccs);
     } catch (std::exception &e) {
         throw ferr("Cannot resolve dep={:?}, src={}: {}", name, d.src(), e.what());
     }
