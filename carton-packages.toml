@@ -437,3 +437,19 @@ inc = [
     "public:src/sw/redis++/no_tls",
     "public:src/sw/redis++/cxx17",
 ]
+
+
+#
+# xxhash
+#
+[xxhash.package]
+name = "xxhash"
+edition = 11
+
+[xxhash.lib]
+git = "https://github.com/Cyan4973/xxhash"
+tag = "v{version}"
+src = ["xxhash.c"]
+inc = ["public:"]
+
+

@@ -5,12 +5,13 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 
 #include <cpx/toml/toruniina_toml.h>
+#include <cpx/defer.h>
+#include <xxhash.h>
 
 namespace fs = std::filesystem;
 
@@ -79,12 +80,16 @@ static std::vector<std::string> parse_depfile(const std::string &path) {
 
 // If you need a hash function, here's simple pseudo-code implemented in C++.
 // Replace with a real hash (xxhash/sha1/etc.) if you want stronger properties.
-static uint64_t hash64_pseudo(std::string_view s) {
-    uint64_t h = 1469598103934665603ull;
-    for (unsigned char c : s) {
-        h ^= (uint64_t)c;
-        h *= 1099511628211ull;
+static uint64_t hash64_pseudo(std::string_view s, XXH3_state_t *state = nullptr) {
+    bool own = !state;
+    if (own) {
+        state = XXH3_createState();
+        XXH3_64bits_reset(state);
     }
+    XXH3_64bits_update(state, s.data(), s.size());
+    uint64_t h = XXH3_64bits_digest(state);
+    if (own)
+        XXH3_freeState(state);
     return h;
 }
 
@@ -103,102 +108,114 @@ static std::string hex64(uint64_t v) {
 
 static fs::path signature_path_for(const fs::path &directory) {
     // One signature file per compile directory, containing many tables keyed by CompileCommand::file().
-    return directory / ".rebuild.lock.toml";
+    return directory / "carton.lock";
 }
 
-// parse_depfile(depfile) returns a list of ABSOLUTE header paths.
-// Hash each dependency entry independently (path + mtime) and combine.
-static std::string hash_deps_snapshot_hex(const fs::path &depfile_abs) {
-    std::vector<std::string> deps = parse_depfile(depfile_abs.string());
+static std::string hash_file_content_hex(const fs::path &p, std::unordered_map<std::string, std::string> &hash_history) {
+    const std::string key = p.string();
 
-    // Make stable across depfile ordering differences (optional but usually desirable).
+    // cache hit
+    if (auto it = hash_history.find(key); it != hash_history.end())
+        return it->second;
+
+    std::ifstream in(p, std::ios::binary);
+    if (!in)
+        return "MISSING";
+
+    uint64_t h = 1469598103934665603ull;
+
+    auto state = XXH3_createState();
+    XXH3_64bits_reset(state);
+    auto _ = defer([state]() { XXH3_freeState(state); });
+    char buffer[4096];
+    while (in.read(buffer, sizeof(buffer)) || in.gcount() > 0) {
+        std::string_view chunk(buffer, in.gcount());
+        h = hash64_combine(h, hash64_pseudo(chunk, state));
+    }
+
+    std::string result = hex64(h);
+    hash_history[key]  = result;
+    return result;
+}
+
+static std::string
+hash_deps_snapshot_hex(const fs::path &depfile_abs, std::unordered_map<std::string, std::string> &hash_history) {
+    std::vector<std::string> deps = parse_depfile(depfile_abs.string());
     std::sort(deps.begin(), deps.end());
 
-    uint64_t h = 1469598103934665603ull; // seed
+    uint64_t h = 1469598103934665603ull;
 
+    auto state = XXH3_createState();
+    XXH3_64bits_reset(state);
+    auto _ = defer([state]() { XXH3_freeState(state); });
     for (const auto &dep_str : deps) {
         fs::path p = fs::path(dep_str).lexically_normal();
 
-        // Per your note, these should already be absolute.
-        // If something unexpected is relative, keep it deterministic anyway.
-        const std::string p_str = p.string();
-
-        uint64_t entry_h = hash64_pseudo(p_str);
+        uint64_t entry_h;
 
         if (!fs::exists(p)) {
-            entry_h = hash64_combine(entry_h, hash64_pseudo("MISSING"));
+            entry_h = hash64_pseudo("MISSING", state);
         } else {
-            std::error_code ec;
-            auto            t = fs::last_write_time(p, ec);
-            if (ec) {
-                entry_h = hash64_combine(entry_h, hash64_pseudo("NO_MTIME"));
-            } else {
-                auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t.time_since_epoch()).count();
-                entry_h = hash64_combine(entry_h, hash64_pseudo(std::to_string(ns)));
-            }
+            std::string content_hash = hash_file_content_hex(p, hash_history);
+            entry_h                  = hash64_pseudo(content_hash, state);
         }
 
-        // Combine into overall deps hash
         h = hash64_combine(h, entry_h);
     }
 
     return hex64(h);
 }
 
-static Signature
-make_signature(const fs::path &directory, const fs::path &output, const fs::path &depfile, const std::string &command_string) {
-    const auto out_abs = (output.is_absolute() ? output : (directory / output)).lexically_normal();
-    const auto dep_abs = (depfile.is_absolute() ? depfile : (directory / depfile)).lexically_normal();
+static Signature make_signature(const CompileCommand &cc, std::unordered_map<std::string, std::string> &hash_history) {
+    const fs::path directory = cc.directory();
+    const fs::path depfile   = cc.depfile();
+    const auto     dep_abs   = (depfile.is_absolute() ? depfile : (directory / depfile)).lexically_normal();
 
     Signature s;
-    s.cmd() = hex64(hash64_pseudo(command_string));
+    s.cmd() = hex64(hash64_pseudo(cc.command()));
 
-    // "file" field: hashed target identity. Here we use the resolved output path string.
-    // If you'd rather hash CompileCommand::file(), change this accordingly.
-    s.file() = hex64(hash64_pseudo(out_abs.string()));
+    // hash SOURCE FILE CONTENT instead of path
+    {
+        fs::path file_abs =
+            (fs::path(cc.file()).is_absolute() ? fs::path(cc.file()) : (directory / cc.file())).lexically_normal();
 
-    // deps: hash each dep independently, then combine
-    s.deps() = hash_deps_snapshot_hex(dep_abs);
+        s.file() = hash_file_content_hex(file_abs, hash_history);
+    }
+
+    s.deps() = hash_deps_snapshot_hex(dep_abs, hash_history);
     return s;
 }
 
 static bool needs_rebuild(
     const std::unordered_map<std::string, Signature> &sig_map,
-    const fs::path                                   &directory,
-    const fs::path                                   &output,
-    const fs::path                                   &depfile,
-    const std::string                                &command_string,
-    const std::string                                &file_key /* CompileCommand::file() */
+    const CompileCommand                             &cc,
+    std::unordered_map<std::string, std::string>     &hash_history
 ) {
+    const fs::path output    = cc.output();
+    const fs::path directory = cc.directory();
+    const fs::path depfile   = cc.depfile();
+
     const auto out_abs = (output.is_absolute() ? output : (directory / output)).lexically_normal();
     const auto dep_abs = (depfile.is_absolute() ? depfile : (directory / depfile)).lexically_normal();
 
-    // If output or depfile is missing, we must rebuild.
     if (!fs::exists(out_abs) || !fs::exists(dep_abs))
         return true;
 
-
-    // Load prior signatures; if none, rebuild.
-    auto it = sig_map.find(file_key);
+    auto it = sig_map.find(cc.output());
     if (it == sig_map.end())
         return true;
 
-    const Signature  current = make_signature(directory, output, depfile, command_string);
+    const Signature  current = make_signature(cc, hash_history);
     const Signature &old     = it->second;
 
-    if (old.cmd() != current.cmd())
-        return true;
-
-    if (old.file() != current.file())
-        return true;
-
-    if (old.deps() != current.deps())
-        return true;
-
-    return false; // signature matches => up-to-date
+    return old.cmd() != current.cmd() || old.file() != current.file() || old.deps() != current.deps();
 }
 
-bool compile_multi(const std::string &name, const std::vector<CompileCommand> &commands) {
+bool compile_multi(
+    const std::string                            &name,
+    const std::vector<CompileCommand>            &commands,
+    std::unordered_map<std::string, std::string> &hash_history
+) {
     if (commands.empty())
         return false;
 
@@ -213,7 +230,7 @@ bool compile_multi(const std::string &name, const std::vector<CompileCommand> &c
 
     std::vector<const CompileCommand *> needs_rebuild_ptrs;
     for (const auto &cmd : commands)
-        if (needs_rebuild(sig_map, cmd.directory(), cmd.output(), cmd.depfile(), cmd.command(), cmd.file()))
+        if (needs_rebuild(sig_map, cmd, hash_history))
             needs_rebuild_ptrs.push_back(&cmd);
 
     if (needs_rebuild_ptrs.empty())
@@ -223,11 +240,14 @@ bool compile_multi(const std::string &name, const std::vector<CompileCommand> &c
     fmt::println("{} ({} files)", name, needs_rebuild_ptrs.size());
     // TODO: parallelize this
     for (const auto *cmd : needs_rebuild_ptrs) {
+        const fs::path output = cmd->output();
+        const fs::path outdir = output.is_absolute() ? output.parent_path() : (fs::path(dir) / output).parent_path();
+
         const std::string full_cmd = fmt::format(
-            "mkdir -p \"{0}\" && cd \"{0}\" && "
-            "(mkdir -p \"{1}\" && {2})",
-            cmd->directory(),
-            fs::path(cmd->output()).parent_path().string(),
+            "mkdir -p \"{0}\" && "
+            "cd \"{1}\" && {2}",
+            outdir.string(),
+            dir,
             cmd->command()
         );
 
@@ -237,8 +257,7 @@ bool compile_multi(const std::string &name, const std::vector<CompileCommand> &c
         }
 
         // On success, update this file() entry in the directory-level signature TOML.
-        sig_map[cmd->file()] =
-            make_signature(fs::path(cmd->directory()), fs::path(cmd->output()), fs::path(cmd->depfile()), cmd->command());
+        sig_map[cmd->output()] = make_signature(*cmd, hash_history);
 
         toml_dump(sig_map, sig_path);
     }

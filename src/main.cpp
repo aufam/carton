@@ -31,5 +31,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    auto of = std::ofstream("./compile_commands.json");
+    of << cpx::json::yy_json::dump(ctx.compile_commands(), YYJSON_WRITE_PRETTY_TWO_SPACES);
+
     return 0;
 }

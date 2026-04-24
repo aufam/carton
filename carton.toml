@@ -21,6 +21,7 @@ toml11 = "4.4.0"
 pfr = "1.88.0"
 magic_enum = "0.9.7"
 CLI11 = "2.6.1"
+xxhash = "0.8.3"
 
 [vars]
 fmt-version = "12.1.0"

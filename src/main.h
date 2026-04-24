@@ -22,7 +22,7 @@ struct Profile {
         t.id()    = "release";
         t.cxx()   = "c++";
         t.c()     = "cc";
-        t.flags() = {"-O3", "-DNDEBUG", "-fPIC"};
+        t.flags() = {"-O3", "-DNDEBUG", "-fPIC", "-Wall", "-Wextra"};
         return t;
     }
 
@@ -31,7 +31,7 @@ struct Profile {
         t.id()    = "debug";
         t.cxx()   = "c++";
         t.c()     = "cc";
-        t.flags() = {"-g", "-fPIC"};
+        t.flags() = {"-g", "-fPIC", "-Wall", "-Wextra"};
         return t;
     }
 };
@@ -85,7 +85,11 @@ struct CompileCommand {
     cpx::Tag<std::string> output    = "json:`output`";
     cpx::Tag<std::string> depfile   = "";
 };
-bool compile_multi(const std::string &name, const std::vector<CompileCommand> &commands);
+bool compile_multi(
+    const std::string                            &name,
+    const std::vector<CompileCommand>            &commands,
+    std::unordered_map<std::string, std::string> &hash_history
+);
 
 struct Project {
     using Dep = std::variant<std::string, Dependency>;
@@ -122,6 +126,9 @@ struct Project {
     cpx::Tag<std::vector<CompileCommand>> compile_commands = "json:`compile_commands`";
 
     std::unordered_map<std::string, Project> *ppackages = nullptr;
+
+    std::unordered_map<std::string, std::string>  hash_history;
+    std::unordered_map<std::string, std::string> *phash_history = nullptr;
 
     void build_dep(const std::vector<std::string> &features = {}, bool subpackage = false);
     void build();

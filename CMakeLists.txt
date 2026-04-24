@@ -63,6 +63,15 @@ CPMAddPackage(
     OPTIONS         "CLI11_PRECOMPILED ON"
 )
 
+CPMAddPackage(
+    NAME            xxhash
+    GIT_REPOSITORY  "https://github.com/Cyan4973/xxHash"
+    GIT_TAG         v0.8.3
+    DOWNLOAD_ONLY   YES
+)
+add_library(xxhash STATIC ${xxhash_SOURCE_DIR}/xxhash.c)
+target_include_directories(xxhash PUBLIC ${xxhash_SOURCE_DIR})
+
 # only setup the exeternal libraries
 if (REQUIREMENTS)
     return()
@@ -80,6 +89,7 @@ target_link_libraries(carton PRIVATE
     Boost::pfr
     magic_enum
     CLI11
+    xxhash
 )
 
 target_compile_options(carton PRIVATE

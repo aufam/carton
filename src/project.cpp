@@ -134,6 +134,7 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
             );
 
         p.ppackages             = &packages();
+        p.phash_history         = &hash_history;
         p.cache()               = cache();
         p.no_default_features() = !d.default_features().value_or(true);
         p.profiles()            = profiles();
@@ -288,7 +289,7 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
                 ccs.push_back(cc);
             }
         }
-        compile_multi(fmt::format("{} v{}", d.name(), d.version()), ccs);
+        compile_multi(fmt::format("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
     } catch (std::exception &e) {
         throw ferr("Cannot resolve dep={:?}, src={}: {}", name, d.src(), e.what());
     }
@@ -383,8 +384,9 @@ void Project::build() {
         }
     }
 
-    bool compiled = compile_multi(fmt::format("{} v{}", d.name(), d.version()), ccs);
-    auto output   = cache / "bin" / d.name();
+    bool compiled =
+        compile_multi(fmt::format("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
+    auto output = cache / "bin" / d.name();
     fs::create_directories(output.parent_path());
     if (compiled || !fs::exists(output)) {
         fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Linking");
