@@ -1,0 +1,29 @@
+﻿{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "debug",
+            "displayName": "debug",
+            "binaryDir": "${sourceDir}/build",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_EXTENSIONS": "OFF",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CPM_USE_LOCAL_PACKAGES": "OFF"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "release",
+            "binaryDir": "${sourceDir}/release",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_EXTENSIONS": "OFF",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_BUILD_TYPE": "Release",
+                "CPM_USE_LOCAL_PACKAGES": "OFF"
+            }
+        }
+    ]
+}

@@ -1,0 +1,334 @@
+#:schema ./carton-packages-schema.json
+
+#
+# fmt
+#
+[fmt.package]
+name = "fmt"
+edition = 11
+
+[fmt.lib]
+git = "https://github.com/fmtlib/fmt"
+tag = "{version}"
+src = ["src/format.cc", "src/os.cc"]
+inc = ["public:include"]
+
+
+#
+# spdlog
+#
+[spdlog.package]
+name = "spdlog"
+edition = 11
+
+[spdlog.lib]
+git = "https://github.com/gabime/spdlog"
+tag = "v{version}"
+src = ["src/*"]
+inc = ["public:include"]
+flags = ["public:-DSPDLOG_COMPILED_LIB"]
+
+[spdlog.dependencies]
+default = { name = "fmt", version = "{fmt-version:11.2.0}" }
+'fmt' = { optional = true }
+
+#
+# nlohmann_json
+#
+[nlohmann_json.package]
+name = "nlohmann_json"
+edition = 11
+
+[nlohmann_json.lib]
+url = "https://github.com/nlohmann/json/releases/download/v{version}/json.tar.xz"
+
+
+#
+# yyjson
+#
+[yyjson.package]
+name = "yyjson"
+edition = 11
+
+[yyjson.lib]
+git = "https://github.com/ibireme/yyjson"
+tag = "{version}"
+src = ["src/yyjson.c"]
+inc = ["src"]
+
+
+#
+# rapidjson
+#
+[rapidjson.package]
+name = "rapidjson"
+edition = 11
+
+[rapidjson.lib]
+git = "https://github.com/Tencent/rapidjson"
+tag = "v{version}"
+
+
+#
+# toml++
+#
+['toml++'.package]
+name = "toml++"
+edition = 17
+
+['toml++'.lib]
+git = "https://github.com/marzer/tomlplusplus"
+tag = "v{version}"
+
+
+#
+# toml11
+#
+[toml11.package]
+name = "toml11"
+edition = 11
+
+[toml11.lib]
+git = "https://github.com/ToruNiina/toml11"
+tag = "v{version}"
+
+
+#
+# yaml-cpp
+#
+[yaml-cpp.package]
+name = "yaml-cpp"
+edition = 11
+
+[yaml-cpp.lib]
+git = "https://github.com/jbeder/yaml-cpp"
+tag = "yaml-cpp-{version}"
+
+
+#
+# Boost.PFR
+#
+[pfr.package]
+name = "pfr"
+edition = 14
+
+[pfr.lib]
+git = "https://github.com/boostorg/pfr"
+tag = "boost-{version}"
+
+
+#
+# Magic Enum
+#
+[magic_enum.package]
+name = "magic_enum"
+edition = 17
+
+[magic_enum.lib]
+git = "https://github.com/Neargye/magic_enum"
+tag = "v{version}"
+
+
+#
+# CLI11
+#
+[CLI11.package]
+name = "CLI11"
+edition = 11
+
+[CLI11.lib]
+git = "https://github.com/CLIUtils/CLI11"
+tag = "v{version}"
+
+
+#
+# cpp-httplib
+#
+[httplib.package]
+name = "httplib"
+edition = 11
+
+[httplib.lib]
+git = "https://github.com/yhirose/cpp-httplib"
+tag = "v{version}"
+src = ["build/httplib.cc"]
+inc = ["public:build"]
+link-flags = ["-lpthread"]
+pre = "python3 split.py -o build"
+
+[httplib.dependencies]
+ssl = { flags = ["public:-DCPPHTTPLIB_OPENSSL_SUPPORT"], link-flags = ["-lssl", "-lcrypto"], optional = true }
+zlib = { flags = ["public:-DCPPHTTPLIB_ZLIB_SUPPORT"], link-flags = ["-lz"], optional = true }
+
+
+#
+# sha256
+#
+[sha256.package]
+name = "sha256"
+edition = 11
+
+[sha256.lib]
+git = "https://github.com/LekKit/sha256"
+branch = "{version}"
+src = ["sha256.c"]
+inc = ["public:"]
+
+
+#
+# gtest
+#
+[gtest.package]
+name = "gtest"
+edition = 17
+
+[gtest.lib]
+url = "https://github.com/google/googletest/releases/download/v{version}/googletest-{version}.tar.gz"
+src = ["googletest/src/gtest-all.cc"]
+inc = ["public:googletest/include", "googletest"]
+
+[gtest.dependencies]
+'gtest-main' = { src = ["googletest/src/gtest_main.cc"] }
+
+
+#
+# onnxruntime
+#
+[onnx.package]
+name = "onnx"
+edition = 17
+
+[onnx.lib]
+url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-linux-x64-{version}.tgz"
+
+[onnx.dependencies]
+default = { lib = ["lib/libonnxruntime.so.{version}"] }
+cuda = {
+    url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-linux-x64-gpu-{version}.tgz",
+    lib = ["lib/libonnxruntime.so.{version}"]
+}
+
+
+['onnx-cuda'.package]
+name = "onnx-cuda"
+
+['onnx-cuda'.lib]
+url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-linux-x64-gpu-{version}.tgz"
+lib = ["lib/libonnxruntime.so.{version}"]
+
+
+#
+# catch2
+#
+[catch2.package]
+name = "catch2"
+edition = 14
+
+[catch2.lib]
+git = "https://github.com/catchorg/Catch2"
+tag = "v{version}"
+src = [
+    "src/catch2/*.cpp",
+    "src/catch2/benchmark/*.cpp",
+    "src/catch2/benchmark/detail/*.cpp",
+    "src/catch2/generators/*.cpp",
+    "src/catch2/interfaces/*.cpp",
+    "src/catch2/internal/*.cpp",
+    "src/catch2/matchers/*.cpp",
+    "src/catch2/matchers/internal/*.cpp",
+    "src/catch2/reporters/*.cpp",
+]
+inc = ["public:src"]
+
+
+#
+# ftxui
+#
+[ftxui.package]
+name = "ftxui"
+edition = 17
+
+[ftxui.lib]
+git = "http://github.com/ArthurSonzogni/FTXUI"
+tag = "v{version}"
+
+[ftxui.dependencies]
+screen = { src = ["src/screen/*.cpp"], optional = true }
+dom = { src = ["src/dom/*.cpp"], optional = true }
+component = { src = ["src/component/*.cpp"], optional = true }
+
+[ftxui.features]
+default = ["screen", "dom", "component"]
+
+
+#
+# async_simple
+#
+[async_simple.package]
+name = "async_simple"
+edition = 20
+
+[async_simple.lib]
+git = "https://github.com/alibaba/async_simple"
+tag = "v{version}"
+inc = ["public:"]
+
+
+#
+# cpptrace
+#
+[cpptrace.package]
+name = "cpptrace"
+edition = 11
+
+[cpptrace.lib]
+git = "https://github.com/jeremy-rifkin/cpptrace"
+tag = "v{version}"
+src = [
+    "src/*.cpp",
+    "src/binary/*.cpp",
+    "src/demangle/*.cpp",
+    "src/jit/*.cpp",
+    "src/platform/*.cpp",
+    "src/snippets/*.cpp",
+    "src/symbols/*.cpp",
+    "src/unwind/*.cpp",
+    "src/utils/*.cpp",
+    "src/utils/io/*.cpp",
+]
+
+
+#
+# redis
+#
+[redis.package]
+name = "redis"
+edition = 11
+
+[redis.lib]
+git = "https://github.com/sewenew/redis-plus-plus"
+tag = "{version}"
+src = [
+    "src/sw/redis++/command.cpp",
+    "src/sw/redis++/command_options.cpp",
+    "src/sw/redis++/connection.cpp",
+    "src/sw/redis++/connection_pool.cpp",
+    "src/sw/redis++/crc16.cpp",
+    "src/sw/redis++/errors.cpp",
+    "src/sw/redis++/pipeline.cpp",
+    "src/sw/redis++/redis.cpp",
+    "src/sw/redis++/redis_cluster.cpp",
+    "src/sw/redis++/redis_uri.cpp",
+    "src/sw/redis++/reply.cpp",
+    "src/sw/redis++/sentinel.cpp",
+    "src/sw/redis++/shards.cpp",
+    "src/sw/redis++/shards_pool.cpp",
+    "src/sw/redis++/subscriber.cpp",
+    "src/sw/redis++/transaction.cpp",
+    "src/sw/redis++/patterns/redlock.cpp",
+]
+inc = [
+    "public:src",
+    "public:src/sw/redis++/no_tls",
+    "public:src/sw/redis++/cxx17",
+]

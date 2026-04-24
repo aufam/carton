@@ -1,0 +1,51 @@
+BasedOnStyle: LLVM
+Standard: c++20
+ColumnLimit: 130
+SortIncludes: Never
+IncludeBlocks: Regroup
+
+# indentation
+MaxEmptyLinesToKeep: 2
+IndentWidth: 4
+ContinuationIndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AccessModifierOffset: -4
+NamespaceIndentation: All
+IndentPPDirectives: AfterHash
+IndentWrappedFunctionNames: false
+
+# Functions, constructors, template parrameters
+PackConstructorInitializers: Never
+BinPackParameters: false
+BinPackArguments: false
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowAllConstructorInitializersOnNextLine: true
+PenaltyBreakBeforeFirstCallParameter: 0
+AlwaysBreakAfterReturnType: None
+PenaltyReturnTypeOnItsOwnLine: 0
+AlwaysBreakTemplateDeclarations: Yes
+AllowShortFunctionsOnASingleLine: Empty
+
+# Classes, enums
+EmptyLineBeforeAccessModifier: Always
+# EnumTrailingComma: Insert
+
+# Aligns
+AlignAfterOpenBracket: BlockIndent
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: AcrossComments
+AlignConsecutiveDeclarations: AcrossComments
+# AlignEscapedNewlines: LeftWithLastLine
+AlignArrayOfStructures: Left
+AlignTrailingComments: Always
+AlignOperands: true
+
+# Breaks
+BreakBeforeBraces: Attach
+BreakAfterAttributes: Always
+BreakBeforeBinaryOperators: None
+BreakConstructorInitializers: BeforeComma
+BreakStringLiterals: true
+

@@ -1,0 +1,12 @@
+#:schema ./carton-schema.json
+
+[package]
+name = "cpp++"
+version = "0.1.0"
+vars = { fmt-version = "12.1.0" }
+
+[dependencies]
+fmt = "{fmt-version}"
+nlohmann_json = "3.12.0"
+httplib = { version = "0.43.1", features = ["ssl"] }
+spdlog = { version = "1.17.0" }
