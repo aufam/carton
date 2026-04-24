@@ -10,3 +10,4 @@ fmt = "{fmt-version}"
 nlohmann_json = "3.12.0"
 httplib = { version = "0.43.1", features = ["ssl"] }
 spdlog = { version = "1.17.0", default-features = false }
+ftxui = "6.1.9"

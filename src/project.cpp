@@ -206,7 +206,7 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
 
     if (!d.pre().empty()) {
         spdlog::info("running pre command for package={:?} dep={:?} pre={:?}", package().name(), name, d.pre());
-        std::string cmd = fmt::format("cd '{}' && {}", working_dir.string(), d.pre());
+        std::string cmd = fmt::format("cd '{}' && ({}) > /dev/null 2>&1", working_dir.string(), d.pre());
         if (std::system(cmd.c_str()) != 0)
             throw ferr("pre command failed for dep={}: {}", name, d.pre());
     }
