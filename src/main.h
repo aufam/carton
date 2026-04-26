@@ -115,6 +115,11 @@ struct Project {
     enum class LogLevel { trace, debug, info, warn, err, critical, off };
     cpx::Tag<LogLevel> log_level = {"opt:`log-level,skipmissing`", LogLevel::warn};
 
+    struct Build {};
+    struct Run {};
+    cpx::Tag<Build> _build = "opt:`build`";
+    cpx::Tag<Run>   _run   = "opt:`run`";
+
     std::unordered_map<std::string, Project> *ppackages = nullptr;
     Project                                  *pparent   = nullptr;
 
@@ -129,7 +134,9 @@ struct Project {
 
     void configure(const std::vector<std::string> &features = {}, bool subpackage = false);
     Meta collect_meta(Dependency &dep, Dependency &root, const Profile &profile);
-    void build(const Profile &profile, bool link, const std::vector<std::string> &link_flags);
+    void build(
+        const std::string &working_dir, const Profile &profile, bool link, const std::vector<std::string> &link_flags, bool do_run
+    );
 
 private:
     void apply_package_placeholders();

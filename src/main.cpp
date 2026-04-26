@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
 
     Project ctx;
-    cpx::cli::cli11::parse("C++ package manager", argc, argv, ctx);
+    auto    subcommands = cpx::cli::cli11::parse_with_subcommands("C++ package manager", argc, argv, ctx);
     spdlog::set_level(spdlog::level::level_enum(ctx.log_level()));
 
     if (ctx.cache().empty())
@@ -42,21 +42,26 @@ int main(int argc, char **argv) {
 
     std::vector<CompileCommand> ccs;
     try {
+        const auto do_run   = !subcommands.empty() && subcommands.front() == "run";
+        const auto do_build = do_run || (!subcommands.empty() && subcommands.front() == "build");
         ctx.configure();
 
         std::unordered_map<std::string, std::string> hash;
         bool                                         relink = false;
         for (const auto &m : ctx.meta) {
-            relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
+            if (do_build)
+                relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
             ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
         }
 
         Dependency dummy_dep;
         auto       m = ctx.collect_meta(ctx.lib(), dummy_dep, ctx.profiles().debug());
-        relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
+        if (do_build)
+            relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
         ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
-        ctx.build(ctx.profiles().debug(), relink, dummy_dep.link_flags());
+        if (do_build && !m.compile_commands.empty())
+            ctx.build(m.compile_commands.front().directory(), ctx.profiles().debug(), relink, dummy_dep.link_flags(), do_run);
     } catch (std::exception &e) {
         spdlog::error("Failed to build: {}", e.what());
         return 1;

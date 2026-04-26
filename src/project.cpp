@@ -323,12 +323,13 @@ Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profi
     }
 }
 
-void Project::build(const Profile &profile, bool link, const std::vector<std::string> &link_flags) {
+void Project::build(
+    const std::string &build_dir, const Profile &profile, bool link, const std::vector<std::string> &link_flags, bool do_run
+) {
     const auto link_flags_ = f("{}", fmt::join(profile.link_flags(), " "));
     const auto LINK        = profile.cxx() + (link_flags_.empty() ? "" : " " + link_flags_);
-    fs::path   cache       = this->cache();
+    const auto output      = fs::path(build_dir) / lib().name();
 
-    auto output = cache / "bin" / lib().name();
     if (link || !fs::exists(output)) {
         fs::create_directories(output.parent_path());
 
@@ -339,5 +340,15 @@ void Project::build(const Profile &profile, bool link, const std::vector<std::st
         spdlog::debug("linking cmd={}", link_cmd);
         if (std::system(link_cmd.c_str()) != 0)
             throw ferr("linking failed: cmd={}", lib().name(), link_cmd);
+    }
+
+    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Finished");
+    fmt::println(stderr, "`{}` profile", profile.id());
+
+    if (do_run) {
+        const std::string exe = output.string();
+        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Running");
+        fmt::println(stderr, "`{}`", exe);
+        std::system(exe.c_str());
     }
 }
