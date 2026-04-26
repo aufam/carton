@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include <chrono>
 
 struct CompileCommand;
 
@@ -13,25 +14,34 @@ struct Profile {
     cpx::Tag<std::string>              id         = "toml,json:`id`";
     cpx::Tag<std::string>              cxx        = {"toml,json:`cxx,skipmissing`", "c++"};
     cpx::Tag<std::string>              c          = {"toml,json:`c,skipmissing`", "c"};
+    cpx::Tag<bool>                     debug      = "toml,json:`debug,skipmissing`";
+    cpx::Tag<bool>                     lto        = "toml,json:`lto,skipmissing`";
+    cpx::Tag<int>                      opt_level  = "toml:`opt-level,skipmissing` json:`optLevel,skipmissing`";
     cpx::Tag<std::vector<std::string>> flags      = "toml,json:`flags,skipmissing,omitempty`";
     cpx::Tag<std::vector<std::string>> link_flags = "toml:`link-flags,skipmissing,omitempty`"
                                                     "json:`linkFlags,skipmissing,omitempty`";
 
     static Profile Release() {
         Profile t;
-        t.id()    = "release";
-        t.cxx()   = "c++";
-        t.c()     = "cc";
-        t.flags() = {"-O3", "-DNDEBUG", "-fPIC", "-Wall", "-Wextra"};
+        t.id()        = "release";
+        t.cxx()       = "c++";
+        t.c()         = "cc";
+        t.debug()     = false;
+        t.lto()       = false;
+        t.opt_level() = 3;
+        t.flags()     = {"-fPIC", "-Wall", "-Wextra"};
         return t;
     }
 
-    static Profile Debug() {
+    static Profile Dev() {
         Profile t;
-        t.id()    = "debug";
-        t.cxx()   = "c++";
-        t.c()     = "cc";
-        t.flags() = {"-g", "-fPIC", "-Wall", "-Wextra"};
+        t.id()        = "dev";
+        t.cxx()       = "c++";
+        t.c()         = "cc";
+        t.debug()     = true;
+        t.lto()       = false;
+        t.opt_level() = 0;
+        t.flags()     = {"-fPIC", "-Wall", "-Wextra"};
         return t;
     }
 };
@@ -96,7 +106,7 @@ struct Project {
 
     struct Profiles {
         cpx::Tag<Profile> release = {"toml,json:`release,skipmissing`", Profile::Release()};
-        cpx::Tag<Profile> debug   = {"toml,json:`debug,skipmissing`", Profile::Debug()};
+        cpx::Tag<Profile> dev     = {"toml,json:`dev,skipmissing`", Profile::Dev()};
     };
     cpx::Tag<Profiles> profiles = "toml,json:`profiles,skipmissing`";
 
@@ -135,7 +145,12 @@ struct Project {
     void configure(const std::vector<std::string> &features = {}, bool subpackage = false);
     Meta collect_meta(Dependency &dep, Dependency &root, const Profile &profile);
     void build(
-        const std::string &working_dir, const Profile &profile, bool link, const std::vector<std::string> &link_flags, bool do_run
+        const std::string                           &working_dir,
+        const Profile                               &profile,
+        bool                                         link,
+        const std::vector<std::string>              &link_flags,
+        bool                                         do_run,
+        const std::chrono::system_clock::time_point &start
     );
 
 private:

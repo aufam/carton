@@ -14,6 +14,8 @@ int main(int argc, char **argv) {
 
     constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
 
+    auto start = std::chrono::system_clock::now();
+
     Project ctx;
     auto    subcommands = cpx::cli::cli11::parse_with_subcommands("C++ package manager", argc, argv, ctx);
     spdlog::set_level(spdlog::level::level_enum(ctx.log_level()));
@@ -55,13 +57,15 @@ int main(int argc, char **argv) {
         }
 
         Dependency dummy_dep;
-        auto       m = ctx.collect_meta(ctx.lib(), dummy_dep, ctx.profiles().debug());
+        auto       m = ctx.collect_meta(ctx.lib(), dummy_dep, ctx.profiles().dev());
         if (do_build)
             relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
         ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
         if (do_build && !m.compile_commands.empty())
-            ctx.build(m.compile_commands.front().directory(), ctx.profiles().debug(), relink, dummy_dep.link_flags(), do_run);
+            ctx.build(
+                m.compile_commands.front().directory(), ctx.profiles().dev(), relink, dummy_dep.link_flags(), do_run, start
+            );
     } catch (std::exception &e) {
         spdlog::error("Failed to build: {}", e.what());
         return 1;

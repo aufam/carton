@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <fmt/ranges.h>
 #include <fmt/color.h>
+#include <fmt/chrono.h>
 #include <spdlog/spdlog.h>
 #include <filesystem>
 #include <cpx/toml/toruniina_toml.h>
@@ -244,9 +245,14 @@ Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profi
             d.inc() = {"public:include"};
     }
 
-    const auto flags_    = f("{}", fmt::join(profile.flags(), " "));
-    const auto CXX       = profile.cxx() + (flags_.empty() ? "" : " " + flags_);
-    const auto C         = profile.c() + (flags_.empty() ? "" : " " + flags_);
+    const auto flags_ =
+        f("{} -O{} {} {}",
+          profile.debug() ? "-g" : "",
+          profile.opt_level(),
+          profile.lto() ? "-flto" : "",
+          fmt::join(profile.flags(), " "));
+    const auto CXX       = f("{} {}", profile.cxx(), flags_);
+    const auto C         = f("{} {}", profile.c(), flags_);
     fs::path   cache     = this->cache();
     fs::path   build_dir = cache / "build" / profile.id() /
                          (d.name() + "-" +
@@ -324,11 +330,15 @@ Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profi
 }
 
 void Project::build(
-    const std::string &build_dir, const Profile &profile, bool link, const std::vector<std::string> &link_flags, bool do_run
+    const std::string                           &build_dir,
+    const Profile                               &profile,
+    bool                                         link,
+    const std::vector<std::string>              &link_flags,
+    bool                                         do_run,
+    const std::chrono::system_clock::time_point &start
 ) {
-    const auto link_flags_ = f("{}", fmt::join(profile.link_flags(), " "));
-    const auto LINK        = profile.cxx() + (link_flags_.empty() ? "" : " " + link_flags_);
-    const auto output      = fs::path(build_dir) / lib().name();
+    const auto LINK   = f("{} {} {}", profile.cxx(), profile.lto() ? "-flto" : "", fmt::join(profile.link_flags(), " "));
+    const auto output = fs::path(build_dir) / lib().name();
 
     if (link || !fs::exists(output)) {
         fs::create_directories(output.parent_path());
@@ -342,8 +352,13 @@ void Project::build(
             throw ferr("linking failed: cmd={}", lib().name(), link_cmd);
     }
 
+    std::string profile_info = profile.opt_level() == 0 ? "unoptimized" : "optimized";
+    if (profile.debug())
+        profile_info += " + debuginfo";
+
+    std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
     fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Finished");
-    fmt::println(stderr, "`{}` profile", profile.id());
+    fmt::println(stderr, "`{}` profile [{}] target(s) in {:.2f}", profile.id(), profile_info, elapsed.count());
 
     if (do_run) {
         const std::string exe = output.string();
