@@ -68,8 +68,8 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
                 url
             );
 
-            fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Downloading");
-            fmt::println("{}", url);
+            fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Downloading");
+            fmt::println(stderr, "{}", url);
             spdlog::debug("downloading: cmd={:?}", cmd);
             if (int res = std::system(cmd.c_str()); res)
                 throw ferr("Failed to download archive from {:?}, return code: {}", path_str, res);
@@ -102,8 +102,8 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
                 path_str,
                 get_tar_flag()
             );
-            fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Extracting");
-            fmt::println("{}", path_str);
+            fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Extracting");
+            fmt::println(stderr, "{}", path_str);
             spdlog::debug("extracting: {:?}", cmd);
             if (int res = std::system(cmd.c_str()); res)
                 throw ferr("Failed to extract {:?}, return code: {}", path_str, res);

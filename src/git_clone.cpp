@@ -68,8 +68,8 @@ std::string git_clone(const std::string &cache, const std::string &git, const st
             url
         );
 
-        fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Cloning");
-        fmt::println("{}", url);
+        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Cloning");
+        fmt::println(stderr, "{}", url);
         spdlog::debug("git clone: cmd={:?}", cmd);
         if (int res = std::system(cmd.c_str()); res)
             throw std::runtime_error(fmt::format("Failed to clone repo from {:?}, return code: {}", url, res));

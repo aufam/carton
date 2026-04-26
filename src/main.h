@@ -122,13 +122,22 @@ struct Project {
     std::unordered_map<std::string, Project>     *ppackages     = nullptr;
     Project                                      *pparent       = nullptr;
 
-    void build_dep(const std::vector<std::string> &features = {}, bool subpackage = false);
-    void build();
+    struct Meta {
+        std::string                 name;
+        std::string                 version;
+        std::string                 detail;
+        std::vector<CompileCommand> compile_commands;
+    };
+    std::vector<Meta>  meta;
+    std::vector<Meta> *pmeta = nullptr;
+
+    void configure(const std::vector<std::string> &features = {}, bool subpackage = false);
+    Meta collect_meta(Dependency &dep, Dependency &root, const Profile &profile);
+    void build(const Profile &profile, bool link, const std::vector<std::string> &link_flags);
 
 private:
     void apply_package_placeholders();
     void resolve_remote_dep(const std::string &name, Dependency &dep);
-    bool compile_dep(Dependency &dep, Dependency &root, const Profile &profile);
 };
 
 Dependency &convert_dep(Project::Dep &dep);

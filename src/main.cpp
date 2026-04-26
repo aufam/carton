@@ -41,8 +41,18 @@ int main(int argc, char **argv) {
     }
 
     try {
-        ctx.build_dep();
-        ctx.build();
+        ctx.configure();
+
+        std::unordered_map<std::string, std::string> hash;
+        bool                                         relink = false;
+        for (const auto &m : ctx.meta)
+            relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
+
+        Dependency dummy_dep;
+        auto       m = ctx.collect_meta(ctx.lib(), dummy_dep, ctx.profiles().debug());
+        relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
+
+        ctx.build(ctx.profiles().debug(), relink, dummy_dep.link_flags());
     } catch (std::exception &e) {
         spdlog::error("Failed to build: {}", e.what());
         return 1;

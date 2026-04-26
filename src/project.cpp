@@ -29,7 +29,7 @@ find_extra_features(Project &p, const std::string &feat, std::vector<std::string
     return "";
 }
 
-void Project::build_dep(const std::vector<std::string> &features, bool subpackage) {
+void Project::configure(const std::vector<std::string> &features, bool subpackage) {
     if (package().name().empty())
         throw ferr("Error building {:?}: name is required", package().name());
 
@@ -76,7 +76,6 @@ void Project::build_dep(const std::vector<std::string> &features, bool subpackag
     }
     spdlog::debug("resolving: name={:?} extra_features={}", package().name(), extra_features);
 
-    std::vector<std::string> resolved;
     for (auto &[name, dep] : dependencies()) {
         auto &d = convert_dep(dep);
         if (d.name().empty())
@@ -87,25 +86,54 @@ void Project::build_dep(const std::vector<std::string> &features, bool subpackag
             continue;
         if (d.optional() && std::find(extra_features.begin(), extra_features.end(), name) == extra_features.end())
             continue;
+        if (d.empty()) {
+            lib() += d;
+            continue;
+        }
+
+        if (d.version() == "auto") {
+            if (pparent == nullptr)
+                throw ferr("version {:?} must be in the parent project", d.version());
+
+            auto it = pparent->dependencies().find(d.name());
+            if (it == pparent->dependencies().end())
+                throw ferr("package {:?} must be in the parent project", d.name());
+
+            d = convert_dep(it->second);
+        }
+
+        bool meta_exists = false;
+        for (const auto &m : (pmeta ? *pmeta : meta))
+            if (m.name == d.name()) {
+                if (m.version != d.version())
+                    throw ferr(
+                        "Error resolving `{} v{}` required by {:?}: Already exist with different version: {}",
+                        d.name(),
+                        d.version(),
+                        package().name(),
+                        m.detail
+                    );
+                spdlog::info("found {} v{}", m.name, m.version);
+                meta_exists = true;
+                break;
+            }
+        if (meta_exists)
+            continue;
 
         try {
             resolve_remote_dep(name, d);
         } catch (const std::exception &e) {
-            throw ferr("Error building dependency `{}` of package `{}`: {}", name, package().name(), e.what());
+            throw ferr("Error resolving {:?} required by {:?}: {}", name, package().name(), e.what());
         }
-        resolved.push_back(name);
+
+        try {
+            auto m = collect_meta(d, lib(), profiles().release());
+            (pmeta ? *pmeta : meta).push_back(std::move(m));
+        } catch (const std::exception &e) {
+            throw ferr("Error collecting meta of {:?} required by {:?}: {}", name, package().name(), e.what());
+        }
     }
 
-    for (auto &name : resolved) {
-        auto &d = convert_dep(dependencies().at(name));
-        if (d.empty())
-            continue;
-        try {
-            compile_dep(d, lib(), profiles().release());
-        } catch (const std::exception &e) {
-            throw ferr("Error collecting meta of dependency `{}` of package `{}`: {}", name, package().name(), e.what());
-        }
-    }
     lib().name()             = package().name();
     lib().version()          = package().version();
     lib().cpp_standard       = package().edition();
@@ -114,9 +142,12 @@ void Project::build_dep(const std::vector<std::string> &features, bool subpackag
 }
 
 void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
+    if (d.empty())
+        throw ferr("assertion failed: {:?} cannot be empty", d.name());
+
     constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
 
-    auto build_subpackage = [&](Project &p) -> Dependency & {
+    auto configure_subpackage = [&](Project &p) -> Dependency & {
         if (p.package().edition() > package().edition())
             throw ferr(
                 "Error building dependency package={0:?}: {0:?} required std=c++{1} but {2:?} only supports std=c++{3}",
@@ -128,23 +159,19 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
 
         p.pparent               = this;
         p.ppackages             = &packages();
+        p.pmeta                 = &meta;
         p.phash_history         = &hash_history;
         p.cache()               = cache();
         p.no_default_features() = !d.default_features().value_or(true);
         p.profiles()            = profiles();
         p.vars()                = vars();
         try {
-            p.build_dep(d.features(), true);
+            p.configure(d.features(), true);
         } catch (const std::exception &e) {
             throw ferr("Error building dependency package={} `{}`: {}", p.package().name(), name, e.what());
         }
         return p.lib();
     };
-
-    if (d.empty()) {
-        lib() += d;
-        return;
-    }
 
     if (!d.path().empty()) {
         spdlog::info("resolving dep={:?} path={:?}", name, d.path());
@@ -159,16 +186,6 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
     } else if (d.version().empty()) {
         throw std::runtime_error("path|git|version is not defined");
     } else {
-        if (d.version() == "auto") {
-            if (pparent == nullptr)
-                throw ferr("version {:?} must be in the parent project", d.version());
-
-            auto it = pparent->dependencies().find(d.name());
-            if (it == pparent->dependencies().end())
-                throw ferr("package {:?} must be in the parent project", d.name());
-
-            d = convert_dep(it->second);
-        }
         spdlog::info("resolving dep={:?} version={:?}", name, d.version());
         auto &packages = ppackages ? *ppackages : this->packages();
 
@@ -182,7 +199,7 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
             throw std::runtime_error("The package `" + name_ + "` does not have a library target");
 
         p.package().version() = d.version();
-        auto &lib             = build_subpackage(p);
+        auto &lib             = configure_subpackage(p);
         d                     = std::move(lib);
         resolve_remote_dep(name, d);
         return;
@@ -190,12 +207,12 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
 
     if (auto sub = fs::path(d.path()) / d.subdir() / "cpp++.toml"; fs::exists(sub)) {
         auto  p   = cpx::toml::toruniina_toml::parse_from_file<Project>(sub.string(), toml_version);
-        auto &lib = build_subpackage(p);
+        auto &lib = configure_subpackage(p);
         d         = std::move(lib);
     }
 }
 
-bool Project::compile_dep(Dependency &d, Dependency &root, const Profile &profile) {
+Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profile &profile) {
     [[maybe_unused]]
     const auto lib = 1;
 
@@ -298,30 +315,29 @@ bool Project::compile_dep(Dependency &d, Dependency &root, const Profile &profil
             } else if (ext == ".cppm" || ext == ".ixx")
                 throw ferr("file={}: carton does not support module yet :(", cc.file());
         }
-        return compile_multi(f("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
+        Meta m;
+        m.name    = d.name();
+        m.version = d.version();
+        m.detail  = f("{} v{} required by {:?}", d.name(), d.version(), package().name());
+        return m;
     } catch (std::exception &e) {
         throw ferr("Cannot resolve dep={:?}, src={}: {}", d.name(), d.src(), e.what());
     }
 }
 
-void Project::build() {
-    const auto &profile     = profiles().debug();
-    const auto  link_flags_ = f("{}", fmt::join(profile.link_flags(), " "));
-    const auto  LINK        = profile.cxx() + (link_flags_.empty() ? "" : " " + link_flags_);
-    fs::path    cache       = this->cache();
-
-    Dependency dummy_root;
-
-    bool compiled = compile_dep(lib(), dummy_root, profile);
+void Project::build(const Profile &profile, bool link, const std::vector<std::string> &link_flags) {
+    const auto link_flags_ = f("{}", fmt::join(profile.link_flags(), " "));
+    const auto LINK        = profile.cxx() + (link_flags_.empty() ? "" : " " + link_flags_);
+    fs::path   cache       = this->cache();
 
     auto output = cache / "bin" / lib().name();
-    if (compiled || !fs::exists(output)) {
+    if (link || !fs::exists(output)) {
         fs::create_directories(output.parent_path());
 
-        fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Linking");
-        fmt::println("{} v{}", lib().name(), lib().version());
+        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Linking");
+        fmt::println(stderr, "{} v{}", lib().name(), lib().version());
 
-        auto link_cmd = f("{} -o '{}' {}", LINK, output.string(), fmt::join(dummy_root.link_flags(), " "));
+        auto link_cmd = f("{} -o '{}' {}", LINK, output.string(), fmt::join(link_flags, " "));
         spdlog::debug("linking cmd={}", link_cmd);
         if (std::system(link_cmd.c_str()) != 0)
             throw ferr("linking failed: cmd={}", lib().name(), link_cmd);

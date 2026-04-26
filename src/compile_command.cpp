@@ -236,8 +236,8 @@ bool compile_multi(
     if (needs_rebuild_ptrs.empty())
         return false; // all up-to-date
 
-    fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Compiling");
-    fmt::println("{} ({} files)", name, needs_rebuild_ptrs.size());
+    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Compiling");
+    fmt::println(stderr, "{} ({} files)", name, needs_rebuild_ptrs.size());
     // TODO: parallelize this
     for (const auto *cmd : needs_rebuild_ptrs) {
         const fs::path output = cmd->output();
