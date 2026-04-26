@@ -40,17 +40,21 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    std::vector<CompileCommand> ccs;
     try {
         ctx.configure();
 
         std::unordered_map<std::string, std::string> hash;
         bool                                         relink = false;
-        for (const auto &m : ctx.meta)
+        for (const auto &m : ctx.meta) {
             relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
+            ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
+        }
 
         Dependency dummy_dep;
         auto       m = ctx.collect_meta(ctx.lib(), dummy_dep, ctx.profiles().debug());
         relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
+        ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
         ctx.build(ctx.profiles().debug(), relink, dummy_dep.link_flags());
     } catch (std::exception &e) {
@@ -59,7 +63,7 @@ int main(int argc, char **argv) {
     }
 
     auto of = std::ofstream("./compile_commands.json");
-    of << cpx::json::yy_json::dump(ctx.compile_commands(), YYJSON_WRITE_PRETTY_TWO_SPACES);
+    of << cpx::json::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
 
     return 0;
 }

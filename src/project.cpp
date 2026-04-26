@@ -160,7 +160,6 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
         p.pparent               = this;
         p.ppackages             = &packages();
         p.pmeta                 = &meta;
-        p.phash_history         = &hash_history;
         p.cache()               = cache();
         p.no_default_features() = !d.default_features().value_or(true);
         p.profiles()            = profiles();
@@ -304,21 +303,20 @@ Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profi
                       cc.depfile());
 
                 push_unique(root.link_flags(), (build_dir / cc.output()).string());
-                compile_commands().push_back(cc);
                 ccs.push_back(cc);
             } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S") {
                 cc.command() =
                     f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
                 push_unique(root.link_flags(), (build_dir / cc.output()).string());
-                compile_commands().push_back(cc);
                 ccs.push_back(cc);
             } else if (ext == ".cppm" || ext == ".ixx")
                 throw ferr("file={}: carton does not support module yet :(", cc.file());
         }
         Meta m;
-        m.name    = d.name();
-        m.version = d.version();
-        m.detail  = f("{} v{} required by {:?}", d.name(), d.version(), package().name());
+        m.name             = d.name();
+        m.version          = d.version();
+        m.detail           = f("{} v{} required by {:?}", d.name(), d.version(), package().name());
+        m.compile_commands = std::move(ccs);
         return m;
     } catch (std::exception &e) {
         throw ferr("Cannot resolve dep={:?}, src={}: {}", d.name(), d.src(), e.what());
