@@ -14,7 +14,7 @@ license = "MIT"
 
 [dependencies]
 cpx = "0.1.0"
-fmt = "{fmt-version}"
+fmt = "12.1.0"
 spdlog = { version = "1.17.0", default-features = false }
 yyjson = "0.12.0"
 toml11 = "4.4.0"
@@ -22,6 +22,4 @@ pfr = "1.88.0"
 magic_enum = "0.9.7"
 CLI11 = "2.6.1"
 xxhash = "0.8.3"
-
-[vars]
-fmt-version = "12.1.0"
+http = { version = "0.41.0", features = ["full"], optional = true }

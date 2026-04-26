@@ -112,23 +112,15 @@ struct Project {
     cpx::Tag<std::string> cache               = "opt:`cache,env=CARTON_CACHE,skipmissing`";
     cpx::Tag<bool>        no_default_features = "opt:`no-default-features,help=Disable default features`";
 
-    enum class LogLevel {
-        trace,
-        debug,
-        info,
-        warn,
-        err,
-        critical,
-        off,
-    };
+    enum class LogLevel { trace, debug, info, warn, err, critical, off };
     cpx::Tag<LogLevel> log_level = {"opt:`log-level,skipmissing`", LogLevel::warn};
 
     cpx::Tag<std::vector<CompileCommand>> compile_commands = "json:`compile_commands`";
 
-    std::unordered_map<std::string, Project> *ppackages = nullptr;
-
     std::unordered_map<std::string, std::string>  hash_history;
     std::unordered_map<std::string, std::string> *phash_history = nullptr;
+    std::unordered_map<std::string, Project>     *ppackages     = nullptr;
+    Project                                      *pparent       = nullptr;
 
     void build_dep(const std::vector<std::string> &features = {}, bool subpackage = false);
     void build();

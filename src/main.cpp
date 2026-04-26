@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "main.h"
+#include <filesystem>
 
 int main(int argc, char **argv) {
     auto sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
@@ -17,11 +18,27 @@ int main(int argc, char **argv) {
     cpx::cli::cli11::parse("C++ package manager", argc, argv, ctx);
     spdlog::set_level(spdlog::level::level_enum(ctx.log_level()));
 
-    cpx::toml::toruniina_toml::parse_from_file("./carton-packages.toml", ctx.packages(), toml_version);
-    cpx::toml::toruniina_toml::parse_from_file("./carton.toml", ctx, toml_version);
-
     if (ctx.cache().empty())
         ctx.cache() = std::getenv("HOME") + std::string("/.carton");
+
+    try {
+        auto packages = "carton-packages.toml";
+        cpx::toml::toruniina_toml::parse_from_file(
+            fmt::format("{}{}", std::filesystem::exists(packages) ? "" : ctx.cache() + "/", packages),
+            ctx.packages(),
+            toml_version
+        );
+    } catch (std::exception &e) {
+        spdlog::error("Failed to parse carton packages: {}", e.what());
+        return 1;
+    }
+
+    try {
+        cpx::toml::toruniina_toml::parse_from_file("./carton.toml", ctx, toml_version);
+    } catch (std::exception &e) {
+        spdlog::error("Failed to parse carton package: {}", e.what());
+        return 1;
+    }
 
     try {
         ctx.build_dep();

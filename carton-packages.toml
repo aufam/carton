@@ -38,7 +38,7 @@ tag = "v{version}"
 flags = ["public:-DSPDLOG_COMPILED_LIB"]
 
 [spdlog.dependencies]
-fmt = { version = "{fmt-version:11.2.0}", optional = true }
+fmt = { version = "auto", optional = true }
 fmt-external-flag = { flags = ["public:-DSPDLOG_FMT_EXTERNAL"], optional = true }
 
 [spdlog.features]
@@ -109,15 +109,27 @@ git = "https://github.com/ToruNiina/toml11"
 tag = "v{version}"
 flags = ["public:-DTOML11_COMPILE_SOURCES"]
 
+#
+# toml
+#
+[toml.package]
+name = "toml"
+edition = 11
+
+[toml.lib]
+git = "https://github.com/ToruNiina/toml11"
+tag = "v{version}"
+flags = ["public:-DTOML11_COMPILE_SOURCES"]
+
 
 #
 # yaml-cpp
 #
-[yaml-cpp.package]
-name = "yaml-cpp"
+[yaml.package]
+name = "yaml"
 edition = 11
 
-[yaml-cpp.lib]
+[yaml.lib]
 git = "https://github.com/jbeder/yaml-cpp"
 tag = "yaml-cpp-{version}"
 
@@ -147,6 +159,18 @@ tag = "v{version}"
 
 
 #
+# Magic Enum
+#
+[magic-enum.package]
+name = "magic-enum"
+edition = 17
+
+[magic-enum.lib]
+git = "https://github.com/Neargye/magic_enum"
+tag = "v{version}"
+
+
+#
 # CLI11
 #
 [CLI11.package]
@@ -154,6 +178,19 @@ name = "CLI11"
 edition = 11
 
 [CLI11.lib]
+git = "https://github.com/CLIUtils/CLI11"
+tag = "v{version}"
+flags = ["public:-DCLI11_PRECOMPILE"]
+
+
+#
+# CLI11
+#
+[cli.package]
+name = "cli"
+edition = 11
+
+[cli.lib]
 git = "https://github.com/CLIUtils/CLI11"
 tag = "v{version}"
 flags = ["public:-DCLI11_PRECOMPILE"]
@@ -175,8 +212,31 @@ link-flags = ["-lpthread"]
 pre = "python3 split.py -o build"
 
 [httplib.dependencies]
+ssl = { flags = ["public:-dcpphttplib_openssl_support"], link-flags = ["-lssl", "-lcrypto"], optional = true }
+z = { flags = ["public:-dcpphttplib_zlib_support"], link-flags = ["-lz"], optional = true }
+
+
+#
+# cpp-httplib
+#
+[http.package]
+name = "http"
+edition = 11
+
+[http.lib]
+git = "https://github.com/yhirose/cpp-httplib"
+tag = "v{version}"
+src = ["build/httplib.cc"]
+inc = ["public:build"]
+link-flags = ["-lpthread"]
+pre = "python3 split.py -o build"
+
+[http.dependencies]
 ssl = { flags = ["public:-DCPPHTTPLIB_OPENSSL_SUPPORT"], link-flags = ["-lssl", "-lcrypto"], optional = true }
-zlib = { flags = ["public:-DCPPHTTPLIB_ZLIB_SUPPORT"], link-flags = ["-lz"], optional = true }
+z = { flags = ["public:-DCPPHTTPLIB_ZLIB_SUPPORT"], link-flags = ["-lz"], optional = true }
+
+[http.features]
+full = ["ssl", "z"]
 
 
 #
@@ -206,7 +266,7 @@ src = ["googletest/src/gtest-all.cc"]
 inc = ["public:googletest/include", "googletest"]
 
 [gtest.dependencies]
-'gtest-main' = { src = ["googletest/src/gtest_main.cc"] }
+gtest-main = { src = ["googletest/src/gtest_main.cc"] }
 
 
 #
@@ -376,17 +436,32 @@ edition = 20
 [async_simple.lib]
 git = "https://github.com/alibaba/async_simple"
 tag = "v{version}"
+src = ["async_simple/uthread/internal/thread.cc", "async_simple/uthread/internal/Linux/x86_64/*"]
+inc = ["public:"]
+
+
+#
+# async_simple
+#
+[async.package]
+name = "async"
+edition = 20
+
+[async.lib]
+git = "https://github.com/alibaba/async_simple"
+tag = "v{version}"
+src = ["async_simple/uthread/internal/thread.cc", "async_simple/uthread/internal/Linux/x86_64/*"]
 inc = ["public:"]
 
 
 #
 # cpptrace
 #
-[cpptrace.package]
-name = "cpptrace"
+[trace.package]
+name = "trace"
 edition = 11
 
-[cpptrace.lib]
+[trace.lib]
 git = "https://github.com/jeremy-rifkin/cpptrace"
 tag = "v{version}"
 src = [
@@ -453,3 +528,14 @@ src = ["xxhash.c"]
 inc = ["public:"]
 
 
+#
+# z
+#
+[z.package]
+name = "z"
+edition = 11
+
+[z.lib]
+url = "https://zlib.net/fossils/zlib-{version}.tar.gz"
+src = ["*.c"]
+inc = ["public:"]

@@ -10,25 +10,23 @@
 #define ferr(...) std::runtime_error(fmt::format(__VA_ARGS__))
 namespace fs = std::filesystem;
 
-static void find_requested_features(
-    const Project &p, const std::string &feat, std::vector<std::string> &required_features, bool dep = false
-) {
+static std::string
+find_extra_features(Project &p, const std::string &feat, std::vector<std::string> &required_features, bool dep = false) {
     // TODO: support "feat1/feat2" syntax for features of dependencies
     if (feat.rfind("dep:", 0) == 0)
-        return find_requested_features(p, feat.substr(4), required_features, true);
+        return find_extra_features(p, feat.substr(4), required_features, true);
 
     if (auto it = p.features().find(feat); dep || it == p.features().end()) {
         auto d = p.dependencies().find(feat);
         if (d == p.dependencies().end())
-            throw ferr(
-                "Error building {:?}: feature `{}` is not defined in the package or dependencies", p.package().name(), feat
-            );
-        else
+            return f("Error building {:?}: feature `{}` is not defined in the package or dependencies", p.package().name(), feat);
+        else if (convert_dep(d->second).optional())
             push_unique(required_features, feat);
     } else {
         for (auto &dep : it->second)
-            find_requested_features(p, dep, required_features, dep == feat);
+            find_extra_features(p, dep, required_features, dep == feat);
     }
+    return "";
 }
 
 void Project::build_dep(const std::vector<std::string> &features, bool subpackage) {
@@ -66,22 +64,17 @@ void Project::build_dep(const std::vector<std::string> &features, bool subpackag
             lib().inc() = {"public:include"};
     }
 
-    std::vector<std::string> required_features;
+    std::vector<std::string> extra_features;
     if (!no_default_features())
-        try {
-            find_requested_features(*this, "default", required_features);
-        } catch (const std::exception &e) {
-            std::ignore = e;
-        }
+        std::ignore = find_extra_features(*this, "default", extra_features);
     else
-        try {
-            find_requested_features(*this, "nodefault", required_features);
-        } catch (const std::exception &e) {
-            std::ignore = e;
-        }
-    for (auto &feat : features)
-        find_requested_features(*this, feat, required_features);
-    spdlog::debug("resolving: name={:?} required_features={}", package().name(), required_features);
+        std::ignore = find_extra_features(*this, "nodefault", extra_features);
+    for (auto &feat : features) {
+        auto err = find_extra_features(*this, feat, extra_features);
+        if (!err.empty())
+            throw std::runtime_error(err);
+    }
+    spdlog::debug("resolving: name={:?} extra_features={}", package().name(), extra_features);
 
     std::vector<std::string> resolved;
     for (auto &[name, dep] : dependencies()) {
@@ -92,7 +85,7 @@ void Project::build_dep(const std::vector<std::string> &features, bool subpackag
             continue;
         if (!no_default_features() && name == "nodefault")
             continue;
-        if (d.optional() && std::find(required_features.begin(), required_features.end(), name) == required_features.end())
+        if (d.optional() && std::find(extra_features.begin(), extra_features.end(), name) == extra_features.end())
             continue;
 
         try {
@@ -116,7 +109,7 @@ void Project::build_dep(const std::vector<std::string> &features, bool subpackag
     lib().name()             = package().name();
     lib().version()          = package().version();
     lib().cpp_standard       = package().edition();
-    lib().features()         = features;
+    lib().features()         = std::move(extra_features);
     lib().default_features() = !no_default_features();
 }
 
@@ -133,6 +126,7 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
                 package().edition()
             );
 
+        p.pparent               = this;
         p.ppackages             = &packages();
         p.phash_history         = &hash_history;
         p.cache()               = cache();
@@ -165,6 +159,16 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
     } else if (d.version().empty()) {
         throw std::runtime_error("path|git|version is not defined");
     } else {
+        if (d.version() == "auto") {
+            if (pparent == nullptr)
+                throw ferr("version {:?} must be in the parent project", d.version());
+
+            auto it = pparent->dependencies().find(d.name());
+            if (it == pparent->dependencies().end())
+                throw ferr("package {:?} must be in the parent project", d.name());
+
+            d = convert_dep(it->second);
+        }
         spdlog::info("resolving dep={:?} version={:?}", name, d.version());
         auto &packages = ppackages ? *ppackages : this->packages();
 
@@ -195,9 +199,11 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
     const auto cpp_standard = d.cpp_standard.value_or(package().edition());
 
     std::sort(d.features().begin(), d.features().end());
-    std::string feature_name = fmt::format("{}", fmt::join(d.features(), "-"));
+    std::string feature_name = f("{}", fmt::join(d.features(), "-"));
     if (!d.default_features().value_or(true))
-        feature_name = feature_name + (feature_name.empty() ? "nodefault" : "-nodefault");
+        feature_name = feature_name + (feature_name.find("nodefault") != std::string::npos ? ""
+                                       : feature_name.empty()                              ? "nodefault"
+                                                                                           : "-nodefault");
     if (feature_name.empty())
         feature_name = "-";
 
@@ -207,7 +213,7 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
 
     if (!d.pre().empty()) {
         spdlog::info("running pre command for package={:?} dep={:?} pre={:?}", package().name(), name, d.pre());
-        std::string cmd = fmt::format("cd '{}' && ({}) > /dev/null 2>&1", working_dir.string(), d.pre());
+        std::string cmd = f("cd '{}' && ({}) > /dev/null 2>&1", working_dir.string(), d.pre());
         if (std::system(cmd.c_str()) != 0)
             throw ferr("pre command failed for dep={}: {}", name, d.pre());
     }
@@ -218,7 +224,7 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
         d.inc() = {"public:include"};
 
     const auto &profile   = profiles().release();
-    const auto  flags_    = fmt::format("{}", fmt::join(profile.flags(), " "));
+    const auto  flags_    = f("{}", fmt::join(profile.flags(), " "));
     const auto  CXX       = profile.cxx() + (flags_.empty() ? "" : " " + flags_);
     const auto  C         = profile.c() + (flags_.empty() ? "" : " " + flags_);
     fs::path    cache     = this->cache();
@@ -265,10 +271,7 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
             cc.output()    = entry.string() + ".o";
             cc.depfile()   = entry.string() + ".d";
             cc.file()      = (working_dir / entry).string();
-            if (auto ext = entry.extension(); ext == ".cpp" || ext == ".cxx" || ext == ".cc" || ext == ".cppm") {
-                if (ext == ".cppm" && cpp_standard < 20)
-                    throw ferr("C++ modules are not supported in std=c++{}, but std=c++{} is used", cpp_standard, entry.string());
-
+            if (auto ext = entry.extension(); ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
                 cc.command() =
                     f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
                       CXX,
@@ -281,29 +284,37 @@ void Project::collect_meta(const std::string &name, Dependency &d) {
                 push_unique(lib().link_flags(), (build_dir / cc.output()).string());
                 compile_commands().push_back(cc);
                 ccs.push_back(cc);
-            } else if (ext == ".c") {
+            } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S") {
                 cc.command() =
                     f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
                 push_unique(lib().link_flags(), (build_dir / cc.output()).string());
                 compile_commands().push_back(cc);
                 ccs.push_back(cc);
-            }
+            } else if (ext == ".cppm" || ext == ".ixx")
+                throw ferr("file={}: carton does not support module yet :(", cc.file());
         }
-        compile_multi(fmt::format("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
+        compile_multi(f("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
     } catch (std::exception &e) {
         throw ferr("Cannot resolve dep={:?}, src={}: {}", name, d.src(), e.what());
     }
 }
 
 void Project::build() {
-    const auto &d = lib();
+    auto &d = lib();
 
     [[maybe_unused]]
     auto lib = 1;
 
     const auto cpp_standard = d.cpp_standard.value_or(package().edition());
 
-    const std::string feature_name = "-";
+    std::sort(d.features().begin(), d.features().end());
+    std::string feature_name = f("{}", fmt::join(d.features(), "-"));
+    if (!d.default_features().value_or(true))
+        feature_name = feature_name + (feature_name.find("nodefault") != std::string::npos ? ""
+                                       : feature_name.empty()                              ? "nodefault"
+                                                                                           : "-nodefault");
+    if (feature_name.empty())
+        feature_name = "-";
 
     fs::path working_dir = fs::path(d.path()) / d.subdir();
     if (working_dir.empty())
@@ -311,14 +322,14 @@ void Project::build() {
 
     if (!d.pre().empty()) {
         spdlog::info("running pre command for package={:?} dep={:?} pre={:?}", package().name(), d.name(), d.pre());
-        std::string cmd = fmt::format("cd '{}' && ({}) > /dev/null 2>&1", working_dir.string(), d.pre());
+        std::string cmd = f("cd '{}' && ({}) > /dev/null 2>&1", working_dir.string(), d.pre());
         if (std::system(cmd.c_str()) != 0)
             throw ferr("pre command failed for dep={}: {}", d.name(), d.pre());
     }
 
     const auto &profile     = profiles().debug();
-    const auto  flags_      = fmt::format("{}", fmt::join(profile.flags(), " "));
-    const auto  link_flags_ = fmt::format("{}", fmt::join(profile.link_flags(), " "));
+    const auto  flags_      = f("{}", fmt::join(profile.flags(), " "));
+    const auto  link_flags_ = f("{}", fmt::join(profile.link_flags(), " "));
     const auto  CXX         = profile.cxx() + (flags_.empty() ? "" : " " + flags_);
     const auto  C           = profile.c() + (flags_.empty() ? "" : " " + flags_);
     const auto  LINK        = profile.cxx() + (link_flags_.empty() ? "" : " " + link_flags_);
@@ -359,7 +370,7 @@ void Project::build() {
         cc.output()    = entry.string() + ".o";
         cc.depfile()   = entry.string() + ".d";
         cc.file()      = (working_dir / entry).string();
-        if (auto ext = entry.extension(); ext == ".cpp" || ext == ".cxx" || ext == ".cc" || ext == ".cppm") {
+        if (auto ext = entry.extension(); ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
             if (ext == ".cppm" && cpp_standard < 20)
                 throw ferr("C++ modules are not supported in std=c++{}, but std=c++{} is used", cpp_standard, entry.string());
 
@@ -375,18 +386,18 @@ void Project::build() {
             push_unique(link_flags, (build_dir / cc.output()).string());
             compile_commands().push_back(cc);
             ccs.push_back(cc);
-        } else if (ext == ".c") {
+        } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S") {
             cc.command() =
                 f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
             push_unique(link_flags, (build_dir / cc.output()).string());
             compile_commands().push_back(cc);
             ccs.push_back(cc);
-        }
+        } else if (ext == ".cppm" || ext == ".ixx")
+            throw ferr("file={}: carton does not support module yet :(", cc.file());
     }
 
-    bool compiled =
-        compile_multi(fmt::format("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
-    auto output = cache / "bin" / d.name();
+    bool compiled = compile_multi(f("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
+    auto output   = cache / "bin" / d.name();
     fs::create_directories(output.parent_path());
     if (compiled || !fs::exists(output)) {
         fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Linking");
