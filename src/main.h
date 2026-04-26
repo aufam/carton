@@ -128,7 +128,7 @@ struct Project {
 private:
     void apply_package_placeholders();
     void resolve_remote_dep(const std::string &name, Dependency &dep);
-    void collect_meta(const std::string &name, Dependency &dep);
+    bool compile_dep(Dependency &dep, Dependency &root, const Profile &profile);
 };
 
 Dependency &convert_dep(Project::Dep &dep);

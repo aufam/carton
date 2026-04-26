@@ -101,7 +101,7 @@ void Project::build_dep(const std::vector<std::string> &features, bool subpackag
         if (d.empty())
             continue;
         try {
-            collect_meta(d.name().empty() ? name : d.name(), d);
+            compile_dep(d, lib(), profiles().release());
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of dependency `{}` of package `{}`: {}", name, package().name(), e.what());
         }
@@ -195,115 +195,9 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
     }
 }
 
-void Project::collect_meta(const std::string &name, Dependency &d) {
-    const auto cpp_standard = d.cpp_standard.value_or(package().edition());
-
-    std::sort(d.features().begin(), d.features().end());
-    std::string feature_name = f("{}", fmt::join(d.features(), "-"));
-    if (!d.default_features().value_or(true))
-        feature_name = feature_name + (feature_name.find("nodefault") != std::string::npos ? ""
-                                       : feature_name.empty()                              ? "nodefault"
-                                                                                           : "-nodefault");
-    if (feature_name.empty())
-        feature_name = "-";
-
-    fs::path working_dir = fs::path(d.path()) / d.subdir();
-    if (working_dir.empty())
-        throw ferr("path and subdir is empty for dep={}", name);
-
-    if (!d.pre().empty()) {
-        spdlog::info("running pre command for package={:?} dep={:?} pre={:?}", package().name(), name, d.pre());
-        std::string cmd = f("cd '{}' && ({}) > /dev/null 2>&1", working_dir.string(), d.pre());
-        if (std::system(cmd.c_str()) != 0)
-            throw ferr("pre command failed for dep={}: {}", name, d.pre());
-    }
-
-    if (d.src().empty() && fs::is_directory(working_dir / "src"))
-        d.src() = {"src/*"};
-    if (d.inc().empty() && fs::is_directory(working_dir / "include"))
-        d.inc() = {"public:include"};
-
-    const auto &profile   = profiles().release();
-    const auto  flags_    = f("{}", fmt::join(profile.flags(), " "));
-    const auto  CXX       = profile.cxx() + (flags_.empty() ? "" : " " + flags_);
-    const auto  C         = profile.c() + (flags_.empty() ? "" : " " + flags_);
-    fs::path    cache     = this->cache();
-    fs::path    build_dir = cache / "build" / profile.id() /
-                         (name + "-" +
-                          (d.branch().empty() && d.tag().empty() ? d.version()
-                           : d.branch().empty()                  ? d.tag()
-                                                                 : d.branch())) /
-                         feature_name;
-
-    std::vector<std::string> flags;
-    for (auto &str : d.flags()) {
-        if (str.rfind("public:", 0) == 0) {
-            auto f = str.substr(std::string("public:").size());
-            push_unique(flags, f);
-            push_unique(lib().flags(), f);
-        } else {
-            push_unique(flags, str);
-        }
-    }
-    for (auto &str : d.inc()) {
-        if (str.rfind("public:", 0) == 0) {
-            auto inc = "-I" + (working_dir / str.substr(std::string("public:").size())).string();
-            push_unique(flags, inc);
-            push_unique(lib().flags(), inc);
-        } else {
-            push_unique(flags, "-I" + (working_dir / str).string());
-        }
-    }
-    for (auto &str : d.lib()) {
-        push_unique(lib().link_flags(), (working_dir / str).string());
-    }
-    for (auto &str : d.link_flags()) {
-        push_unique(lib().link_flags(), str);
-    }
-
-    try {
-        auto expanded = expand_path(working_dir.string(), d.src());
-
-        std::vector<CompileCommand> ccs;
-        for (fs::path entry : expanded) {
-            CompileCommand cc;
-            cc.directory() = build_dir.string();
-            cc.output()    = entry.string() + ".o";
-            cc.depfile()   = entry.string() + ".d";
-            cc.file()      = (working_dir / entry).string();
-            if (auto ext = entry.extension(); ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
-                cc.command() =
-                    f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
-                      CXX,
-                      cpp_standard,
-                      fmt::join(flags, " "),
-                      cc.output(),
-                      cc.file(),
-                      cc.depfile());
-
-                push_unique(lib().link_flags(), (build_dir / cc.output()).string());
-                compile_commands().push_back(cc);
-                ccs.push_back(cc);
-            } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S") {
-                cc.command() =
-                    f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
-                push_unique(lib().link_flags(), (build_dir / cc.output()).string());
-                compile_commands().push_back(cc);
-                ccs.push_back(cc);
-            } else if (ext == ".cppm" || ext == ".ixx")
-                throw ferr("file={}: carton does not support module yet :(", cc.file());
-        }
-        compile_multi(f("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
-    } catch (std::exception &e) {
-        throw ferr("Cannot resolve dep={:?}, src={}: {}", name, d.src(), e.what());
-    }
-}
-
-void Project::build() {
-    auto &d = lib();
-
+bool Project::compile_dep(Dependency &d, Dependency &root, const Profile &profile) {
     [[maybe_unused]]
-    auto lib = 1;
+    const auto lib = 1;
 
     const auto cpp_standard = d.cpp_standard.value_or(package().edition());
 
@@ -327,21 +221,30 @@ void Project::build() {
             throw ferr("pre command failed for dep={}: {}", d.name(), d.pre());
     }
 
-    const auto &profile     = profiles().debug();
-    const auto  flags_      = f("{}", fmt::join(profile.flags(), " "));
-    const auto  link_flags_ = f("{}", fmt::join(profile.link_flags(), " "));
-    const auto  CXX         = profile.cxx() + (flags_.empty() ? "" : " " + flags_);
-    const auto  C           = profile.c() + (flags_.empty() ? "" : " " + flags_);
-    const auto  LINK        = profile.cxx() + (link_flags_.empty() ? "" : " " + link_flags_);
-    fs::path    cache       = this->cache();
-    fs::path    build_dir   = cache / "build" / profile.id() / (d.name() + "-" + d.version()) / feature_name;
+    if (&d != &this->lib()) { // otherwise, already done
+        if (d.src().empty() && fs::is_directory(working_dir / "src"))
+            d.src() = {"src/*"};
+        if (d.inc().empty() && fs::is_directory(working_dir / "include"))
+            d.inc() = {"public:include"};
+    }
 
-    std::vector<std::string> link_flags;
+    const auto flags_    = f("{}", fmt::join(profile.flags(), " "));
+    const auto CXX       = profile.cxx() + (flags_.empty() ? "" : " " + flags_);
+    const auto C         = profile.c() + (flags_.empty() ? "" : " " + flags_);
+    fs::path   cache     = this->cache();
+    fs::path   build_dir = cache / "build" / profile.id() /
+                         (d.name() + "-" +
+                          (d.branch().empty() && d.tag().empty() ? d.version()
+                           : d.branch().empty()                  ? d.tag()
+                                                                 : d.branch())) /
+                         feature_name;
+
     std::vector<std::string> flags;
     for (auto &str : d.flags()) {
         if (str.rfind("public:", 0) == 0) {
             auto f = str.substr(std::string("public:").size());
             push_unique(flags, f);
+            push_unique(root.flags(), f);
         } else {
             push_unique(flags, str);
         }
@@ -350,62 +253,77 @@ void Project::build() {
         if (str.rfind("public:", 0) == 0) {
             auto inc = "-I" + (working_dir / str.substr(std::string("public:").size())).string();
             push_unique(flags, inc);
+            push_unique(root.flags(), inc);
         } else {
             push_unique(flags, "-I" + (working_dir / str).string());
         }
     }
     for (auto &str : d.lib()) {
-        push_unique(link_flags, (working_dir / str).string());
+        auto lib = (working_dir / str).string();
+        push_unique(root.link_flags(), lib);
     }
     for (auto &str : d.link_flags()) {
-        push_unique(link_flags, str);
+        push_unique(root.link_flags(), str);
     }
 
-    auto expanded = expand_path(working_dir.string(), d.src());
+    try {
+        auto expanded = expand_path(working_dir.string(), d.src());
 
-    std::vector<CompileCommand> ccs;
-    for (fs::path entry : expanded) {
-        CompileCommand cc;
-        cc.directory() = build_dir.string();
-        cc.output()    = entry.string() + ".o";
-        cc.depfile()   = entry.string() + ".d";
-        cc.file()      = (working_dir / entry).string();
-        if (auto ext = entry.extension(); ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
-            if (ext == ".cppm" && cpp_standard < 20)
-                throw ferr("C++ modules are not supported in std=c++{}, but std=c++{} is used", cpp_standard, entry.string());
+        std::vector<CompileCommand> ccs;
+        for (fs::path entry : expanded) {
+            CompileCommand cc;
+            cc.directory() = build_dir.string();
+            cc.output()    = entry.string() + ".o";
+            cc.depfile()   = entry.string() + ".d";
+            cc.file()      = (working_dir / entry).string();
+            if (auto ext = entry.extension(); ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
+                cc.command() =
+                    f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
+                      CXX,
+                      cpp_standard,
+                      fmt::join(flags, " "),
+                      cc.output(),
+                      cc.file(),
+                      cc.depfile());
 
-            cc.command() =
-                f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
-                  CXX,
-                  cpp_standard,
-                  fmt::join(flags, " "),
-                  cc.output(),
-                  cc.file(),
-                  cc.depfile());
-
-            push_unique(link_flags, (build_dir / cc.output()).string());
-            compile_commands().push_back(cc);
-            ccs.push_back(cc);
-        } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S") {
-            cc.command() =
-                f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
-            push_unique(link_flags, (build_dir / cc.output()).string());
-            compile_commands().push_back(cc);
-            ccs.push_back(cc);
-        } else if (ext == ".cppm" || ext == ".ixx")
-            throw ferr("file={}: carton does not support module yet :(", cc.file());
+                push_unique(root.link_flags(), (build_dir / cc.output()).string());
+                compile_commands().push_back(cc);
+                ccs.push_back(cc);
+            } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S") {
+                cc.command() =
+                    f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
+                push_unique(root.link_flags(), (build_dir / cc.output()).string());
+                compile_commands().push_back(cc);
+                ccs.push_back(cc);
+            } else if (ext == ".cppm" || ext == ".ixx")
+                throw ferr("file={}: carton does not support module yet :(", cc.file());
+        }
+        return compile_multi(f("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
+    } catch (std::exception &e) {
+        throw ferr("Cannot resolve dep={:?}, src={}: {}", d.name(), d.src(), e.what());
     }
+}
 
-    bool compiled = compile_multi(f("{} v{}", d.name(), d.version()), ccs, phash_history ? *phash_history : hash_history);
-    auto output   = cache / "bin" / d.name();
-    fs::create_directories(output.parent_path());
+void Project::build() {
+    const auto &profile     = profiles().debug();
+    const auto  link_flags_ = f("{}", fmt::join(profile.link_flags(), " "));
+    const auto  LINK        = profile.cxx() + (link_flags_.empty() ? "" : " " + link_flags_);
+    fs::path    cache       = this->cache();
+
+    Dependency dummy_root;
+
+    bool compiled = compile_dep(lib(), dummy_root, profile);
+
+    auto output = cache / "bin" / lib().name();
     if (compiled || !fs::exists(output)) {
-        fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Linking");
-        fmt::println("{} v{}", d.name(), d.version());
+        fs::create_directories(output.parent_path());
 
-        auto link_cmd = f("{} -o '{}' {}", LINK, output.string(), fmt::join(link_flags, " "));
+        fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Linking");
+        fmt::println("{} v{}", lib().name(), lib().version());
+
+        auto link_cmd = f("{} -o '{}' {}", LINK, output.string(), fmt::join(dummy_root.link_flags(), " "));
         spdlog::debug("linking cmd={}", link_cmd);
         if (std::system(link_cmd.c_str()) != 0)
-            throw ferr("linking failed: cmd={}", d.name(), link_cmd);
+            throw ferr("linking failed: cmd={}", lib().name(), link_cmd);
     }
 }
