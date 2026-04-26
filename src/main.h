@@ -108,7 +108,7 @@ struct Project {
         cpx::Tag<Profile> release = {"toml,json:`release,skipmissing`", Profile::Release()};
         cpx::Tag<Profile> dev     = {"toml,json:`dev,skipmissing`", Profile::Dev()};
     };
-    cpx::Tag<Profiles> profiles = "toml,json:`profiles,skipmissing`";
+    cpx::Tag<Profiles> profiles = "toml,json:`profile,skipmissing`";
 
     cpx::Tag<std::unordered_map<std::string, Project>> packages = "toml:`packages,skipmissing,omitempty`";
     cpx::Tag<Package>                                  package  = "toml,json:`package`";
