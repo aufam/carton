@@ -136,16 +136,16 @@ struct Project {
     Project                                  *pparent   = nullptr;
 
     struct Meta {
-        std::string                 name;
-        std::string                 version;
-        std::string                 detail;
+        Dependency                  lib;
+        std::vector<std::string>    flags;
+        std::vector<std::string>    link_flags;
         std::vector<CompileCommand> compile_commands;
     };
     std::vector<Meta>  meta;
     std::vector<Meta> *pmeta = nullptr;
 
     void configure(const Profile &profile, const std::vector<std::string> &features = {});
-    Meta collect_meta(Dependency &dep, Dependency &root, const Profile &profile);
+    Meta collect_meta(const Profile &profile, Dependency &dep);
     void build(
         const std::string                           &working_dir,
         const Profile                               &profile,

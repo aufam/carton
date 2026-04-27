@@ -94,33 +94,32 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
             d = convert_dep(it->second);
         }
 
-        bool meta_exists = false;
+        const Meta *existing = nullptr;
         for (const auto &m : (pmeta ? *pmeta : meta))
-            if (m.name == d.name()) {
-                if (m.version != d.version())
-                    throw ferr(
-                        "Error resolving `{} v{}` required by {:?}: Already exist with different version: {}",
-                        d.name(),
-                        d.version(),
-                        package().name(),
-                        m.detail
-                    );
-                spdlog::info("found {} v{}", m.name, m.version);
-                meta_exists = true;
+            if (m.lib.name() == d.name()) {
+                if (m.lib.version() != d.version())
+                    throw ferr("version already exist");
+                spdlog::info("found {} v{}", m.lib.name(), m.lib.version());
+                existing = &m;
                 break;
             }
 
+        if (existing) {
+            push_unique(lib().flags(), existing->flags);
+            push_unique(lib().link_flags(), existing->link_flags);
+        }
+
         try {
-            if (!meta_exists)
-                resolve_remote_dep(profile, name, d);
+            resolve_remote_dep(profile, name, d);
         } catch (const std::exception &e) {
             throw ferr("Error resolving {:?} required by {:?}: {}", name, package().name(), e.what());
         }
 
         try {
-            auto m = collect_meta(d, lib(), profile);
-            if (!meta_exists)
-                (pmeta ? *pmeta : meta).push_back(std::move(m));
+            auto m = collect_meta(profile, d);
+            push_unique(lib().flags(), m.flags);
+            push_unique(lib().link_flags(), m.link_flags);
+            (pmeta ? *pmeta : meta).push_back(std::move(m));
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of {:?} required by {:?}: {}", name, package().name(), e.what());
         }
@@ -216,7 +215,7 @@ void Project::resolve_remote_dep(const Profile &profile, const std::string &name
     }
 }
 
-Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profile &profile) {
+Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
     [[maybe_unused]]
     const auto lib = 1;
 
@@ -259,11 +258,13 @@ Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profi
                          feature_name;
 
     std::vector<std::string> flags;
+    std::vector<std::string> export_flags;
+    std::vector<std::string> export_link_flags;
     for (auto &str : d.flags()) {
         if (str.rfind("public:", 0) == 0) {
             auto f = str.substr(std::string("public:").size());
             push_unique(flags, f);
-            push_unique(root.flags(), f);
+            push_unique(export_flags, f);
         } else {
             push_unique(flags, str);
         }
@@ -272,17 +273,17 @@ Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profi
         if (str.rfind("public:", 0) == 0) {
             auto inc = "-I" + (working_dir / str.substr(std::string("public:").size())).string();
             push_unique(flags, inc);
-            push_unique(root.flags(), inc);
+            push_unique(export_flags, inc);
         } else {
             push_unique(flags, "-I" + (working_dir / str).string());
         }
     }
     for (auto &str : d.lib()) {
         auto lib = (working_dir / str).string();
-        push_unique(root.link_flags(), lib);
+        push_unique(export_link_flags, lib);
     }
     for (auto &str : d.link_flags()) {
-        push_unique(root.link_flags(), str);
+        push_unique(export_link_flags, str);
     }
 
     try {
@@ -305,20 +306,20 @@ Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profi
                       cc.file(),
                       cc.depfile());
 
-                push_unique(root.link_flags(), (build_dir / cc.output()).string());
+                push_unique(export_link_flags, (build_dir / cc.output()).string());
                 ccs.push_back(cc);
             } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S") {
                 cc.command() =
                     f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
-                push_unique(root.link_flags(), (build_dir / cc.output()).string());
+                push_unique(export_link_flags, (build_dir / cc.output()).string());
                 ccs.push_back(cc);
             } else if (ext == ".cppm" || ext == ".ixx")
                 throw ferr("file={}: carton does not support module yet :(", cc.file());
         }
         Meta m;
-        m.name             = d.name();
-        m.version          = d.version();
-        m.detail           = f("{} v{} required by {:?}", d.name(), d.version(), package().name());
+        m.lib              = d;
+        m.flags            = std::move(export_flags);
+        m.link_flags       = std::move(export_link_flags);
         m.compile_commands = std::move(ccs);
         return m;
     } catch (std::exception &e) {

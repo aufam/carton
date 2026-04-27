@@ -61,20 +61,17 @@ int main(int argc, char **argv) {
         bool                                         relink = false;
         for (const auto &m : ctx.meta) {
             if (do_build)
-                relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
+                relink |= compile_multi(fmt::format("{} v{}", m.lib.name(), m.lib.name()), m.compile_commands, hash);
             ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
         }
 
-        Dependency dummy_dep;
-        auto       m = ctx.collect_meta(ctx.lib(), dummy_dep, ctx.profiles().dev());
+        auto m = ctx.collect_meta(ctx.profiles().dev(), ctx.lib());
         if (do_build)
-            relink |= compile_multi(fmt::format("{} v{}", m.name, m.version), m.compile_commands, hash);
+            relink |= compile_multi(fmt::format("{} v{}", m.lib.name(), m.lib.name()), m.compile_commands, hash);
         ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
         if (do_build && !m.compile_commands.empty())
-            ctx.build(
-                m.compile_commands.front().directory(), ctx.profiles().dev(), relink, dummy_dep.link_flags(), do_run, start
-            );
+            ctx.build(m.compile_commands.front().directory(), ctx.profiles().dev(), relink, m.link_flags, do_run, start);
     } catch (std::exception &e) {
         spdlog::error("Failed to build: {}", e.what());
         return 1;
