@@ -62,7 +62,7 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
         if (std::string cmd = fmt::format("[ -f \"{}\" ]", out.string()); std::system(cmd.c_str()) != 0) {
             cmd = fmt::format(
                 "mkdir -p \"{0}\" && "
-                "curl -sSfL -o \"{1}\" \"{2}\"",
+                "wget -q --show-progress -O \"{1}\" \"{2}\"",
                 dir.string(),
                 out.string(),
                 url
