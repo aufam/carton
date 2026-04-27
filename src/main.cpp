@@ -53,9 +53,11 @@ int main(int argc, char **argv) {
     std::vector<CompileCommand> ccs;
     const std::string          &subcommand = subcommands.empty() ? "" : subcommands.front();
     try {
-        const auto do_run   = subcommand == "run";
-        const auto do_build = do_run || (subcommand == "build");
-        ctx.configure(ctx.profiles().dev());
+        const auto  do_run       = subcommand == "run";
+        const auto  do_build     = do_run || (subcommand == "build");
+        const auto  release_mode = ctx._build().release() || ctx._run().release();
+        const auto &profile      = release_mode ? ctx.profiles().release() : ctx.profiles().dev();
+        ctx.configure(profile);
 
         std::unordered_map<std::string, std::string> hash;
         bool                                         relink = false;
@@ -65,13 +67,13 @@ int main(int argc, char **argv) {
             ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
         }
 
-        auto m = ctx.collect_meta(ctx.profiles().dev(), ctx.lib());
+        auto m = ctx.collect_meta(profile, ctx.lib());
         if (do_build)
             relink |= compile_multi(fmt::format("{} v{}", m.lib.name(), m.lib.name()), m.compile_commands, hash);
         ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
         if (do_build && !m.compile_commands.empty())
-            ctx.build(m.compile_commands.front().directory(), ctx.profiles().dev(), relink, m.link_flags, do_run, start);
+            ctx.build(m.compile_commands.front().directory(), profile, relink, m.link_flags, do_run, start);
     } catch (std::exception &e) {
         spdlog::error("Failed to build: {}", e.what());
         return 1;

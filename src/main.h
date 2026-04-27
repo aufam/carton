@@ -125,8 +125,12 @@ struct Project {
     enum class LogLevel { trace, debug, info, warn, err, critical, off };
     cpx::Tag<LogLevel> log_level = {"opt:`log-level,skipmissing`", LogLevel::warn};
 
-    struct Build {};
-    struct Run {};
+    struct Build {
+        cpx::Tag<bool> release = "opt:`release`";
+    };
+    struct Run {
+        cpx::Tag<bool> release = "opt:`release`";
+    };
     struct Manifest {};
     cpx::Tag<Build>    _build    = "opt:`build`";
     cpx::Tag<Run>      _run      = "opt:`run`";
