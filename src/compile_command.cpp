@@ -40,7 +40,29 @@ namespace {
     }
 } // namespace
 
-// Keep the depfile parser exactly as-is, aside from includes already present.
+static void printProgressBar(size_t current, size_t total) {
+    const int barWidth = 27;
+
+    const float progress = total == 0 ? 1.0f : static_cast<float>(current) / static_cast<float>(total);
+
+    const int filled = static_cast<int>(barWidth * progress);
+
+    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::cyan), "\r{:>12} ", "Compiling");
+    fmt::print(stderr, "[");
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < filled)
+            fmt::print(stderr, "#");
+        else if (i == filled && current < total)
+            fmt::print(stderr, ">");
+        else
+            fmt::print(stderr, " ");
+    }
+
+    fmt::print(stderr, "] {}/{}", current, total);
+
+    fflush(stderr);
+}
+
 static std::vector<std::string> parse_depfile(const std::string &path) {
     std::ifstream in(path);
     if (!in)
@@ -237,9 +259,11 @@ bool compile_multi(
         return false; // all up-to-date
 
     fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Compiling");
-    fmt::println(stderr, "{} ({} files)", name, needs_rebuild_ptrs.size());
+    fmt::println(stderr, "{}", name);
     // TODO: parallelize this
-    for (const auto *cmd : needs_rebuild_ptrs) {
+    printProgressBar(0, needs_rebuild_ptrs.size());
+    for (size_t i = 0; i < needs_rebuild_ptrs.size(); ++i) {
+        const auto    *cmd    = needs_rebuild_ptrs[i];
         const fs::path output = cmd->output();
         const fs::path outdir = output.is_absolute() ? output.parent_path() : (fs::path(dir) / output).parent_path();
 
@@ -256,11 +280,15 @@ bool compile_multi(
             throw std::runtime_error(fmt::format("Failed to compile {}: command={:?}", cmd->file(), full_cmd));
         }
 
+        printProgressBar(i + 1, needs_rebuild_ptrs.size());
         // On success, update this file() entry in the directory-level signature TOML.
         sig_map[cmd->output()] = make_signature(*cmd, hash_history);
 
         toml_dump(sig_map, sig_path);
     }
+
+    fmt::print(stderr, "\r");
+    fflush(stderr);
 
     return true;
 }
