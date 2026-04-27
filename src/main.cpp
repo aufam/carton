@@ -4,8 +4,13 @@
 #include <fmt/ranges.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include "main.h"
 #include <filesystem>
+#include "main.h"
+
+#define f(...)    fmt::format(__VA_ARGS__)
+#define ferr(...) std::runtime_error(fmt::format(__VA_ARGS__))
+namespace fs = std::filesystem;
+
 
 int main(int argc, char **argv) {
     auto sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
@@ -37,16 +42,20 @@ int main(int argc, char **argv) {
 
     try {
         cpx::toml::toruniina_toml::parse_from_file("./carton.toml", ctx, toml_version);
+        if (fs::path(ctx.lib().path()).is_absolute() && fs::path(ctx.lib().subdir()).is_absolute())
+            throw ferr("Path must be relative");
     } catch (std::exception &e) {
         spdlog::error("Failed to parse carton package: {}", e.what());
         return 1;
     }
+    ctx.lib().path() = (fs::current_path() / ctx.lib().path()).string();
 
     std::vector<CompileCommand> ccs;
+    const std::string          &subcommand = subcommands.empty() ? "" : subcommands.front();
     try {
-        const auto do_run   = !subcommands.empty() && subcommands.front() == "run";
-        const auto do_build = do_run || (!subcommands.empty() && subcommands.front() == "build");
-        ctx.configure();
+        const auto do_run   = subcommand == "run";
+        const auto do_build = do_run || (subcommand == "build");
+        ctx.configure(ctx.profiles().dev());
 
         std::unordered_map<std::string, std::string> hash;
         bool                                         relink = false;
@@ -73,6 +82,10 @@ int main(int argc, char **argv) {
 
     auto of = std::ofstream("./compile_commands.json");
     of << cpx::json::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
+
+    if (subcommand == "manifest") {
+        fmt::println("{}", cpx::json::yy_json::dump(ctx));
+    }
 
     return 0;
 }

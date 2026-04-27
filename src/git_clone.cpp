@@ -62,7 +62,7 @@ std::string git_clone(const std::string &cache, const std::string &git, const st
     if (!fs::is_directory(result_path)) {
         const std::string cmd = fmt::format(
             ""
-            "git -c advice.detachedHead=false clone --quiet --depth 1 {1}\"{2}\" \"{0}\"",
+            "git -c advice.detachedHead=false clone --quiet --progress --depth 1 {1}\"{2}\" \"{0}\"",
             result_path.string(),
             tag.empty() ? "" : "--branch \"" + tag + "\" ",
             url

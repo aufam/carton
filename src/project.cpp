@@ -30,7 +30,7 @@ find_extra_features(Project &p, const std::string &feat, std::vector<std::string
     return "";
 }
 
-void Project::configure(const std::vector<std::string> &features, bool subpackage) {
+void Project::configure(const Profile &profile, const std::vector<std::string> &features) {
     if (package().name().empty())
         throw ferr("Error building {:?}: name is required", package().name());
 
@@ -54,16 +54,7 @@ void Project::configure(const std::vector<std::string> &features, bool subpackag
     if (!lib().version().empty())
         throw ferr("Error building {:?}: lib version is already set to {}", package().name(), lib().version());
 
-    if (!lib().empty())
-        resolve_remote_dep(package().name(), lib());
-    else if (!subpackage) {
-        fs::path working_dir = fs::current_path();
-        lib().path()         = working_dir.string();
-        if (lib().src().empty() && fs::is_directory(working_dir / "src"))
-            lib().src() = {"src/*"};
-        if (lib().inc().empty() && fs::is_directory(working_dir / "include"))
-            lib().inc() = {"public:include"};
-    }
+    resolve_remote_dep(profile, package().name(), lib());
 
     std::vector<std::string> extra_features;
     if (!no_default_features())
@@ -75,8 +66,8 @@ void Project::configure(const std::vector<std::string> &features, bool subpackag
         if (!err.empty())
             throw std::runtime_error(err);
     }
-    spdlog::debug("resolving: name={:?} extra_features={}", package().name(), extra_features);
 
+    spdlog::debug("resolving: name={:?} extra_features={}", package().name(), extra_features);
     for (auto &[name, dep] : dependencies()) {
         auto &d = convert_dep(dep);
         if (d.name().empty())
@@ -118,18 +109,18 @@ void Project::configure(const std::vector<std::string> &features, bool subpackag
                 meta_exists = true;
                 break;
             }
-        if (meta_exists)
-            continue;
 
         try {
-            resolve_remote_dep(name, d);
+            if (!meta_exists)
+                resolve_remote_dep(profile, name, d);
         } catch (const std::exception &e) {
             throw ferr("Error resolving {:?} required by {:?}: {}", name, package().name(), e.what());
         }
 
         try {
-            auto m = collect_meta(d, lib(), profiles().release());
-            (pmeta ? *pmeta : meta).push_back(std::move(m));
+            auto m = collect_meta(d, lib(), profile);
+            if (!meta_exists)
+                (pmeta ? *pmeta : meta).push_back(std::move(m));
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of {:?} required by {:?}: {}", name, package().name(), e.what());
         }
@@ -142,11 +133,9 @@ void Project::configure(const std::vector<std::string> &features, bool subpackag
     lib().default_features() = !no_default_features();
 }
 
-void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
+void Project::resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &d) {
     if (d.empty())
         throw ferr("assertion failed: {:?} cannot be empty", d.name());
-
-    constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
 
     auto configure_subpackage = [&](Project &p) -> Dependency & {
         if (p.package().edition() > package().edition())
@@ -166,7 +155,7 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
         p.profiles()            = profiles();
         p.vars()                = vars();
         try {
-            p.configure(d.features(), true);
+            p.configure(profile, d.features());
         } catch (const std::exception &e) {
             throw ferr("Error building dependency package={} `{}`: {}", p.package().name(), name, e.what());
         }
@@ -201,14 +190,29 @@ void Project::resolve_remote_dep(const std::string &name, Dependency &d) {
         p.package().version() = d.version();
         auto &lib             = configure_subpackage(p);
         d                     = std::move(lib);
-        resolve_remote_dep(name, d);
+        resolve_remote_dep(profile, name, d);
         return;
     }
 
-    if (auto sub = fs::path(d.path()) / d.subdir() / "cpp++.toml"; fs::exists(sub)) {
-        auto  p   = cpx::toml::toruniina_toml::parse_from_file<Project>(sub.string(), toml_version);
+    if (fs::path path = d.path(); path.is_relative())
+        d.path() = (fs::path(lib().path()) / lib().subdir() / path).lexically_normal().string();
+
+    fs::path working_dir = fs::path(d.path()) / d.subdir();
+    if (auto sub = working_dir / "carton.toml"; &lib() != &d && fs::exists(sub)) {
+        constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
+
+        auto p = cpx::toml::toruniina_toml::parse_from_file<Project>(sub.string(), toml_version);
+        if (fs::path(p.lib().path()).is_absolute() && fs::path(p.lib().subdir()).is_absolute())
+            throw ferr("Path must be relative");
+        p.lib().path() = (working_dir / p.lib().path()).string();
+
         auto &lib = configure_subpackage(p);
         d         = std::move(lib);
+    } else {
+        if (d.src().empty() && fs::is_directory(working_dir / "src"))
+            d.src() = {"src/*"};
+        if (d.inc().empty() && fs::is_directory(working_dir / "include"))
+            d.inc() = {"public:include"};
     }
 }
 
@@ -236,13 +240,6 @@ Project::Meta Project::collect_meta(Dependency &d, Dependency &root, const Profi
         std::string cmd = f("cd '{}' && ({}) > /dev/null 2>&1", working_dir.string(), d.pre());
         if (std::system(cmd.c_str()) != 0)
             throw ferr("pre command failed for dep={}: {}", d.name(), d.pre());
-    }
-
-    if (&d != &this->lib()) { // otherwise, already done
-        if (d.src().empty() && fs::is_directory(working_dir / "src"))
-            d.src() = {"src/*"};
-        if (d.inc().empty() && fs::is_directory(working_dir / "include"))
-            d.inc() = {"public:include"};
     }
 
     const auto flags_ =

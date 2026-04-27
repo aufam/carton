@@ -127,8 +127,10 @@ struct Project {
 
     struct Build {};
     struct Run {};
-    cpx::Tag<Build> _build = "opt:`build`";
-    cpx::Tag<Run>   _run   = "opt:`run`";
+    struct Manifest {};
+    cpx::Tag<Build>    _build    = "opt:`build`";
+    cpx::Tag<Run>      _run      = "opt:`run`";
+    cpx::Tag<Manifest> _manifest = "opt:`manifest`";
 
     std::unordered_map<std::string, Project> *ppackages = nullptr;
     Project                                  *pparent   = nullptr;
@@ -142,7 +144,7 @@ struct Project {
     std::vector<Meta>  meta;
     std::vector<Meta> *pmeta = nullptr;
 
-    void configure(const std::vector<std::string> &features = {}, bool subpackage = false);
+    void configure(const Profile &profile, const std::vector<std::string> &features = {});
     Meta collect_meta(Dependency &dep, Dependency &root, const Profile &profile);
     void build(
         const std::string                           &working_dir,
@@ -155,7 +157,7 @@ struct Project {
 
 private:
     void apply_package_placeholders();
-    void resolve_remote_dep(const std::string &name, Dependency &dep);
+    void resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &dep);
 };
 
 Dependency &convert_dep(Project::Dep &dep);
