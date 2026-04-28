@@ -11,7 +11,7 @@
 struct CompileCommand;
 
 struct Profile {
-    cpx::Tag<std::string>              id         = "toml,json:`id`";
+    cpx::Tag<std::string>              id         = "toml,json:`id,skipmissing`";
     cpx::Tag<std::string>              cxx        = {"toml,json:`cxx,skipmissing`", "c++"};
     cpx::Tag<std::string>              c          = {"toml,json:`c,skipmissing`", "c"};
     cpx::Tag<bool>                     debug      = "toml,json:`debug,skipmissing`";
@@ -20,6 +20,9 @@ struct Profile {
     cpx::Tag<std::vector<std::string>> flags      = "toml,json:`flags,skipmissing,omitempty`";
     cpx::Tag<std::vector<std::string>> link_flags = "toml:`link-flags,skipmissing,omitempty`"
                                                     "json:`linkFlags,skipmissing,omitempty`";
+
+    cpx::Tag<bool> modules             = "toml,json:`modules,skipmissing`";
+    int            _module_cxx_version = 20;
 
     static Profile Release() {
         Profile t;
@@ -74,6 +77,7 @@ struct Dependency {
     cpx::Tag<std::vector<std::string>> src        = "toml,json:`src,skipmissing,omitempty`";
     cpx::Tag<std::vector<std::string>> inc        = "toml,json:`inc,skipmissing,omitempty`";
     cpx::Tag<std::vector<std::string>> lib        = "toml,json:`lib,skipmissing,omitempty`";
+    cpx::Tag<std::vector<std::string>> mod        = "toml,json:`mod,skipmissing,omitempty`";
     cpx::Tag<std::vector<std::string>> flags      = "toml,json:`flags,skipmissing,omitempty`";
     cpx::Tag<std::vector<std::string>> link_flags = "toml:`link-flags,skipmissing,omitempty`"
                                                     "json:`linkFlags,skipmissing,omitempty`";
@@ -171,7 +175,7 @@ Dependency &convert_dep(Project::Dep &dep);
 std::string resolve_path(const std::string &cache, const std::string &path);
 std::string git_clone(const std::string &cache, const std::string &git, const std::string &tag);
 
-std::vector<std::pair<std::string, bool>> expand_path(const std::string &working_dir, const std::vector<std::string> &sources);
+std::vector<std::string> expand_path(const std::string &working_dir, std::vector<std::string> &sources);
 
-void push_unique(std::vector<std::string> &vec, const std::string &value);
-void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values);
+void push_unique(std::vector<std::string> &vec, const std::string &value, bool front = false);
+void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front = false);

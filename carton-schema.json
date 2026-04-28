@@ -54,6 +54,7 @@
         "src": { "type": "array", "items": { "type": "string" } },
         "inc": { "type": "array", "items": { "type": "string" } },
         "lib": { "type": "array", "items": { "type": "string" } },
+        "mod": { "type": "array", "items": { "type": "string" } },
         "flags": { "type": "array", "items": { "type": "string" } },
         "link-flags": { "type": "array", "items": { "type": "string" } },
         "pre": { "type": "string" }

@@ -277,6 +277,8 @@ bool compile_multi(
 
         spdlog::info("compiling: cmd={:?}", full_cmd);
         if (std::system(full_cmd.c_str()) != 0) {
+            fmt::print(stderr, "\r\033[2K");
+            fflush(stderr);
             throw std::runtime_error(fmt::format("Failed to compile {}: command={:?}", cmd->file(), full_cmd));
         }
 

@@ -6,6 +6,7 @@ Dependency &Dependency::operator+=(const Dependency &other) {
         return *this;
 
     push_unique(src(), other.src());
+    push_unique(mod(), other.mod(), true);
     push_unique(inc(), other.inc());
     push_unique(flags(), other.flags());
     push_unique(link_flags(), other.link_flags());
@@ -65,14 +66,18 @@ static void string_replace(
     }
 }
 
-void push_unique(std::vector<std::string> &vec, const std::string &value) {
-    if (std::find(vec.begin(), vec.end(), value) == vec.end())
-        vec.push_back(value);
+void push_unique(std::vector<std::string> &vec, const std::string &value, bool front) {
+    if (std::find(vec.begin(), vec.end(), value) == vec.end()) {
+        if (front)
+            vec.insert(vec.begin(), value);
+        else
+            vec.push_back(value);
+    }
 }
 
-void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values) {
+void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front) {
     for (const auto &value : values)
-        push_unique(vec, value);
+        push_unique(vec, value, front);
 }
 
 void Project::apply_package_placeholders() {

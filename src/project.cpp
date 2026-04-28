@@ -34,8 +34,8 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
     if (package().name().empty())
         throw ferr("Error building {:?}: name is required", package().name());
 
-    if (package().version().empty())
-        throw ferr("Error building {:?}: version is required", package().name());
+    // if (package().version().empty())
+    //     throw ferr("Error building {:?}: version is required", package().name());
 
     switch (package().edition()) {
     case 11:
@@ -54,6 +54,7 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
     if (!lib().version().empty())
         throw ferr("Error building {:?}: lib version is already set to {}", package().name(), lib().version());
 
+    lib().name() = package().name();
     resolve_remote_dep(profile, package().name(), lib());
 
     std::vector<std::string> extra_features;
@@ -125,7 +126,6 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
         }
     }
 
-    lib().name()             = package().name();
     lib().version()          = package().version();
     lib().cpp_standard       = package().edition();
     lib().features()         = std::move(extra_features);
@@ -208,10 +208,16 @@ void Project::resolve_remote_dep(const Profile &profile, const std::string &name
         auto &lib = configure_subpackage(p);
         d         = std::move(lib);
     } else {
+        // if (d.mod().empty() && fs::exists(working_dir / "src" / "lib.cppm"))
+        //     d.mod() = {d.name() + ":src/lib.cppm"};
         if (d.src().empty() && fs::is_directory(working_dir / "src"))
             d.src() = {"src/*"};
-        if (d.inc().empty() && fs::is_directory(working_dir / "include"))
-            d.inc() = {"public:include"};
+        if (d.inc().empty() && fs::is_directory(working_dir / "include")) {
+            if (d.mod().empty() || !profile.modules())
+                d.inc() = {"public:include"};
+            else
+                d.inc() = {"include"};
+        }
     }
 }
 
@@ -286,12 +292,63 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
         push_unique(export_link_flags, str);
     }
 
-    try {
-        auto expanded = expand_path(working_dir.string(), d.src());
+    if (profile.modules() && profile.cxx().find("clang++") == std::string::npos)
+        throw ferr("compiling a module required clang compiler");
 
+    if (!profile.modules())
+        d.mod().clear();
+
+    try {
         std::vector<CompileCommand> ccs;
-        for (auto &[src, is_module] : expanded) {
-            fs::path       entry = src;
+        for (const auto &mod : d.mod()) {
+            std::string mod_name;
+            fs::path    mod_path;
+            if (auto pos = mod.find(':'); pos != std::string::npos) {
+                mod_name = mod.substr(0, pos);
+                mod_path = mod.substr(pos + 1);
+            } else {
+                mod_path = mod;
+                mod_name = mod_path.filename().stem().string();
+            }
+
+            CompileCommand ccm;
+            ccm.directory() = build_dir.string();
+            ccm.file()      = (working_dir / mod_path).string();
+            ccm.output()    = f("{}/{}.pcm", profile._module_cxx_version, mod_name);
+            auto pcm_flag   = f("-fprebuilt-module-path='{}'", (build_dir / ccm.output()).parent_path().string());
+
+            ccm.command() =
+                f("{} -std=c++{} -x c++-module {} -o '{}' --precompile '{}' {}",
+                  CXX,
+                  profile._module_cxx_version,
+                  fmt::join(flags, " "),
+                  ccm.output(),
+                  ccm.file(),
+                  pcm_flag);
+
+            push_unique(export_flags, pcm_flag);
+            ccs.push_back(ccm);
+
+            CompileCommand cc;
+            cc.directory() = build_dir.string();
+            cc.output()    = mod_path.string() + ".o";
+            cc.depfile()   = mod_path.string() + ".d";
+            cc.file()      = (working_dir / mod_path).string();
+            cc.command() =
+                f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
+                  CXX,
+                  profile._module_cxx_version,
+                  fmt::join(flags, " "),
+                  cc.output(),
+                  cc.file(),
+                  cc.depfile());
+
+            push_unique(export_link_flags, (build_dir / cc.output()).string());
+            ccs.push_back(cc);
+        }
+
+        auto expanded = expand_path(working_dir.string(), d.src());
+        for (fs::path entry : expanded) {
             CompileCommand cc;
             cc.directory() = build_dir.string();
             cc.output()    = entry.string() + ".o";
@@ -299,33 +356,8 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             cc.file()      = (working_dir / entry).string();
 
             const auto ext = entry.extension();
-            if (ext == ".cppm" || ext == ".ixx") {
-                is_module = true;
-            }
 
-            if (is_module && profile.cxx().find("clang++") == std::string::npos)
-                throw ferr("compiling a module required clang compiler");
-
-            if (is_module || ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
-                if (is_module) {
-                    CompileCommand ccm;
-                    ccm.directory()     = build_dir.string();
-                    ccm.file()          = (working_dir / entry).string();
-                    ccm.output()        = entry.replace_extension(".pcm").string();
-                    const auto pcm_path = f("-fprebuilt-module-path='{}'", (build_dir / ccm.output()).parent_path().string());
-
-                    ccm.command() =
-                        f("{} -std=c++{} -x c++-module {} -o '{}' --precompile '{}' {}",
-                          CXX,
-                          cpp_standard,
-                          fmt::join(flags, " "),
-                          ccm.output(),
-                          ccm.file(),
-                          pcm_path);
-
-                    push_unique(export_flags, pcm_path);
-                    ccs.push_back(ccm);
-                }
+            if (ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
                 cc.command() =
                     f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
                       CXX,
@@ -370,8 +402,18 @@ void Project::build(
     if (link || !fs::exists(output)) {
         fs::create_directories(output.parent_path());
 
+        std::string name = lib().name();
+        if (!lib().version().empty()) {
+            name += " v" + lib().version();
+        } else if (!lib().tag().empty()) {
+            name += " #" + lib().tag();
+        } else if (!lib().branch().empty()) {
+            name += " " + lib().branch();
+        } else {
+            name += " (" + lib().path() + ")";
+        }
         fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Linking");
-        fmt::println(stderr, "{} v{}", lib().name(), lib().version());
+        fmt::println(stderr, "{}", name);
 
         auto link_cmd = f("{} -o '{}' {}", LINK, output.string(), fmt::join(link_flags, " "));
         spdlog::debug("linking cmd={}", link_cmd);

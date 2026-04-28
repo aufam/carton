@@ -49,6 +49,10 @@ int main(int argc, char **argv) {
         return 1;
     }
     ctx.lib().path() = (fs::current_path() / ctx.lib().path()).string();
+    if (ctx.profiles().dev().modules())
+        ctx.profiles().dev()._module_cxx_version = std::max(ctx.package().edition(), 20);
+    if (ctx.profiles().release().modules())
+        ctx.profiles().release()._module_cxx_version = std::max(ctx.package().edition(), 20);
 
     std::vector<CompileCommand> ccs;
     const std::string          &subcommand = subcommands.empty() ? "" : subcommands.front();
@@ -62,14 +66,34 @@ int main(int argc, char **argv) {
         std::unordered_map<std::string, std::string> hash;
         bool                                         relink = false;
         for (const auto &m : ctx.meta) {
+            std::string name = m.lib.name();
+            if (!m.lib.version().empty()) {
+                name += " v" + m.lib.version();
+            } else if (!m.lib.tag().empty()) {
+                name += " #" + m.lib.tag();
+            } else if (!m.lib.branch().empty()) {
+                name += " " + m.lib.branch();
+            } else {
+                name += " (" + m.lib.path() + ")";
+            }
             if (do_build)
-                relink |= compile_multi(fmt::format("{} v{}", m.lib.name(), m.lib.version()), m.compile_commands, hash);
+                relink |= compile_multi(name, m.compile_commands, hash);
             ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
         }
 
-        auto m = ctx.collect_meta(profile, ctx.lib());
+        auto        m    = ctx.collect_meta(profile, ctx.lib());
+        std::string name = m.lib.name();
+        if (!m.lib.version().empty()) {
+            name += " v" + m.lib.version();
+        } else if (!m.lib.tag().empty()) {
+            name += " #" + m.lib.tag();
+        } else if (!m.lib.branch().empty()) {
+            name += " " + m.lib.branch();
+        } else {
+            name += " (" + m.lib.path() + ")";
+        }
         if (do_build)
-            relink |= compile_multi(fmt::format("{} v{}", m.lib.name(), m.lib.version()), m.compile_commands, hash);
+            relink |= compile_multi(name, m.compile_commands, hash);
         ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
         if (do_build && !m.compile_commands.empty())
