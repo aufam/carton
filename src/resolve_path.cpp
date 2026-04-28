@@ -118,41 +118,45 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
     return path_str;
 }
 
-std::vector<std::string> expand_path(const std::string &working_dir, std::vector<std::string> sources) {
+std::vector<std::pair<std::string, bool>> expand_path(const std::string &working_dir, const std::vector<std::string> &sources) {
     if (sources.empty())
         return {};
 
-    for (auto &src : sources) {
+    std::vector<std::pair<std::string, bool>> res;
+    for (const auto &entry : sources) {
+        bool        is_module = false;
+        std::string src       = entry;
+        if (entry.rfind("module:", 0) == 0) {
+            is_module = true;
+            src       = entry.substr(std::string_view("module:").size());
+        }
+
         size_t pos = 0;
         while ((pos = src.find(' ', pos)) != std::string::npos) {
             src.replace(pos, 1, "\\ ");
             pos += 2;
         }
-    }
 
-    std::string cmd = fmt::format(
-        "cd \"{}\" "
-        "&& printf '%s\\n' {}",
-        working_dir,
-        fmt::join(sources, " ")
-    );
+        std::string cmd = fmt::format(
+            "cd \"{}\" "
+            "&& printf '%s\\n' {}",
+            working_dir,
+            src
+        );
+        auto       pipe = popen(cmd.c_str(), "r");
+        cpx::defer _    = [&]() { pclose(pipe); };
 
-    spdlog::debug("expanding: cmd={:?}", cmd);
-    auto       pipe = popen(cmd.c_str(), "r");
-    cpx::defer _    = [&]() { pclose(pipe); };
+        char buffer[4096];
+        while (fgets(buffer, sizeof(buffer), pipe)) {
+            std::string buf = buffer;
+            buf.pop_back();
 
-    std::vector<std::string> res;
-    char                     buffer[4096];
-    while (fgets(buffer, sizeof(buffer), pipe)) {
-        std::string buf = buffer;
-        buf.pop_back();
-
-        fs::path entry = buf;
-        if (!fs::exists(fs::path(working_dir) / entry)) {
-            throw ferr("Expand failed: {:?} does not exist in {:?}", entry.string(), working_dir);
+            fs::path entry = buf;
+            if (!fs::exists(fs::path(working_dir) / entry)) {
+                throw ferr("Expand failed: {:?} does not exist in {:?}", entry.string(), working_dir);
+            }
+            res.emplace_back(entry.string(), is_module);
         }
-        res.push_back(entry.string());
     }
-
     return res;
 }
