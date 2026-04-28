@@ -50,7 +50,7 @@ tag = "v{version}"
 flags = ["public:-DSPDLOG_COMPILED_LIB"]
 
 [spdlog.dependencies]
-fmt = { version = "auto", optional = true }
+fmt = { version = "?", optional = true }
 fmt-external-flag = { flags = ["public:-DSPDLOG_FMT_EXTERNAL"], optional = true }
 
 [spdlog.features]

@@ -83,7 +83,7 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
             continue;
         }
 
-        if (d.version() == "auto") {
+        if (d.version() == "?") {
             if (pparent == nullptr)
                 throw ferr("version {:?} must be in the parent project", d.version());
 
