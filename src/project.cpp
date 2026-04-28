@@ -361,6 +361,7 @@ void Project::build(
     bool                                         link,
     const std::vector<std::string>              &link_flags,
     bool                                         do_run,
+    const std::vector<std::string>              &run_args,
     const std::chrono::system_clock::time_point &start
 ) {
     const auto LINK   = f("{} {} {}", profile.cxx(), profile.lto() ? "-flto" : "", fmt::join(profile.link_flags(), " "));
@@ -387,7 +388,16 @@ void Project::build(
     fmt::println(stderr, "`{}` profile [{}] target(s) in {:.2f}", profile.id(), profile_info, elapsed.count());
 
     if (do_run) {
-        const std::string exe = output.string();
+        std::string out = output.string();
+        for (size_t pos = 0; (pos = out.find(' ', pos)) != std::string::npos;) {
+            out.replace(pos, 1, "\\ ");
+            pos += 2;
+        }
+
+        std::string exe = f("{} {}", out, fmt::join(run_args, " "));
+        if (run_args.empty())
+            exe.pop_back();
+
         fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Running");
         fmt::println(stderr, "`{}`", exe);
         std::system(exe.c_str());

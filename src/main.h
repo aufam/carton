@@ -129,7 +129,8 @@ struct Project {
         cpx::Tag<bool> release = "opt:`release`";
     };
     struct Run {
-        cpx::Tag<bool> release = "opt:`release`";
+        cpx::Tag<bool>                     release = "opt:`release`";
+        cpx::Tag<std::vector<std::string>> args    = "opt:`args,positional`";
     };
     struct Manifest {};
     cpx::Tag<Build>    _build    = "opt:`build`";
@@ -156,6 +157,7 @@ struct Project {
         bool                                         link,
         const std::vector<std::string>              &link_flags,
         bool                                         do_run,
+        const std::vector<std::string>              &run_args,
         const std::chrono::system_clock::time_point &start
     );
 

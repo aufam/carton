@@ -51,7 +51,7 @@ static void printProgressBar(size_t current, size_t total) {
     fmt::print(stderr, "[");
     for (int i = 0; i < barWidth; ++i) {
         if (i < filled)
-            fmt::print(stderr, "#");
+            fmt::print(stderr, "=");
         else if (i == filled && current < total)
             fmt::print(stderr, ">");
         else

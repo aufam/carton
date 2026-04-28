@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
         ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
         if (do_build && !m.compile_commands.empty())
-            ctx.build(m.compile_commands.front().directory(), profile, relink, m.link_flags, do_run, start);
+            ctx.build(m.compile_commands.front().directory(), profile, relink, m.link_flags, do_run, ctx._run().args(), start);
     } catch (std::exception &e) {
         spdlog::error("Failed to build: {}", e.what());
         return 1;
