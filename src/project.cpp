@@ -341,7 +341,7 @@ void Project::build(
     if (link || !fs::exists(output)) {
         fs::create_directories(output.parent_path());
 
-        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Linking");
+        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Linking");
         fmt::println(stderr, "{} v{}", lib().name(), lib().version());
 
         auto link_cmd = f("{} -o '{}' {}", LINK, output.string(), fmt::join(link_flags, " "));
@@ -355,12 +355,12 @@ void Project::build(
         profile_info += " + debuginfo";
 
     std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
-    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Finished");
+    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Finished");
     fmt::println(stderr, "`{}` profile [{}] target(s) in {:.2f}", profile.id(), profile_info, elapsed.count());
 
     if (do_run) {
         const std::string exe = output.string();
-        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Running");
+        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Running");
         fmt::println(stderr, "`{}`", exe);
         std::system(exe.c_str());
     }

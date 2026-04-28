@@ -68,7 +68,7 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
                 url
             );
 
-            fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Downloading");
+            fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Downloading");
             fmt::println(stderr, "{}", url);
             spdlog::debug("downloading: cmd={:?}", cmd);
             if (int res = std::system(cmd.c_str()); res)
@@ -102,7 +102,7 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
                 path_str,
                 get_tar_flag()
             );
-            fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Extracting");
+            fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Extracting");
             fmt::println(stderr, "{}", path_str);
             spdlog::debug("extracting: {:?}", cmd);
             if (int res = std::system(cmd.c_str()); res)

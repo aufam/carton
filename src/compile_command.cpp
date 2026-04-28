@@ -47,7 +47,7 @@ static void printProgressBar(size_t current, size_t total) {
 
     const int filled = static_cast<int>(barWidth * progress);
 
-    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::cyan), "\r{:>12} ", "Compiling");
+    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::cyan), "\r{:>12} ", "Building");
     fmt::print(stderr, "[");
     for (int i = 0; i < barWidth; ++i) {
         if (i < filled)
@@ -258,7 +258,7 @@ bool compile_multi(
     if (needs_rebuild_ptrs.empty())
         return false; // all up-to-date
 
-    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::color::green), "{:>12} ", "Compiling");
+    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Compiling");
     fmt::println(stderr, "{}", name);
     // TODO: parallelize this
     printProgressBar(0, needs_rebuild_ptrs.size());
@@ -287,7 +287,7 @@ bool compile_multi(
         toml_dump(sig_map, sig_path);
     }
 
-    fmt::print(stderr, "\r");
+    fmt::print(stderr, "\r\033[2K");
     fflush(stderr);
 
     return true;
