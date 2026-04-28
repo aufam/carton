@@ -63,13 +63,13 @@ int main(int argc, char **argv) {
         bool                                         relink = false;
         for (const auto &m : ctx.meta) {
             if (do_build)
-                relink |= compile_multi(fmt::format("{} v{}", m.lib.name(), m.lib.name()), m.compile_commands, hash);
+                relink |= compile_multi(fmt::format("{} v{}", m.lib.name(), m.lib.version()), m.compile_commands, hash);
             ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
         }
 
         auto m = ctx.collect_meta(profile, ctx.lib());
         if (do_build)
-            relink |= compile_multi(fmt::format("{} v{}", m.lib.name(), m.lib.name()), m.compile_commands, hash);
+            relink |= compile_multi(fmt::format("{} v{}", m.lib.name(), m.lib.version()), m.compile_commands, hash);
         ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
         if (do_build && !m.compile_commands.empty())
