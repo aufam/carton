@@ -290,13 +290,42 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
         auto expanded = expand_path(working_dir.string(), d.src());
 
         std::vector<CompileCommand> ccs;
-        for (fs::path entry : expanded) {
+        for (auto &[src, is_module] : expanded) {
+            fs::path       entry = src;
             CompileCommand cc;
             cc.directory() = build_dir.string();
             cc.output()    = entry.string() + ".o";
             cc.depfile()   = entry.string() + ".d";
             cc.file()      = (working_dir / entry).string();
-            if (auto ext = entry.extension(); ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
+
+            const auto ext = entry.extension();
+            if (ext == ".cppm" || ext == ".ixx") {
+                is_module = true;
+            }
+
+            if (is_module && profile.cxx().find("clang++") == std::string::npos)
+                throw ferr("compiling a module required clang compiler");
+
+            if (is_module || ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
+                if (is_module) {
+                    CompileCommand ccm;
+                    ccm.directory()     = build_dir.string();
+                    ccm.file()          = (working_dir / entry).string();
+                    ccm.output()        = entry.replace_extension(".pcm").string();
+                    const auto pcm_path = f("-fprebuilt-module-path='{}'", (build_dir / ccm.output()).parent_path().string());
+
+                    ccm.command() =
+                        f("{} -std=c++{} -x c++-module {} -o '{}' --precompile '{}' {}",
+                          CXX,
+                          cpp_standard,
+                          fmt::join(flags, " "),
+                          ccm.output(),
+                          ccm.file(),
+                          pcm_path);
+
+                    push_unique(export_flags, pcm_path);
+                    ccs.push_back(ccm);
+                }
                 cc.command() =
                     f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
                       CXX,
@@ -313,8 +342,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
                     f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
                 push_unique(export_link_flags, (build_dir / cc.output()).string());
                 ccs.push_back(cc);
-            } else if (ext == ".cppm" || ext == ".ixx")
-                throw ferr("file={}: carton does not support module yet :(", cc.file());
+            }
         }
         Meta m;
         m.lib              = d;

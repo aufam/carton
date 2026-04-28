@@ -169,7 +169,7 @@ Dependency &convert_dep(Project::Dep &dep);
 std::string resolve_path(const std::string &cache, const std::string &path);
 std::string git_clone(const std::string &cache, const std::string &git, const std::string &tag);
 
-std::vector<std::string> expand_path(const std::string &working_dir, std::vector<std::string> sources);
+std::vector<std::pair<std::string, bool>> expand_path(const std::string &working_dir, const std::vector<std::string> &sources);
 
 void push_unique(std::vector<std::string> &vec, const std::string &value);
 void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values);

@@ -24,6 +24,18 @@ git = "https://github.com/fmtlib/fmt"
 tag = "{version}"
 src = ["src/format.cc", "src/os.cc"]
 
+#
+# fmt-module
+#
+[fmt-module.package]
+name = "fmt-module"
+edition = 20
+
+[fmt-module.lib]
+git = "https://github.com/fmtlib/fmt"
+tag = "{version}"
+src = ["module:src/fmt.cc"]
+
 
 #
 # spdlog
