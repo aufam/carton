@@ -67,6 +67,8 @@ static void string_replace(
 }
 
 void push_unique(std::vector<std::string> &vec, const std::string &value, bool front) {
+    if (value.empty())
+        return;
     if (std::find(vec.begin(), vec.end(), value) == vec.end()) {
         if (front)
             vec.insert(vec.begin(), value);

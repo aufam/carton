@@ -54,7 +54,8 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
     if (!lib().version().empty())
         throw ferr("Error building {:?}: lib version is already set to {}", package().name(), lib().version());
 
-    lib().name() = package().name();
+    if (lib().name().empty())
+        lib().name() = package().name();
     resolve_remote_dep(profile, package().name(), lib());
 
     std::vector<std::string> extra_features;
@@ -208,8 +209,8 @@ void Project::resolve_remote_dep(const Profile &profile, const std::string &name
         auto &lib = configure_subpackage(p);
         d         = std::move(lib);
     } else {
-        // if (d.mod().empty() && fs::exists(working_dir / "src" / "lib.cppm"))
-        //     d.mod() = {d.name() + ":src/lib.cppm"};
+        if (d.mod().empty() && fs::exists(working_dir / "src" / "lib.cppm"))
+            d.mod() = {d.name() + ":src/lib.cppm"};
         if (d.src().empty() && fs::is_directory(working_dir / "src"))
             d.src() = {"src/*"};
         if (d.inc().empty() && fs::is_directory(working_dir / "include")) {
@@ -300,6 +301,9 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
 
     try {
         std::vector<CompileCommand> ccs;
+
+        const fs::path    pcm_dir  = build_dir / std::to_string(profile._module_cxx_version);
+        const std::string pcm_flag = d.mod().empty() ? "" : f("-fprebuilt-module-path='{}'", pcm_dir.string());
         for (const auto &mod : d.mod()) {
             std::string mod_name;
             fs::path    mod_path;
@@ -315,7 +319,6 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             ccm.directory() = build_dir.string();
             ccm.file()      = (working_dir / mod_path).string();
             ccm.output()    = f("{}/{}.pcm", profile._module_cxx_version, mod_name);
-            auto pcm_flag   = f("-fprebuilt-module-path='{}'", (build_dir / ccm.output()).parent_path().string());
 
             ccm.command() =
                 f("{} -std=c++{} -x c++-module {} -o '{}' --precompile '{}' {}",
@@ -326,7 +329,6 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
                   ccm.file(),
                   pcm_flag);
 
-            push_unique(export_flags, pcm_flag);
             ccs.push_back(ccm);
 
             CompileCommand cc;
@@ -335,16 +337,22 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             cc.depfile()   = mod_path.string() + ".d";
             cc.file()      = (working_dir / mod_path).string();
             cc.command() =
-                f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
+                f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}' {}",
                   CXX,
                   profile._module_cxx_version,
                   fmt::join(flags, " "),
                   cc.output(),
                   cc.file(),
-                  cc.depfile());
+                  cc.depfile(),
+                  pcm_flag);
 
             push_unique(export_link_flags, (build_dir / cc.output()).string());
             ccs.push_back(cc);
+        }
+
+        push_unique(export_flags, pcm_flag);
+        if (cpp_standard >= 20) {
+            push_unique(flags, pcm_flag);
         }
 
         auto expanded = expand_path(working_dir.string(), d.src());
