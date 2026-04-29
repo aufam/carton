@@ -109,6 +109,10 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
         if (existing) {
             push_unique(lib().flags(), existing->flags);
             push_unique(lib().link_flags(), existing->link_flags);
+            push_unique(
+                lib().flags(),
+                package().edition() >= 20 && profile._module_support ? existing->module_flags : existing->include_flags
+            );
         }
 
         try {
@@ -121,6 +125,7 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
             auto m = collect_meta(profile, d);
             push_unique(lib().flags(), m.flags);
             push_unique(lib().link_flags(), m.link_flags);
+            push_unique(lib().flags(), package().edition() >= 20 && profile._module_support ? m.module_flags : m.include_flags);
             (pmeta ? *pmeta : meta).push_back(std::move(m));
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of {:?} required by {:?}: {}", name, package().name(), e.what());
@@ -209,16 +214,14 @@ void Project::resolve_remote_dep(const Profile &profile, const std::string &name
         auto &lib = configure_subpackage(p);
         d         = std::move(lib);
     } else {
+        std::string name = d.name();
+        name.replace(name.begin(), name.end(), '-', '.');
         if (d.mod().empty() && fs::exists(working_dir / "src" / "lib.cppm"))
             d.mod() = {d.name() + ":src/lib.cppm"};
         if (d.src().empty() && fs::is_directory(working_dir / "src"))
             d.src() = {"src/*"};
-        if (d.inc().empty() && fs::is_directory(working_dir / "include")) {
-            if (d.mod().empty() || !profile.modules())
-                d.inc() = {"public:include"};
-            else
-                d.inc() = {"include"};
-        }
+        if (d.inc().empty() && fs::is_directory(working_dir / "include"))
+            d.inc() = {"public:include"};
     }
 }
 
@@ -266,6 +269,8 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
 
     std::vector<std::string> flags;
     std::vector<std::string> export_flags;
+    std::vector<std::string> export_inc_flags;
+    std::vector<std::string> export_module_flags;
     std::vector<std::string> export_link_flags;
     for (auto &str : d.flags()) {
         if (str.rfind("public:", 0) == 0) {
@@ -280,7 +285,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
         if (str.rfind("public:", 0) == 0) {
             auto inc = "-I" + (working_dir / str.substr(std::string("public:").size())).string();
             push_unique(flags, inc);
-            push_unique(export_flags, inc);
+            push_unique(export_inc_flags, inc);
         } else {
             push_unique(flags, "-I" + (working_dir / str).string());
         }
@@ -293,10 +298,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
         push_unique(export_link_flags, str);
     }
 
-    if (profile.modules() && profile.cxx().find("clang++") == std::string::npos)
-        throw ferr("compiling a module required clang compiler");
-
-    if (!profile.modules())
+    if (!profile._module_support)
         d.mod().clear();
 
     try {
@@ -350,7 +352,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             ccs.push_back(cc);
         }
 
-        push_unique(export_flags, pcm_flag);
+        push_unique(export_module_flags, pcm_flag);
         if (cpp_standard >= 20) {
             push_unique(flags, pcm_flag);
         }
@@ -388,6 +390,8 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
         m.lib              = d;
         m.flags            = std::move(export_flags);
         m.link_flags       = std::move(export_link_flags);
+        m.include_flags    = std::move(export_inc_flags);
+        m.module_flags     = std::move(export_module_flags);
         m.compile_commands = std::move(ccs);
         return m;
     } catch (std::exception &e) {

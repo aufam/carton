@@ -49,10 +49,11 @@ int main(int argc, char **argv) {
         return 1;
     }
     ctx.lib().path() = (fs::current_path() / ctx.lib().path()).string();
-    if (ctx.profiles().dev().modules())
-        ctx.profiles().dev()._module_cxx_version = std::max(ctx.package().edition(), 20);
-    if (ctx.profiles().release().modules())
-        ctx.profiles().release()._module_cxx_version = std::max(ctx.package().edition(), 20);
+
+    ctx.profiles().dev()._module_cxx_version     = std::max(ctx.package().edition(), 20);
+    ctx.profiles().release()._module_cxx_version = std::max(ctx.package().edition(), 20);
+    ctx.profiles().dev()._module_support         = ctx.profiles().dev().cxx().find("clang++") != std::string::npos;
+    ctx.profiles().release()._module_support     = ctx.profiles().release().cxx().find("clang++") != std::string::npos;
 
     std::vector<CompileCommand> ccs;
     const std::string          &subcommand = subcommands.empty() ? "" : subcommands.front();

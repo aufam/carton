@@ -21,8 +21,8 @@ struct Profile {
     cpx::Tag<std::vector<std::string>> link_flags = "toml:`link-flags,skipmissing,omitempty`"
                                                     "json:`linkFlags,skipmissing,omitempty`";
 
-    cpx::Tag<bool> modules             = "toml,json:`modules,skipmissing`";
-    int            _module_cxx_version = 20;
+    bool _module_support     = false;
+    int  _module_cxx_version = 20;
 
     static Profile Release() {
         Profile t;
@@ -148,6 +148,8 @@ struct Project {
         Dependency                  lib;
         std::vector<std::string>    flags;
         std::vector<std::string>    link_flags;
+        std::vector<std::string>    module_flags;
+        std::vector<std::string>    include_flags;
         std::vector<CompileCommand> compile_commands;
     };
     std::vector<Meta>  meta;
