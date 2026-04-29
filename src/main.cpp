@@ -54,6 +54,8 @@ int main(int argc, char **argv) {
     ctx.profiles().release()._module_cxx_version = std::max(ctx.package().edition(), 20);
     ctx.profiles().dev()._module_support         = ctx.profiles().dev().cxx().find("clang++") != std::string::npos;
     ctx.profiles().release()._module_support     = ctx.profiles().release().cxx().find("clang++") != std::string::npos;
+    spdlog::info("provile.dev._module_support={}", ctx.profiles().dev()._module_support);
+    spdlog::info("provile.release._module_support={}", ctx.profiles().release()._module_support);
 
     std::vector<CompileCommand> ccs;
     const std::string          &subcommand = subcommands.empty() ? "" : subcommands.front();
@@ -64,8 +66,18 @@ int main(int argc, char **argv) {
         const auto &profile      = release_mode ? ctx.profiles().release() : ctx.profiles().dev();
         ctx.configure(profile);
 
-        std::unordered_map<std::string, std::string> hash;
-        bool                                         relink = false;
+        auto m      = ctx.collect_meta(profile, ctx.lib());
+        bool relink = false;
+        auto hash   = std::unordered_map<std::string, std::string>();
+        for (const auto &m : ctx.meta) {
+            ccs.insert(ccs.end(), m.precompile_commands.begin(), m.precompile_commands.end());
+            ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
+            relink |= compile_multi("", m.precompile_commands, hash);
+        }
+        ccs.insert(ccs.end(), m.precompile_commands.begin(), m.precompile_commands.end());
+        ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
+        relink |= compile_multi("", m.precompile_commands, hash);
+
         for (const auto &m : ctx.meta) {
             std::string name = m.lib.name();
             if (!m.lib.version().empty()) {
@@ -79,10 +91,8 @@ int main(int argc, char **argv) {
             }
             if (do_build)
                 relink |= compile_multi(name, m.compile_commands, hash);
-            ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
         }
 
-        auto        m    = ctx.collect_meta(profile, ctx.lib());
         std::string name = m.lib.name();
         if (!m.lib.version().empty()) {
             name += " v" + m.lib.version();
@@ -95,7 +105,6 @@ int main(int argc, char **argv) {
         }
         if (do_build)
             relink |= compile_multi(name, m.compile_commands, hash);
-        ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
         push_unique(m.link_flags, m.main_o);
         if (do_build && !m.compile_commands.empty())

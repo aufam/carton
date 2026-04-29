@@ -152,6 +152,7 @@ struct Project {
         std::vector<std::string>    include_flags;
         std::string                 main_o;
         std::vector<CompileCommand> compile_commands;
+        std::vector<CompileCommand> precompile_commands;
     };
     std::vector<Meta>  meta;
     std::vector<Meta> *pmeta = nullptr;

@@ -258,10 +258,14 @@ bool compile_multi(
     if (needs_rebuild_ptrs.empty())
         return false; // all up-to-date
 
-    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Compiling");
-    fmt::println(stderr, "{}", name);
+    const bool verbose = !name.empty();
+    if (verbose) {
+        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Compiling");
+        fmt::println(stderr, "{}", name);
+        printProgressBar(0, needs_rebuild_ptrs.size());
+    }
+
     // TODO: parallelize this
-    printProgressBar(0, needs_rebuild_ptrs.size());
     for (size_t i = 0; i < needs_rebuild_ptrs.size(); ++i) {
         const auto    *cmd    = needs_rebuild_ptrs[i];
         const fs::path output = cmd->output();
@@ -277,20 +281,25 @@ bool compile_multi(
 
         spdlog::info("compiling: cmd={:?}", full_cmd);
         if (std::system(full_cmd.c_str()) != 0) {
-            fmt::print(stderr, "\r\033[2K");
-            fflush(stderr);
+            if (verbose) {
+                fmt::println(stderr, "\r\033[2K");
+                fflush(stderr);
+            }
             throw std::runtime_error(fmt::format("Failed to compile {}: command={:?}", cmd->file(), full_cmd));
         }
 
-        printProgressBar(i + 1, needs_rebuild_ptrs.size());
+        if (verbose)
+            printProgressBar(i + 1, needs_rebuild_ptrs.size());
         // On success, update this file() entry in the directory-level signature TOML.
         sig_map[cmd->output()] = make_signature(*cmd, hash_history);
 
         toml_dump(sig_map, sig_path);
     }
 
-    fmt::print(stderr, "\r\033[2K");
-    fflush(stderr);
+    if (verbose) {
+        fmt::print(stderr, "\r\033[2K");
+        fflush(stderr);
+    }
 
     return true;
 }

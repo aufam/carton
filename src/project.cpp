@@ -111,7 +111,8 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
             push_unique(lib().link_flags(), existing->link_flags);
             push_unique(
                 lib().flags(),
-                package().edition() >= 20 && profile._module_support ? existing->module_flags : existing->include_flags
+                package().edition() >= 20 && profile._module_support && !existing->module_flags.empty() ? existing->module_flags
+                                                                                                        : existing->include_flags
             );
             continue;
         }
@@ -126,7 +127,10 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
             auto m = collect_meta(profile, d);
             push_unique(lib().flags(), m.flags);
             push_unique(lib().link_flags(), m.link_flags);
-            push_unique(lib().flags(), package().edition() >= 20 && profile._module_support ? m.module_flags : m.include_flags);
+            push_unique(
+                lib().flags(),
+                package().edition() >= 20 && profile._module_support && !m.module_flags.empty() ? m.module_flags : m.include_flags
+            );
             (pmeta ? *pmeta : meta).push_back(std::move(m));
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of {:?} required by {:?}: {}", name, package().name(), e.what());
@@ -216,9 +220,9 @@ void Project::resolve_remote_dep(const Profile &profile, const std::string &name
         d         = std::move(lib);
     } else {
         std::string name = d.name();
-        name.replace(name.begin(), name.end(), '-', '.');
+        std::replace(name.begin(), name.end(), '-', '.');
         if (d.mod().empty() && fs::exists(working_dir / "src" / "lib.cppm"))
-            d.mod() = {d.name() + ":src/lib.cppm"};
+            d.mod() = {name + ":src/lib.cppm"};
         if (d.src().empty() && fs::is_directory(working_dir / "src"))
             d.src() = {"src/*"};
         if (d.inc().empty() && fs::is_directory(working_dir / "include"))
@@ -305,6 +309,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
 
     try {
         std::vector<CompileCommand> ccs;
+        std::vector<CompileCommand> ccms;
 
         const fs::path    pcm_dir  = build_dir / std::to_string(profile._module_cxx_version);
         const std::string pcm_flag = d.mod().empty() ? "" : f("-fprebuilt-module-path='{}'", pcm_dir.string());
@@ -334,7 +339,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
                   ccm.file(),
                   pcm_flag);
 
-            ccs.push_back(ccm);
+            ccms.push_back(ccm);
 
             CompileCommand cc;
             cc.directory() = build_dir.string();
@@ -396,13 +401,14 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             }
         }
         Meta m;
-        m.lib              = d;
-        m.flags            = std::move(export_flags);
-        m.link_flags       = std::move(export_link_flags);
-        m.include_flags    = std::move(export_inc_flags);
-        m.module_flags     = std::move(export_module_flags);
-        m.main_o           = std::move(main_o);
-        m.compile_commands = std::move(ccs);
+        m.lib                 = d;
+        m.flags               = std::move(export_flags);
+        m.link_flags          = std::move(export_link_flags);
+        m.include_flags       = std::move(export_inc_flags);
+        m.module_flags        = std::move(export_module_flags);
+        m.main_o              = std::move(main_o);
+        m.compile_commands    = std::move(ccs);
+        m.precompile_commands = std::move(ccms);
         return m;
     } catch (std::exception &e) {
         throw ferr("Cannot resolve dep={:?}, src={}: {}", d.name(), d.src(), e.what());
