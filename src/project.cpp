@@ -69,7 +69,7 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
             throw std::runtime_error(err);
     }
 
-    spdlog::debug("resolving: name={:?} extra_features={}", package().name(), extra_features);
+    spdlog::info("resolving: dep={:?} extra_features={}", package().name(), extra_features);
     for (auto &[name, dep] : dependencies()) {
         auto &d = convert_dep(dep);
         if (d.name().empty())
@@ -113,7 +113,7 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
                 lib().flags(),
                 package().edition() >= 20 && profile._module_support ? existing->module_flags : existing->include_flags
             );
-            break;
+            continue;
         }
 
         try {
