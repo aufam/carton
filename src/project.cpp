@@ -85,6 +85,7 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
             continue;
         }
 
+        // what if the subpackage got discovered first?
         if (!d.version().empty() && d.version().front() == '?') {
             if (pparent == nullptr) {
                 d.version() = d.version().substr(1);
