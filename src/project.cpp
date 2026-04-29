@@ -85,15 +85,15 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
             continue;
         }
 
-        if (d.version() == "?") {
-            if (pparent == nullptr)
-                throw ferr("version {:?} must be in the parent project", d.version());
-
-            auto it = pparent->dependencies().find(d.name());
-            if (it == pparent->dependencies().end())
-                throw ferr("package {:?} must be in the parent project", d.name());
-
-            d = convert_dep(it->second);
+        if (!d.version().empty() && d.version().front() == '?') {
+            if (pparent == nullptr) {
+                d.version() = d.version().substr(1);
+            } else {
+                auto it = pparent->dependencies().find(d.name());
+                if (it == pparent->dependencies().end())
+                    throw ferr("dep={:?} must be in the parent project", d.name());
+                d = convert_dep(it->second);
+            }
         }
 
         const Meta *existing = nullptr;
