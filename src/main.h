@@ -15,6 +15,7 @@ struct Profile {
     cpx::Tag<std::string>              cxx        = {"toml,json:`cxx,skipmissing`", "c++"};
     cpx::Tag<std::string>              c          = {"toml,json:`c,skipmissing`", "c"};
     cpx::Tag<bool>                     debug      = "toml,json:`debug,skipmissing`";
+    cpx::Tag<bool>                     asan       = "toml,json:`asan,skipmissing`";
     cpx::Tag<bool>                     lto        = "toml,json:`lto,skipmissing`";
     cpx::Tag<int>                      opt_level  = "toml:`opt-level,skipmissing` json:`optLevel,skipmissing`";
     cpx::Tag<std::vector<std::string>> flags      = "toml,json:`flags,skipmissing,omitempty`";
@@ -31,6 +32,7 @@ struct Profile {
         t.c()         = "cc";
         t.debug()     = false;
         t.lto()       = false;
+        t.asan()      = false;
         t.opt_level() = 3;
         t.flags()     = {"-fPIC", "-Wall", "-Wextra"};
         return t;
@@ -43,6 +45,7 @@ struct Profile {
         t.c()         = "cc";
         t.debug()     = true;
         t.lto()       = false;
+        t.asan()      = true;
         t.opt_level() = 0;
         t.flags()     = {"-fPIC", "-Wall", "-Wextra"};
         return t;

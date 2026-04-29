@@ -257,10 +257,11 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
     }
 
     const auto flags_ =
-        f("{} -O{} {} {}",
+        f("{} -O{} {} {} {}",
           profile.debug() ? "-g" : "",
           profile.opt_level(),
           profile.lto() ? "-flto" : "",
+          profile.asan() ? "-fsanitize=address,undefined" : "",
           fmt::join(profile.flags(), " "));
     const auto CXX       = f("{} {}", profile.cxx(), flags_);
     const auto C         = f("{} {}", profile.c(), flags_);
@@ -424,7 +425,12 @@ void Project::build(
     const std::vector<std::string>              &run_args,
     const std::chrono::system_clock::time_point &start
 ) {
-    const auto LINK   = f("{} {} {}", profile.cxx(), profile.lto() ? "-flto" : "", fmt::join(profile.link_flags(), " "));
+    const auto LINK =
+        f("{} {} {} {}",
+          profile.cxx(),
+          profile.lto() ? "-flto" : "",
+          profile.asan() ? "-fsanitize=address,undefined" : "",
+          fmt::join(profile.link_flags(), " "));
     const auto output = fs::path(build_dir) / lib().name();
 
     if (link || !fs::exists(output)) {
@@ -452,6 +458,8 @@ void Project::build(
     std::string profile_info = profile.opt_level() == 0 ? "unoptimized" : "optimized";
     if (profile.debug())
         profile_info += " + debuginfo";
+    if (profile.asan())
+        profile_info += " + asan";
 
     std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
     fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Finished");
