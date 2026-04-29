@@ -113,6 +113,7 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
                 lib().flags(),
                 package().edition() >= 20 && profile._module_support ? existing->module_flags : existing->include_flags
             );
+            break;
         }
 
         try {
