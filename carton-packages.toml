@@ -214,12 +214,12 @@ git = "https://github.com/yhirose/cpp-httplib"
 tag = "v{version}"
 src = ["build/httplib.cc"]
 inc = ["public:build"]
-link-flags = ["-lpthread"]
-pre = "python3 split.py -o build"
+mod = ["build/httplib.cppm"]
+pre = "python3 split.py -o build && python3 generate_module.py -o build"
 
 [httplib.dependencies]
-ssl = { flags = ["public:-dcpphttplib_openssl_support"], link-flags = ["-lssl", "-lcrypto"], optional = true }
-z = { flags = ["public:-dcpphttplib_zlib_support"], link-flags = ["-lz"], optional = true }
+ssl = { flags = ["public:-DCPPHTTPLIB_OPENSSL_SUPPORT"], link-flags = ["-lssl", "-lcrypto"], optional = true }
+z = { flags = ["public:-DCPPHTTPLIB_ZLIB_SUPPORT"], link-flags = ["-lz"], optional = true }
 
 
 #
@@ -234,8 +234,8 @@ git = "https://github.com/yhirose/cpp-httplib"
 tag = "v{version}"
 src = ["build/httplib.cc"]
 inc = ["public:build"]
-link-flags = ["-lpthread"]
-pre = "python3 split.py -o build"
+mod = ["build/httplib.cppm"]
+pre = "python3 split.py -o build && python3 generate_module.py -o build"
 
 [http.dependencies]
 ssl = { flags = ["public:-DCPPHTTPLIB_OPENSSL_SUPPORT"], link-flags = ["-lssl", "-lcrypto"], optional = true }
