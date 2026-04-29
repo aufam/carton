@@ -97,6 +97,7 @@ int main(int argc, char **argv) {
             relink |= compile_multi(name, m.compile_commands, hash);
         ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
 
+        push_unique(m.link_flags, m.main_o);
         if (do_build && !m.compile_commands.empty())
             ctx.build(m.compile_commands.front().directory(), profile, relink, m.link_flags, do_run, ctx._run().args(), start);
     } catch (std::exception &e) {
@@ -107,9 +108,8 @@ int main(int argc, char **argv) {
     auto of = std::ofstream("./compile_commands.json");
     of << cpx::json::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
 
-    if (subcommand == "manifest") {
+    if (subcommand == "manifest")
         fmt::println("{}", cpx::json::yy_json::dump(ctx));
-    }
 
     return 0;
 }

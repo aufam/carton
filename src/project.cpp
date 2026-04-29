@@ -272,6 +272,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
     std::vector<std::string> export_inc_flags;
     std::vector<std::string> export_module_flags;
     std::vector<std::string> export_link_flags;
+    std::string              main_o;
     for (auto &str : d.flags()) {
         if (str.rfind("public:", 0) == 0) {
             auto f = str.substr(std::string("public:").size());
@@ -321,6 +322,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             ccm.directory() = build_dir.string();
             ccm.file()      = (working_dir / mod_path).string();
             ccm.output()    = f("{}/{}.pcm", profile._module_cxx_version, mod_name);
+            ccm.depfile()   = mod_path.string() + ".d";
 
             ccm.command() =
                 f("{} -std=c++{} -x c++-module {} -o '{}' --precompile '{}' {}",
@@ -358,7 +360,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
         }
 
         auto expanded = expand_path(working_dir.string(), d.src());
-        for (fs::path entry : expanded) {
+        for (const fs::path entry : expanded) {
             CompileCommand cc;
             cc.directory() = build_dir.string();
             cc.output()    = entry.string() + ".o";
@@ -376,13 +378,19 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
                       cc.output(),
                       cc.file(),
                       cc.depfile());
-
-                push_unique(export_link_flags, (build_dir / cc.output()).string());
-                ccs.push_back(cc);
             } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S") {
                 cc.command() =
                     f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output(), cc.file(), cc.depfile());
-                push_unique(export_link_flags, (build_dir / cc.output()).string());
+            }
+
+            if (!cc.command().empty()) {
+                if (entry.filename().stem().string() == "main") {
+                    if (!main_o.empty())
+                        throw ferr("multiple main files in `{}`", working_dir.string());
+                    main_o = (build_dir / cc.output()).string();
+                } else {
+                    push_unique(export_link_flags, (build_dir / cc.output()).string());
+                }
                 ccs.push_back(cc);
             }
         }
@@ -392,6 +400,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
         m.link_flags       = std::move(export_link_flags);
         m.include_flags    = std::move(export_inc_flags);
         m.module_flags     = std::move(export_module_flags);
+        m.main_o           = std::move(main_o);
         m.compile_commands = std::move(ccs);
         return m;
     } catch (std::exception &e) {
