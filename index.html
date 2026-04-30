@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carton Registry</title>
+
+  <style>
+    :root {
+      --bg: #0f1117;
+      --panel: #161b22;
+      --card: #1c2128;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --line: #30363d;
+      --accent: #58a6ff;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      padding: 42px 24px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.2rem
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    input {
+      width: 100%;
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+    }
+
+    main {
+      padding: 28px 24px 50px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .card h2 {
+      margin: 0 0 6px;
+    }
+
+    .desc {
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      font-size: .82rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    dt {
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    dd {
+      margin: 2px 0 0 0;
+      word-break: break-word;
+    }
+
+    code {
+      background: #0d1117;
+      border: 1px solid var(--line);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .status {
+      color: var(--muted);
+      padding: 30px 0;
+    }
+
+    .error {
+      color: #ff7b72;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 24px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="container">
+      <h1>📦 Carton Registry</h1>
+      <div class="subtitle">
+        Registry is loaded dynamically from <code>carton-packages.toml</code>
+      </div>
+      <input id="search" placeholder="Search packages..." />
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <div id="status" class="status">Loading registry...</div>
+      <div id="packages" class="grid"></div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      Carton Registry • GitHub Pages Ready
+    </div>
+  </footer>
+
+  <script type="module">
+    import {parse} from "https://esm.sh/smol-toml";
+
+    const statusEl = document.getElementById("status");
+    const gridEl = document.getElementById("packages");
+    const searchEl = document.getElementById("search");
+
+    let packageCards = [];
+    let registryData = {};
+
+    function escapeHtml(str = "") {
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[s]));
+    }
+
+    function repoUrl(pkg) {
+      return pkg?.package?.repository || pkg?.lib?.git || "";
+    }
+
+    function homepageUrl(pkg) {
+      return pkg?.package?.homepage || "";
+    }
+
+    function description(pkg) {
+      return pkg?.package?.description || "No description yet.";
+    }
+
+    function createCard(name, pkg) {
+      const repo = repoUrl(pkg);
+      const home = homepageUrl(pkg);
+
+      return `
+    <article class="card package-card" data-name="${escapeHtml(name)}">
+      <div class="pkg-main" onclick="openPackage('${escapeHtml(name)}')">
+        <h2>${escapeHtml(pkg.package?.name || name)}</h2>
+        <div class="desc">${escapeHtml(description(pkg))}</div>
+
+        ${home ? `
+          <div><strong>Homepage:</strong><br>
+          <a href="${escapeHtml(home)}" target="_blank">${escapeHtml(home)}</a>
+          </div>` : ""
+        }
+
+        ${repo ? `
+          <div style="margin-top:10px">
+          <strong>Repository:</strong><br>
+          <a href="${escapeHtml(repo)}" target="_blank">${escapeHtml(repo)}</a>
+          </div>` : ""
+        }
+
+        <div style="margin-top:14px;color:var(--accent)">
+          Click to view details
+        </div>
+      </div>
+
+      <div class="pkg-detail" id="detail-${escapeHtml(name)}" style="display:none;margin-top:18px">
+        Loading...
+      </div>
+    </article>
+  `;
+    }
+
+    function renderRegistry(data) {
+      registryData = data;
+
+      const packages = Object.entries(data);
+
+      gridEl.innerHTML = packages
+        .map(([name, pkg]) => createCard(name, pkg))
+        .join("");
+
+      packageCards = [...document.querySelectorAll(".package-card")];
+      statusEl.style.display = "none";
+    }
+
+    function filterCards(query) {
+      const q = query.trim().toLowerCase();
+
+      packageCards.forEach(card => {
+        const name = card.dataset.name.toLowerCase();
+        card.style.display = name.includes(q) ? "" : "none";
+      });
+    }
+
+    function githubReadmeUrl(repo) {
+      if (!repo.includes("github.com")) return null;
+
+      const cleaned = repo.replace(".git", "");
+      return cleaned + "/raw/HEAD/README.md";
+    }
+
+    async function openPackage(name) {
+      const detailEl = document.getElementById("detail-" + name);
+      const pkg = registryData[name];
+
+      const visible = detailEl.style.display !== "none";
+      if (visible) {
+        detailEl.style.display = "none";
+        return;
+      }
+
+      detailEl.style.display = "block";
+
+      const meta = pkg.package || {};
+      const deps = pkg.dependencies || {};
+      const features = pkg.features || {};
+
+      let readme = "README not available.";
+      const repo = repoUrl(pkg);
+
+      try {
+        const url = githubReadmeUrl(repo);
+        if (url) {
+          const res = await fetch(url);
+          if (res.ok) {
+            readme = await res.text();
+            readme = readme.slice(0, 5000);
+          }
+        }
+      } catch { }
+
+      detailEl.innerHTML = `
+    <div class="desc"><strong>License:</strong> ${escapeHtml(meta.license || "Unknown")}</div>
+
+    <div style="margin-top:14px">
+      <strong>Dependencies</strong>
+      <pre>${escapeHtml(JSON.stringify(deps, null, 2) || "{}")}</pre>
+    </div>
+
+    <div style="margin-top:14px">
+      <strong>Features</strong>
+      <pre>${escapeHtml(JSON.stringify(features, null, 2) || "{}")}</pre>
+    </div>
+
+    <div style="margin-top:14px">
+      <strong>README</strong>
+      <pre style="white-space:pre-wrap">${escapeHtml(readme)}</pre>
+    </div>
+  `;
+    }
+
+    window.openPackage = openPackage;
+
+    async function loadRegistry() {
+      try {
+        const res = await fetch("./carton-packages.toml");
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const text = await res.text();
+        const data = parse(text);
+
+        renderRegistry(data);
+      }
+      catch (err) {
+        statusEl.classList.add("error");
+        statusEl.innerHTML =
+          `Failed to load registry<br>${escapeHtml(err.message)}`;
+      }
+    }
+
+    searchEl.addEventListener("input", e => {
+      filterCards(e.target.value);
+    });
+
+    loadRegistry();
+  </script>
+</body>
+
+</html>
