@@ -61,6 +61,17 @@ edition = 11
 
 [nlohmann-json.lib]
 url = "https://github.com/nlohmann/json/releases/download/v{version}/json.tar.xz"
+
+#
+# nlohmann.json
+#
+['nlohmann.json'.package]
+name = "nlohmann-json"
+edition = 11
+
+['nlohmann.json'.lib]
+git = "https://github.com/nlohmann/json"
+branch = "develop"
 mod = ["nlohmann.json:src/modules/json.cppm"]
 
 
@@ -187,19 +198,21 @@ edition = 11
 git = "https://github.com/CLIUtils/CLI11"
 tag = "v{version}"
 flags = ["public:-DCLI11_PRECOMPILE"]
+mod = ["cli11:src/modules/CLI11.cppm"]
 
 
 #
 # CLI11
 #
-[cli.package]
-name = "cli"
+[cli11.package]
+name = "cli11"
 edition = 11
 
-[cli.lib]
+[cli11.lib]
 git = "https://github.com/CLIUtils/CLI11"
 tag = "v{version}"
 flags = ["public:-DCLI11_PRECOMPILE"]
+mod = ["cli11:src/modules/CLI11.cppm"]
 
 
 #

@@ -330,15 +330,16 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             ccm.directory() = build_dir.string();
             ccm.file()      = (working_dir / mod_path).string();
             ccm.output()    = f("{}/{}.pcm", profile._module_cxx_version, mod_name);
-            ccm.depfile()   = mod_path.string() + ".d";
+            ccm.depfile()   = ccm.output() + ".d";
 
             ccm.command() =
-                f("{} -std=c++{} -x c++-module {} -o '{}' --precompile '{}' {}",
+                f("{} -std=c++{} -x c++-module {} -o '{}' --precompile '{}' -MMD -MP -MF '{}' {}",
                   CXX,
                   profile._module_cxx_version,
                   fmt::join(flags, " "),
                   ccm.output(),
                   ccm.file(),
+                  ccm.depfile(),
                   pcm_flag);
 
             ccms.push_back(ccm);
