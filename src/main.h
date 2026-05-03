@@ -105,7 +105,8 @@ struct CompileCommand {
 bool compile_multi(
     const std::string                            &name,
     const std::vector<CompileCommand>            &commands,
-    std::unordered_map<std::string, std::string> &hash_history
+    std::unordered_map<std::string, std::string> &hash_history,
+    bool                                          precompile = false
 );
 
 struct Project {
@@ -183,6 +184,7 @@ std::string resolve_path(const std::string &cache, const std::string &path);
 std::string git_clone(const std::string &cache, const std::string &git, const std::string &tag);
 
 std::vector<std::string> expand_path(const std::string &working_dir, std::vector<std::string> &sources);
+std::vector<std::string> sort_modules(const std::string &working_dir, std::vector<std::string> &sources);
 
 void push_unique(std::vector<std::string> &vec, const std::string &value, bool front = false);
 void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front = false);

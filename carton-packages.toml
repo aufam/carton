@@ -72,7 +72,7 @@ edition = 11
 ['nlohmann.json'.lib]
 git = "https://github.com/nlohmann/json"
 branch = "develop"
-mod = ["nlohmann.json:src/modules/json.cppm"]
+mod = ["src/modules/json.cppm"]
 
 
 #
@@ -198,7 +198,7 @@ edition = 11
 git = "https://github.com/CLIUtils/CLI11"
 tag = "v{version}"
 flags = ["public:-DCLI11_PRECOMPILE"]
-mod = ["cli11:src/modules/CLI11.cppm"]
+mod = ["src/modules/CLI11.cppm"]
 
 
 #
@@ -212,7 +212,7 @@ edition = 11
 git = "https://github.com/CLIUtils/CLI11"
 tag = "v{version}"
 flags = ["public:-DCLI11_PRECOMPILE"]
-mod = ["cli11:src/modules/CLI11.cppm"]
+mod = ["src/modules/CLI11.cppm"]
 
 
 #
@@ -457,7 +457,7 @@ edition = 20
 git = "http://github.com/ArthurSonzogni/FTXUI"
 branch = "main"
 inc = ["public:include", "src"]
-mod = ["ftxui:src/ftxui/ftxui.cppm"]
+mod = ["src/ftxui/ftxui.cppm"]
 
 [ftxui-mod.dependencies]
 screen = {
@@ -470,7 +470,7 @@ screen = {
         "src/ftxui/screen/string.cpp",
         "src/ftxui/screen/terminal.cpp",
     ],
-    mod = ["ftxui.screen:src/ftxui/screen.cppm"],
+    mod = ["src/ftxui/screen.cppm"],
     optional = true,
 }
 dom = {
@@ -518,7 +518,7 @@ dom = {
         "src/ftxui/dom/util.cpp",
         "src/ftxui/dom/vbox.cpp",
     ],
-    mod = ["ftxui.dom:src/ftxui/dom.cppm"],
+    mod = ["src/ftxui/dom.cppm"],
     optional = true,
 }
 component = {
@@ -549,11 +549,11 @@ component = {
         "src/ftxui/component/util.cpp",
         "src/ftxui/component/window.cpp",
     ],
-    mod = ["ftxui.component:src/ftxui/component.cppm"],
+    mod = ["src/ftxui/component.cppm"],
     optional = true,
 }
 util = {
-    mod = ["ftxui.util:src/ftxui/util.cppm"],
+    mod = ["src/ftxui/util.cppm"],
     optional = true,
 }
 

@@ -236,7 +236,8 @@ static bool needs_rebuild(
 bool compile_multi(
     const std::string                            &name,
     const std::vector<CompileCommand>            &commands,
-    std::unordered_map<std::string, std::string> &hash_history
+    std::unordered_map<std::string, std::string> &hash_history,
+    bool                                          precompile
 ) {
     if (commands.empty())
         return false;
@@ -258,12 +259,11 @@ bool compile_multi(
     if (needs_rebuild_ptrs.empty())
         return false; // all up-to-date
 
-    const bool verbose = !name.empty();
-    if (verbose) {
-        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Compiling");
-        fmt::println(stderr, "{}", name);
-        printProgressBar(0, needs_rebuild_ptrs.size());
-    }
+    fmt::print(
+        stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", precompile ? "Precompiling" : "Compiling"
+    );
+    fmt::println(stderr, "{}", name);
+    printProgressBar(0, needs_rebuild_ptrs.size());
 
     // TODO: parallelize this
     for (size_t i = 0; i < needs_rebuild_ptrs.size(); ++i) {
@@ -281,25 +281,20 @@ bool compile_multi(
 
         spdlog::info("compiling: cmd={:?}", full_cmd);
         if (std::system(full_cmd.c_str()) != 0) {
-            if (verbose) {
-                fmt::println(stderr, "\r\033[2K");
-                fflush(stderr);
-            }
+            fmt::println(stderr, "\r\033[2K");
+            fflush(stderr);
             throw std::runtime_error(fmt::format("Failed to compile {}: command={:?}", cmd->file(), full_cmd));
         }
 
-        if (verbose)
-            printProgressBar(i + 1, needs_rebuild_ptrs.size());
+        printProgressBar(i + 1, needs_rebuild_ptrs.size());
         // On success, update this file() entry in the directory-level signature TOML.
         sig_map[cmd->output()] = make_signature(*cmd, hash_history);
 
         toml_dump(sig_map, sig_path);
     }
 
-    if (verbose) {
-        fmt::print(stderr, "\r\033[2K");
-        fflush(stderr);
-    }
+    fmt::print(stderr, "\r\033[2K");
+    fflush(stderr);
 
     return true;
 }

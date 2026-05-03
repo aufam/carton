@@ -70,13 +70,33 @@ int main(int argc, char **argv) {
         bool relink = false;
         auto hash   = std::unordered_map<std::string, std::string>();
         for (const auto &m : ctx.meta) {
+            std::string name = m.lib.name();
+            if (!m.lib.version().empty()) {
+                name += " v" + m.lib.version();
+            } else if (!m.lib.tag().empty()) {
+                name += " #" + m.lib.tag();
+            } else if (!m.lib.branch().empty()) {
+                name += " " + m.lib.branch();
+            } else {
+                name += " (" + m.lib.path() + ")";
+            }
             ccs.insert(ccs.end(), m.precompile_commands.begin(), m.precompile_commands.end());
             ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
-            relink |= compile_multi("", m.precompile_commands, hash);
+            relink |= compile_multi(name, m.precompile_commands, hash, true);
+        }
+        std::string name = m.lib.name();
+        if (!m.lib.version().empty()) {
+            name += " v" + m.lib.version();
+        } else if (!m.lib.tag().empty()) {
+            name += " #" + m.lib.tag();
+        } else if (!m.lib.branch().empty()) {
+            name += " " + m.lib.branch();
+        } else {
+            name += " (" + m.lib.path() + ")";
         }
         ccs.insert(ccs.end(), m.precompile_commands.begin(), m.precompile_commands.end());
         ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
-        relink |= compile_multi("", m.precompile_commands, hash);
+        relink |= compile_multi(name, m.precompile_commands, hash, true);
 
         for (const auto &m : ctx.meta) {
             std::string name = m.lib.name();
@@ -93,16 +113,6 @@ int main(int argc, char **argv) {
                 relink |= compile_multi(name, m.compile_commands, hash);
         }
 
-        std::string name = m.lib.name();
-        if (!m.lib.version().empty()) {
-            name += " v" + m.lib.version();
-        } else if (!m.lib.tag().empty()) {
-            name += " #" + m.lib.tag();
-        } else if (!m.lib.branch().empty()) {
-            name += " " + m.lib.branch();
-        } else {
-            name += " (" + m.lib.path() + ")";
-        }
         if (do_build)
             relink |= compile_multi(name, m.compile_commands, hash);
 

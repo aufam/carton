@@ -110,11 +110,9 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
         if (existing) {
             push_unique(lib().flags(), existing->flags);
             push_unique(lib().link_flags(), existing->link_flags);
-            push_unique(
-                lib().flags(),
-                package().edition() >= 20 && profile._module_support && !existing->module_flags.empty() ? existing->module_flags
-                                                                                                        : existing->include_flags
-            );
+            if (package().edition() >= 20 && profile._module_support)
+                push_unique(lib().flags(), existing->module_flags);
+            push_unique(lib().flags(), existing->include_flags);
             continue;
         }
 
@@ -128,10 +126,9 @@ void Project::configure(const Profile &profile, const std::vector<std::string> &
             auto m = collect_meta(profile, d);
             push_unique(lib().flags(), m.flags);
             push_unique(lib().link_flags(), m.link_flags);
-            push_unique(
-                lib().flags(),
-                package().edition() >= 20 && profile._module_support && !m.module_flags.empty() ? m.module_flags : m.include_flags
-            );
+            if (package().edition() >= 20 && profile._module_support)
+                push_unique(lib().flags(), m.module_flags);
+            push_unique(lib().flags(), m.include_flags);
             (pmeta ? *pmeta : meta).push_back(std::move(m));
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of {:?} required by {:?}: {}", name, package().name(), e.what());
@@ -220,10 +217,8 @@ void Project::resolve_remote_dep(const Profile &profile, const std::string &name
         auto &lib = configure_subpackage(p);
         d         = std::move(lib);
     } else {
-        std::string name = d.name();
-        std::replace(name.begin(), name.end(), '-', '.');
         if (d.mod().empty() && fs::exists(working_dir / "src" / "lib.cppm"))
-            d.mod() = {name + ":src/lib.cppm"};
+            d.mod() = {"src/*.cppm"};
         if (d.src().empty() && fs::is_directory(working_dir / "src"))
             d.src() = {"src/*"};
         if (d.inc().empty() && fs::is_directory(working_dir / "include"))
@@ -309,22 +304,17 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
     if (!profile._module_support)
         d.mod().clear();
 
-    try {
-        std::vector<CompileCommand> ccs;
-        std::vector<CompileCommand> ccms;
+    std::vector<CompileCommand> ccs;
+    std::vector<CompileCommand> ccms;
 
-        const fs::path    pcm_dir  = build_dir / std::to_string(profile._module_cxx_version);
-        const std::string pcm_flag = d.mod().empty() ? "" : f("-fprebuilt-module-path='{}'", pcm_dir.string());
-        for (const auto &mod : d.mod()) {
-            std::string mod_name;
-            fs::path    mod_path;
-            if (auto pos = mod.find(':'); pos != std::string::npos) {
-                mod_name = mod.substr(0, pos);
-                mod_path = mod.substr(pos + 1);
-            } else {
-                mod_path = mod;
-                mod_name = mod_path.filename().stem().string();
-            }
+    const fs::path    pcm_dir  = build_dir / std::to_string(profile._module_cxx_version);
+    const std::string pcm_flag = d.mod().empty() ? "" : f("-fprebuilt-module-path='{}'", pcm_dir.string());
+    try {
+        auto modules   = expand_path(working_dir.string(), d.mod());
+        auto mod_names = sort_modules(working_dir, modules);
+        for (size_t i = 0; i < modules.size(); ++i) {
+            const std::string &mod_name = mod_names[i];
+            const fs::path     mod_path = modules[i];
 
             CompileCommand ccm;
             ccm.directory() = build_dir.string();
@@ -360,7 +350,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
                   pcm_flag);
 
             push_unique(export_link_flags, (build_dir / cc.output()).string());
-            ccs.push_back(cc);
+            ccms.push_back(cc);
         }
 
         push_unique(export_module_flags, pcm_flag);
@@ -368,8 +358,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             push_unique(flags, pcm_flag);
         }
 
-        auto expanded = expand_path(working_dir.string(), d.src());
-        for (const fs::path entry : expanded) {
+        for (const fs::path entry : expand_path(working_dir.string(), d.src())) {
             CompileCommand cc;
             cc.directory() = build_dir.string();
             cc.output()    = entry.string() + ".o";
@@ -414,7 +403,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
         m.precompile_commands = std::move(ccms);
         return m;
     } catch (std::exception &e) {
-        throw ferr("Cannot resolve dep={:?}, src={}: {}", d.name(), d.src(), e.what());
+        throw ferr("Cannot resolve dep={:?}, src={}, mod={}: {}", d.name(), d.src(), d.mod(), e.what());
     }
 }
 
