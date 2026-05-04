@@ -443,7 +443,7 @@ void Project::build(
         auto link_cmd = f("{} -o '{}' {}", LINK, output.string(), fmt::join(link_flags, " "));
         spdlog::debug("linking cmd={}", link_cmd);
         if (std::system(link_cmd.c_str()) != 0)
-            throw ferr("linking failed: cmd={}", lib().name(), link_cmd);
+            throw ferr("linking failed: name={}, cmd=`{}`", lib().name(), link_cmd);
     }
 
     std::string profile_info = profile.opt_level() == 0 ? "unoptimized" : "optimized";

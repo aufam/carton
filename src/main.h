@@ -22,6 +22,8 @@ struct Profile {
     cpx::Tag<std::vector<std::string>> link_flags = "toml:`link-flags,skipmissing,omitempty`"
                                                     "json:`linkFlags,skipmissing,omitempty`";
 
+    cpx::Tag<std::string> modules = {"toml,json:modules,skipmissing", "auto"};
+
     bool _module_support     = false;
     int  _module_cxx_version = 20;
 
