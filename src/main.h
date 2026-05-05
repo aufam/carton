@@ -150,6 +150,7 @@ struct Project {
     Project                                  *pparent   = nullptr;
 
     struct Meta {
+        std::string                 build_dir;
         Dependency                  lib;
         std::vector<std::string>    flags;
         std::vector<std::string>    link_flags;

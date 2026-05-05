@@ -383,6 +383,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             }
         }
         Meta m;
+        m.build_dir           = build_dir;
         m.lib                 = d;
         m.flags               = std::move(export_flags);
         m.link_flags          = std::move(export_link_flags);

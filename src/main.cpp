@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 
         push_unique(m.link_flags, m.main_o);
         if (do_build && !m.compile_commands.empty())
-            ctx.build(m.compile_commands.front().directory(), profile, relink, m.link_flags, do_run, ctx._run().args(), start);
+            ctx.build(m.build_dir, profile, relink, m.link_flags, do_run, ctx._run().args(), start);
     } catch (std::exception &e) {
         spdlog::error("Failed to build: {}", e.what());
         return 1;
