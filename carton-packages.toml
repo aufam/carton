@@ -124,7 +124,7 @@ edition = 11
 [toml11.lib]
 git = "https://github.com/ToruNiina/toml11"
 tag = "v{version}"
-flags = ["public:-DTOML11_COMPILE_SOURCES"]
+flags = ["public:-DTOML11_COMPILE_SOURCES", "-Wno-deprecated-literal-operator"]
 
 #
 # toml

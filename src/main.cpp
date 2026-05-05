@@ -50,8 +50,6 @@ int main(int argc, char **argv) {
     }
     ctx.lib().path() = (fs::current_path() / ctx.lib().path()).string();
 
-    ctx.profiles().dev()._module_cxx_version     = std::max(ctx.package().edition(), 20);
-    ctx.profiles().release()._module_cxx_version = std::max(ctx.package().edition(), 20);
     ctx.profiles().dev()._module_support =
         ctx.profiles().dev().modules() == "auto" && ctx.profiles().dev().cxx().find("clang++") != std::string::npos;
     ctx.profiles().release()._module_support =

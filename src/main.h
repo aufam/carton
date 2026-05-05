@@ -24,8 +24,7 @@ struct Profile {
 
     cpx::Tag<std::string> modules = {"toml,json:modules,skipmissing", "auto"};
 
-    bool _module_support     = false;
-    int  _module_cxx_version = 20;
+    bool _module_support = false;
 
     static Profile Release() {
         Profile t;

@@ -259,15 +259,15 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
           profile.lto() ? "-flto" : "",
           profile.asan() ? "-fsanitize=address,undefined" : "",
           fmt::join(profile.flags(), " "));
-    const auto CXX       = f("{} {}", profile.cxx(), flags_);
-    const auto C         = f("{} {}", profile.c(), flags_);
-    fs::path   cache     = this->cache();
-    fs::path   build_dir = cache / "build" / profile.id() /
-                         (d.name() + "-" +
-                          (d.branch().empty() && d.tag().empty() ? d.version()
-                           : d.branch().empty()                  ? d.tag()
-                                                                 : d.branch())) /
-                         feature_name;
+    const auto     CXX       = f("{} {}", profile.cxx(), flags_);
+    const auto     C         = f("{} {}", profile.c(), flags_);
+    const fs::path cache     = this->cache();
+    const fs::path build_dir = cache / "build" / profile.id() /
+                               (d.name() + "-" +
+                                (d.branch().empty() && d.tag().empty() ? d.version()
+                                 : d.branch().empty()                  ? d.tag()
+                                                                       : d.branch())) /
+                               feature_name;
 
     std::vector<std::string> flags;
     std::vector<std::string> export_flags;
@@ -307,8 +307,11 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
     std::vector<CompileCommand> ccs;
     std::vector<CompileCommand> ccms;
 
-    const fs::path    pcm_dir  = build_dir / std::to_string(profile._module_cxx_version);
-    const std::string pcm_flag = d.mod().empty() ? "" : f("-fprebuilt-module-path='{}'", pcm_dir.string());
+    const fs::path &pcm_dir = build_dir;
+    if (!d.mod().empty()) {
+        fs::create_directories(pcm_dir);
+    }
+    std::vector<std::string> pcm_flags;
     try {
         auto modules   = expand_path(working_dir.string(), d.mod());
         auto mod_names = sort_modules(working_dir, modules);
@@ -319,43 +322,30 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             CompileCommand ccm;
             ccm.directory() = build_dir.string();
             ccm.file()      = (working_dir / mod_path).string();
-            ccm.output()    = f("{}/{}.pcm", profile._module_cxx_version, mod_name);
-            ccm.depfile()   = ccm.output() + ".d";
+            ccm.output()    = mod_path.string() + ".o";
+            ccm.depfile()   = mod_path.string() + ".d";
+
+            const auto pcm = f("{}.pcm", mod_name);
 
             ccm.command() =
-                f("{} -std=c++{} -x c++-module {} -o '{}' --precompile '{}' -MMD -MP -MF '{}' {}",
+                f("{} -std=c++{} -x c++-module {} {} -fmodule-output='{}' -o '{}' -c '{}' -MMD -MP -MF '{}'",
                   CXX,
-                  profile._module_cxx_version,
+                  std::max(package().edition(), 20),
                   fmt::join(flags, " "),
+                  fmt::join(pcm_flags, " "),
+                  pcm,
                   ccm.output(),
                   ccm.file(),
-                  ccm.depfile(),
-                  pcm_flag);
+                  ccm.depfile());
 
+            push_unique(export_link_flags, (build_dir / ccm.output()).string());
+            push_unique(pcm_flags, f("-fmodule-file={}='{}'", mod_name, (build_dir / pcm).string()));
             ccms.push_back(ccm);
-
-            CompileCommand cc;
-            cc.directory() = build_dir.string();
-            cc.output()    = mod_path.string() + ".o";
-            cc.depfile()   = mod_path.string() + ".d";
-            cc.file()      = (working_dir / mod_path).string();
-            cc.command() =
-                f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}' {}",
-                  CXX,
-                  profile._module_cxx_version,
-                  fmt::join(flags, " "),
-                  cc.output(),
-                  cc.file(),
-                  cc.depfile(),
-                  pcm_flag);
-
-            push_unique(export_link_flags, (build_dir / cc.output()).string());
-            ccms.push_back(cc);
         }
 
-        push_unique(export_module_flags, pcm_flag);
+        push_unique(export_module_flags, pcm_flags);
         if (cpp_standard >= 20) {
-            push_unique(flags, pcm_flag);
+            push_unique(flags, pcm_flags);
         }
 
         for (const fs::path entry : expand_path(working_dir.string(), d.src())) {

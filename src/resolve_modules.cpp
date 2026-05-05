@@ -15,6 +15,7 @@ namespace {
     };
 } // namespace
 
+// TODO: use clang-scan-deps
 static Module parse_module(const std::filesystem::path &working_dir, const std::string &file) {
     std::ifstream in(working_dir / file);
     if (!in)
