@@ -94,6 +94,23 @@ struct Dependency {
     bool        empty() const;
 };
 
+struct Executable {
+    cpx::Tag<std::string>        name    = "toml,json:`name,skipmissing,omitempty`";
+    cpx::Tag<std::optional<int>> edition = "toml,json:`edition,skipmissing`";
+
+    cpx::Tag<std::vector<std::string>> features = "toml,json:`features,skipmissing,omitempty`";
+
+    cpx::Tag<std::vector<std::string>> src        = "toml,json:`src,skipmissing,omitempty`";
+    cpx::Tag<std::vector<std::string>> inc        = "toml,json:`inc,skipmissing,omitempty`";
+    cpx::Tag<std::vector<std::string>> lib        = "toml,json:`lib,skipmissing,omitempty`";
+    cpx::Tag<std::vector<std::string>> mod        = "toml,json:`mod,skipmissing,omitempty`";
+    cpx::Tag<std::vector<std::string>> flags      = "toml,json:`flags,skipmissing,omitempty`";
+    cpx::Tag<std::vector<std::string>> link_flags = "toml:`link-flags,skipmissing,omitempty`"
+                                                    "json:`linkFlags,skipmissing,omitempty`";
+
+    cpx::Tag<std::string> pre = "toml,json:`pre,skipmissing,omitempty`";
+};
+
 using Lib = Dependency;
 
 struct CompileCommand {
@@ -124,9 +141,10 @@ struct Project {
 
     cpx::Tag<std::unordered_map<std::string, Dep>> dependencies = "toml,json:`dependencies,skipmissing,omitempty`";
     cpx::Tag<Lib>                                  lib          = "toml,json:`lib,skipmissing`";
-    cpx::Tag<std::unordered_map<std::string, std::vector<std::string>>> features = "toml,json:`features,skipmissing,omitempty`";
+    cpx::Tag<std::vector<Executable>>              bin          = "toml,json:`bin,skipmissing`";
 
-    cpx::Tag<std::unordered_map<std::string, std::string>> vars = "toml,json:`vars,skipmissing,omitempty`";
+    cpx::Tag<std::unordered_map<std::string, std::vector<std::string>>> features = "toml,json:`features,skipmissing,omitempty`";
+    cpx::Tag<std::unordered_map<std::string, std::string>>              vars     = "toml,json:`vars,skipmissing,omitempty`";
 
     cpx::Tag<std::string> cache               = "opt:`cache,env=CARTON_CACHE,skipmissing`";
     cpx::Tag<bool>        no_default_features = "opt:`no-default-features,help=Disable default features`";
@@ -190,3 +208,5 @@ std::vector<std::string> sort_modules(const std::string &working_dir, std::vecto
 
 void push_unique(std::vector<std::string> &vec, const std::string &value, bool front = false);
 void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front = false);
+
+void collect_executables(const Profile &profile, const Project &project);
