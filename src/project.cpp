@@ -398,43 +398,51 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
     }
 }
 
-void Project::build(
-    const std::string                           &build_dir,
-    const Profile                               &profile,
-    bool                                         link,
-    const std::vector<std::string>              &link_flags,
-    bool                                         do_run,
-    const std::vector<std::string>              &run_args,
-    const std::chrono::system_clock::time_point &start
-) {
-    const auto LINK =
-        f("{} {} {} {}",
-          profile.cxx(),
-          profile.lto() ? "-flto" : "",
-          profile.asan() ? "-fsanitize=address,undefined" : "",
-          fmt::join(profile.link_flags(), " "));
-    const auto output = fs::path(build_dir) / lib().name();
+std::pair<bool, Project::Meta> Project::build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build) {
+    const auto start = std::chrono::system_clock::now();
 
-    if (link || !fs::exists(output)) {
+    auto m      = collect_meta(profile, lib());
+    bool relink = false;
+    auto hash   = std::unordered_map<std::string, std::string>();
+    for (const auto &m : meta) {
+        const auto name = m.lib.display_name();
+        ccs.insert(ccs.end(), m.precompile_commands.begin(), m.precompile_commands.end());
+        ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
+        relink |= compile_multi(name, m.precompile_commands, hash, true);
+    }
+
+    const auto name = m.lib.display_name();
+    ccs.insert(ccs.end(), m.precompile_commands.begin(), m.precompile_commands.end());
+    ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
+    relink |= compile_multi(name, m.precompile_commands, hash, true);
+
+    if (!do_build)
+        return std::make_pair(relink, std::move(m));
+
+    for (const auto &m : meta) {
+        const auto name = m.lib.display_name();
+        relink |= compile_multi(name, m.compile_commands, hash);
+    }
+
+    relink |= compile_multi(name, m.compile_commands, hash);
+
+    const auto output = fs::path(m.build_dir) / m.lib.name();
+    if (!m.main_o.empty() && (relink || !fs::exists(output))) {
+        const auto LINK =
+            f("{} {} {} {}",
+              profile.cxx(),
+              profile.lto() ? "-flto" : "",
+              profile.asan() ? "-fsanitize=address,undefined" : "",
+              fmt::join(profile.link_flags(), " "));
+
         fs::create_directories(output.parent_path());
-
-        std::string name = lib().name();
-        if (!lib().version().empty()) {
-            name += " v" + lib().version();
-        } else if (!lib().tag().empty()) {
-            name += " #" + lib().tag();
-        } else if (!lib().branch().empty()) {
-            name += " " + lib().branch();
-        } else {
-            name += " (" + lib().path() + ")";
-        }
         fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Linking");
-        fmt::println(stderr, "{}", name);
+        fmt::println(stderr, "{}", lib().display_name());
 
-        auto link_cmd = f("{} -o '{}' {}", LINK, output.string(), fmt::join(link_flags, " "));
+        auto link_cmd = f("{} -o '{}' {} {}", LINK, output.string(), fmt::join(m.link_flags, " "), m.main_o);
         spdlog::debug("linking cmd={}", link_cmd);
         if (std::system(link_cmd.c_str()) != 0)
-            throw ferr("linking failed: name={}, cmd=`{}`", lib().name(), link_cmd);
+            throw ferr("linking failed: name={}, cmd=`{}`", m.lib.name(), link_cmd);
     }
 
     std::string profile_info = profile.opt_level() == 0 ? "unoptimized" : "optimized";
@@ -447,19 +455,30 @@ void Project::build(
     fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Finished");
     fmt::println(stderr, "`{}` profile [{}] target(s) in {:.2f}", profile.id(), profile_info, elapsed.count());
 
-    if (do_run) {
-        std::string out = output.string();
-        for (size_t pos = 0; (pos = out.find(' ', pos)) != std::string::npos;) {
-            out.replace(pos, 1, "\\ ");
-            pos += 2;
-        }
+    return std::make_pair(relink, std::move(m));
+}
 
-        std::string exe = f("{} {}", out, fmt::join(run_args, " "));
-        if (run_args.empty())
-            exe.pop_back();
+int Project::run(const Meta &m) {
+    const auto output = fs::path(m.build_dir) / m.lib.name();
 
-        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Running");
-        fmt::println(stderr, "`{}`", exe);
-        std::system(exe.c_str());
+    std::string out = output.string();
+    for (size_t pos = 0; (pos = out.find(' ', pos)) != std::string::npos;) {
+        out.replace(pos, 1, "\\ ");
+        pos += 2;
+    }
+
+    std::string exe = f("{} {}", out, fmt::join(_run().args(), " "));
+    if (_run().args().empty())
+        exe.pop_back();
+
+    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Running");
+    fmt::println(stderr, "`{}`", exe);
+    int ret = std::system(exe.c_str());
+    if (ret == -1) {
+        return -1;
+    } else if (WIFEXITED(ret)) {
+        return WEXITSTATUS(ret);
+    } else {
+        return 256;
     }
 }

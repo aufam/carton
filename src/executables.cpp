@@ -3,7 +3,7 @@
 #include <algorithm>
 
 namespace fs = std::filesystem;
-void collect_executables(const Profile &profile, const Project &project) {
+void collect_executables(const Profile &, const Project &project) {
     std::unordered_map<std::string, Executable> examples, tests, benches, bins;
 
     auto base = fs::current_path() / project.lib().path() / project.lib().subdir();

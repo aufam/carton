@@ -17,6 +17,20 @@ bool Dependency::empty() const {
     return version().empty() && path().empty() && url().empty() && git().empty();
 }
 
+std::string Dependency::display_name() const {
+    std::string name = this->name();
+    if (!version().empty()) {
+        name += " v" + version();
+    } else if (!tag().empty()) {
+        name += " #" + tag();
+    } else if (!branch().empty()) {
+        name += " " + branch();
+    } else {
+        name += " (" + path() + ")";
+    }
+    return name;
+}
+
 Dependency &convert_dep(Project::Dep &dep) {
     if (auto *version = std::get_if<std::string>(&dep)) {
         Dependency d{};

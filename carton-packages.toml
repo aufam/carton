@@ -287,6 +287,9 @@ inc = ["public:googletest/include", "googletest"]
 [gtest.dependencies]
 gtest-main = { src = ["googletest/src/gtest_main.cc"] }
 
+[gtest.features]
+default = ["gtest-main"]
+
 
 #
 # onnxruntime

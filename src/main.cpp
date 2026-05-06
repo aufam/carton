@@ -11,20 +11,17 @@
 #define ferr(...) std::runtime_error(fmt::format(__VA_ARGS__))
 namespace fs = std::filesystem;
 
+constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
 
 int main(int argc, char **argv) {
     auto sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("cpp++", std::move(sink)));
     spdlog::set_pattern("%^%l%$: %v");
 
-    constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
-
-    auto start = std::chrono::system_clock::now();
-
     Project ctx;
-    auto    subcommands = cpx::cli::cli11::parse_with_subcommands("C++ package manager", argc, argv, ctx);
-    spdlog::set_level(spdlog::level::level_enum(ctx.log_level()));
 
+    auto subcommands = cpx::cli::cli11::parse_with_subcommands("C++ package manager", argc, argv, ctx);
+    spdlog::set_level(spdlog::level::level_enum(ctx.log_level()));
     if (ctx.cache().empty())
         ctx.cache() = std::getenv("HOME") + std::string("/.carton");
 
@@ -58,67 +55,18 @@ int main(int argc, char **argv) {
     spdlog::info("provile.release._module_support={}", ctx.profiles().release()._module_support);
 
     std::vector<CompileCommand> ccs;
-    const std::string          &subcommand = subcommands.empty() ? "" : subcommands.front();
+
+    const auto &subcommand   = subcommands.empty() ? "" : subcommands.front();
+    const bool  do_run       = subcommand == "run";
+    const bool  do_build     = do_run || (subcommand == "build");
+    const bool  release_mode = ctx._build().release() || ctx._run().release();
+    const auto &profile      = release_mode ? ctx.profiles().release() : ctx.profiles().dev();
+
     try {
-        const auto  do_run       = subcommand == "run";
-        const auto  do_build     = do_run || (subcommand == "build");
-        const auto  release_mode = ctx._build().release() || ctx._run().release();
-        const auto &profile      = release_mode ? ctx.profiles().release() : ctx.profiles().dev();
         ctx.configure(profile);
-
-        auto m      = ctx.collect_meta(profile, ctx.lib());
-        bool relink = false;
-        auto hash   = std::unordered_map<std::string, std::string>();
-        for (const auto &m : ctx.meta) {
-            std::string name = m.lib.name();
-            if (!m.lib.version().empty()) {
-                name += " v" + m.lib.version();
-            } else if (!m.lib.tag().empty()) {
-                name += " #" + m.lib.tag();
-            } else if (!m.lib.branch().empty()) {
-                name += " " + m.lib.branch();
-            } else {
-                name += " (" + m.lib.path() + ")";
-            }
-            ccs.insert(ccs.end(), m.precompile_commands.begin(), m.precompile_commands.end());
-            ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
-            relink |= compile_multi(name, m.precompile_commands, hash, true);
-        }
-        std::string name = m.lib.name();
-        if (!m.lib.version().empty()) {
-            name += " v" + m.lib.version();
-        } else if (!m.lib.tag().empty()) {
-            name += " #" + m.lib.tag();
-        } else if (!m.lib.branch().empty()) {
-            name += " " + m.lib.branch();
-        } else {
-            name += " (" + m.lib.path() + ")";
-        }
-        ccs.insert(ccs.end(), m.precompile_commands.begin(), m.precompile_commands.end());
-        ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());
-        relink |= compile_multi(name, m.precompile_commands, hash, true);
-
-        for (const auto &m : ctx.meta) {
-            std::string name = m.lib.name();
-            if (!m.lib.version().empty()) {
-                name += " v" + m.lib.version();
-            } else if (!m.lib.tag().empty()) {
-                name += " #" + m.lib.tag();
-            } else if (!m.lib.branch().empty()) {
-                name += " " + m.lib.branch();
-            } else {
-                name += " (" + m.lib.path() + ")";
-            }
-            if (do_build)
-                relink |= compile_multi(name, m.compile_commands, hash);
-        }
-
-        if (do_build)
-            relink |= compile_multi(name, m.compile_commands, hash);
-
-        push_unique(m.link_flags, m.main_o);
-        if (do_build && !m.compile_commands.empty())
-            ctx.build(m.build_dir, profile, relink, m.link_flags, do_run, ctx._run().args(), start);
+        auto [_, m] = ctx.build(profile, ccs, do_build);
+        if (do_run)
+            return ctx.run(m);
     } catch (std::exception &e) {
         spdlog::error("Failed to build: {}", e.what());
         return 1;

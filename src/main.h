@@ -92,6 +92,7 @@ struct Dependency {
 
     Dependency &operator+=(const Dependency &other);
     bool        empty() const;
+    std::string display_name() const;
 };
 
 struct Executable {
@@ -182,20 +183,15 @@ struct Project {
     std::vector<Meta> *pmeta = nullptr;
 
     void configure(const Profile &profile, const std::vector<std::string> &features = {});
-    Meta collect_meta(const Profile &profile, Dependency &dep);
-    void build(
-        const std::string                           &working_dir,
-        const Profile                               &profile,
-        bool                                         link,
-        const std::vector<std::string>              &link_flags,
-        bool                                         do_run,
-        const std::vector<std::string>              &run_args,
-        const std::chrono::system_clock::time_point &start
-    );
+
+    std::pair<bool, Meta> build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build);
+
+    int run(const Meta &m);
 
 private:
     void apply_package_placeholders();
     void resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &dep);
+    Meta collect_meta(const Profile &profile, Dependency &dep);
 };
 
 Dependency &convert_dep(Project::Dep &dep);
