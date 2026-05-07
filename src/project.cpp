@@ -254,7 +254,7 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
 
     const auto flags_ =
         f("{} -O{} {} {} {}",
-          profile.debug() ? "-g" : "",
+          profile.debug() ? "-g" : "-DNDEBUG",
           profile.opt_level(),
           profile.lto() ? "-flto" : "",
           profile.asan() ? "-fsanitize=address,undefined" : "",
