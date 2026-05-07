@@ -290,6 +290,42 @@ gtest-main = { src = ["googletest/src/gtest_main.cc"] }
 [gtest.features]
 default = ["gtest-main"]
 
+#
+# google benchmark
+#
+[benchmark.package]
+name = "benchmark"
+edition = 17
+
+[benchmark.lib]
+git = "https://github.com/google/benchmark"
+tag = "v{version}"
+flags = [
+    "-DBENCHMARK_STATIC_DEFINE",
+    "-DHAVE_POSIX_REGEX",
+    "-DHAVE_PTHREAD_AFFINITY",
+    "-DHAVE_STD_REGEX",
+    "-DHAVE_STEADY_CLOCK",
+    "-DTEST_BENCHMARK_LIBRARY_HAS_NO_ASSERTIONS",
+    "-D_FILE_OFFSET_BITS=64",
+    "-D_LARGEFILE64_SOURCE",
+    "-D_LARGEFILE_SOURCE",
+    "-Wall",
+    "-Wextra",
+    "-Wshadow",
+    "-Wfloat-equal",
+    "-Wold-style-cast",
+    "-Wconversion",
+    "-Werror",
+    "-pedantic",
+    "-pedantic-errors",
+    "-fstrict-aliasing",
+    "-Wno-deprecated-declarations",
+    "-Wno-deprecated",
+    "-Wstrict-aliasing",
+    "-Wno-unused-variable",
+]
+
 
 #
 # onnxruntime
