@@ -622,7 +622,7 @@ edition = 20
 
 [async.lib]
 git = "https://github.com/alibaba/async_simple"
-tag = "v{version}"
+tag = "{version}"
 src = ["async_simple/uthread/internal/thread.cc", "async_simple/uthread/internal/Linux/x86_64/*"]
 inc = ["public:"]
 
@@ -767,3 +767,16 @@ flags = [
     "-Wno-array-bounds",
     "-Wno-missing-field-initializers",
 ]
+
+
+[asio.package]
+name = "asio"
+edition = 20
+
+[asio.lib]
+git = "https://github.com/chriskohlhoff/asio"
+tag = "asio-{version}"
+flags = ["public:-DASIO_SEPARATE_COMPILATION"]
+link-flags = ["-lssl", "-lcrypto"]
+src = ["asio/src/*"]
+inc = ["public:asio/include"]
