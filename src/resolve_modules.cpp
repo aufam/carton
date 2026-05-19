@@ -70,6 +70,18 @@ static Module parse_module(const std::filesystem::path &working_dir, const std::
             auto dep = import_line.substr(0, pos);
             trim(dep);
 
+            if (dep.front() == ':') {
+                std::string parent = name;
+
+                auto pos = parent.find(':');
+                if (pos != std::string::npos) {
+                    parent = parent.substr(0, pos);
+                }
+
+                auto d = parent + dep;
+                dep    = std::move(d);
+            }
+
             // ignore header units like: import <vector>;
             if (!dep.empty() && dep.front() != '<')
                 imports.push_back(dep);

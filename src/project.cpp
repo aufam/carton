@@ -325,7 +325,8 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             ccm.output()    = mod_path.string() + ".o";
             ccm.depfile()   = mod_path.string() + ".d";
 
-            const auto pcm = f("{}.pcm", mod_name);
+            auto pcm = f("{}.pcm", mod_name);
+            std::replace(pcm.begin(), pcm.end(), ':', '-');
 
             ccm.command() =
                 f("{} -std=c++{} -x c++-module {} {} -fmodule-output='{}' -o '{}' -c '{}' -MMD -MP -MF '{}'",
@@ -343,6 +344,13 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             ccms.push_back(ccm);
         }
 
+        // remove internal flags
+        // pcm_flags.erase(
+        //     std::remove_if(
+        //         pcm_flags.begin(), pcm_flags.end(), [](const std::string &s) { return s.find(':') != std::string::npos; }
+        //     ),
+        //     pcm_flags.end()
+        // );
         push_unique(export_module_flags, pcm_flags);
         if (cpp_standard >= 20) {
             push_unique(flags, pcm_flags);
