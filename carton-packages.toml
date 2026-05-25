@@ -769,6 +769,16 @@ flags = [
 ]
 
 
+[msgpack.package]
+name = "msgpack"
+edition = 11
+
+[msgpack.lib]
+git = "https://github.com/msgpack/msgpack-c"
+tag = "cpp-{version}"
+flags = ["public:-DMSGPACK_DEFAULT_API_VERSION=3", "public:-DMSGPACK_NO_BOOST"]
+
+
 [asio.package]
 name = "asio"
 edition = 20
