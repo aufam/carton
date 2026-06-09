@@ -1,11 +1,13 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <map>
 #include <unordered_set>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
 #include <algorithm>
+#include "main.h"
 
 namespace {
     struct Module {
@@ -16,7 +18,7 @@ namespace {
 } // namespace
 
 // TODO: use clang-scan-deps
-static Module parse_module(const std::filesystem::path &working_dir, const std::string &file) {
+static Module parse_module(const std::filesystem::path &working_dir, const std::string &file, bool strict = true) {
     std::ifstream in(working_dir / file);
     if (!in)
         throw std::runtime_error("Failed to open: " + file);
@@ -88,7 +90,7 @@ static Module parse_module(const std::filesystem::path &working_dir, const std::
         }
     }
 
-    if (name.empty())
+    if (strict && name.empty())
         throw std::runtime_error("No module declaration in: " + file);
 
     return Module{name, imports, file};
@@ -147,12 +149,16 @@ static std::vector<std::string> topo_sort(const Graph &g) {
     return result;
 }
 
-std::vector<std::string> sort_modules(const std::string &working_dir, std::vector<std::string> &files) {
+std::vector<std::string> sort_modules(
+    const std::string &working_dir, std::vector<std::string> &files, std::map<std::string, std::vector<std::string>> &mods
+) {
     std::vector<Module> modules;
     modules.reserve(files.size());
 
     for (auto &file : files) {
-        modules.push_back(parse_module(working_dir, file));
+        auto mod       = parse_module(working_dir, file);
+        mods[mod.name] = mod.imports;
+        modules.push_back(mod);
     }
 
     auto graph = build_graph(modules);
@@ -177,4 +183,10 @@ std::vector<std::string> sort_modules(const std::string &working_dir, std::vecto
     std::sort(files.begin(), files.end(), [&](const std::string &a, const std::string &b) { return rank.at(a) < rank.at(b); });
 
     return order;
+}
+
+std::vector<std::string> collect_module_deps(const std::string &working_dir, const std::string &source) {
+    auto module = parse_module(working_dir, source, false);
+    push_unique(module.imports, module.name);
+    return std::move(module.imports);
 }

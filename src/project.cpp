@@ -1,5 +1,6 @@
 #include "main.h"
 #include <algorithm>
+#include <unordered_set>
 #include <fmt/ranges.h>
 #include <fmt/color.h>
 #include <fmt/chrono.h>
@@ -158,6 +159,9 @@ void Project::resolve_remote_dep(const Profile &profile, const std::string &name
         p.pparent               = this;
         p.ppackages             = &packages();
         p.pmeta                 = &meta;
+        p.pmods                 = &mods;
+        p.pmod_paths            = &mod_paths;
+        p.pmod_objs             = &mod_objs;
         p.cache()               = cache();
         p.no_default_features() = !d.default_features().value_or(true);
         p.profiles()            = profiles();
@@ -223,6 +227,36 @@ void Project::resolve_remote_dep(const Profile &profile, const std::string &name
             d.src() = {"src/*"};
         if (d.inc().empty() && fs::is_directory(working_dir / "include"))
             d.inc() = {"public:include"};
+    }
+}
+
+static void collect_modules(
+    const std::string                                     &mod,
+    const std::map<std::string, std::vector<std::string>> &mods,
+    const std::map<std::string, std::string>              &mod_paths,
+    const std::map<std::string, std::string>              &mod_objs,
+    std::unordered_set<std::string>                       &visited,
+    std::vector<std::string>                              &pcm_flags,
+    std::vector<std::string>                              *obj_flags
+) {
+    if (!visited.insert(mod).second)
+        return; // already processed
+
+    auto it_mod = mods.find(mod);
+    if (it_mod == mods.end())
+        throw std::runtime_error("unknown module `" + mod + "`");
+
+    for (const auto &dep : it_mod->second) {
+        auto it_path = mod_paths.find(dep);
+        if (it_path == mod_paths.end()) {
+            throw std::runtime_error(f("unknown module `{}` required by module `{}`", dep, mod));
+        }
+        if (obj_flags) {
+            push_unique(*obj_flags, mod_objs.at(dep));
+        }
+
+        push_unique(pcm_flags, f("-fmodule-file={}='{}'", dep, it_path->second));
+        collect_modules(dep, mods, mod_paths, mod_objs, visited, pcm_flags, obj_flags);
     }
 }
 
@@ -311,10 +345,13 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
     if (!d.mod().empty()) {
         fs::create_directories(pcm_dir);
     }
-    std::vector<std::string> pcm_flags;
+
+    auto &mods      = pmods ? *pmods : this->mods;
+    auto &mod_paths = pmod_paths ? *pmod_paths : this->mod_paths;
+    auto &mod_objs  = pmod_objs ? *pmod_objs : this->mod_objs;
     try {
         auto modules   = expand_path(working_dir.string(), d.mod());
-        auto mod_names = sort_modules(working_dir, modules);
+        auto mod_names = sort_modules(working_dir, modules, mods);
         for (size_t i = 0; i < modules.size(); ++i) {
             const std::string &mod_name = mod_names[i];
             const fs::path     mod_path = modules[i];
@@ -328,6 +365,10 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
             auto pcm = f("{}.pcm", mod_name);
             std::replace(pcm.begin(), pcm.end(), ':', '-');
 
+            std::vector<std::string>        pcm_flags;
+            std::unordered_set<std::string> visited;
+            collect_modules(mod_name, mods, mod_paths, mod_objs, visited, pcm_flags, nullptr);
+
             ccm.command() =
                 f("{} -std=c++{} -x c++-module {} {} -fmodule-output='{}' -o '{}' -c '{}' -MMD -MP -MF '{}'",
                   CXX,
@@ -339,21 +380,9 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
                   ccm.file(),
                   ccm.depfile());
 
-            push_unique(export_link_flags, (build_dir / ccm.output()).string());
-            push_unique(pcm_flags, f("-fmodule-file={}='{}'", mod_name, (build_dir / pcm).string()));
+            mod_paths[mod_name] = (build_dir / pcm).string();
+            mod_objs[mod_name]  = (build_dir / ccm.output()).string();
             ccms.push_back(ccm);
-        }
-
-        // remove internal flags
-        // pcm_flags.erase(
-        //     std::remove_if(
-        //         pcm_flags.begin(), pcm_flags.end(), [](const std::string &s) { return s.find(':') != std::string::npos; }
-        //     ),
-        //     pcm_flags.end()
-        // );
-        push_unique(export_module_flags, pcm_flags);
-        if (cpp_standard >= 20) {
-            push_unique(flags, pcm_flags);
         }
 
         for (const fs::path entry : expand_path(working_dir.string(), d.src())) {
@@ -365,12 +394,25 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
 
             const auto ext = entry.extension();
 
+            std::vector<std::string>        pcm_flags;
+            std::unordered_set<std::string> visited;
+            for (auto &dep : collect_module_deps(working_dir.string(), entry.string())) {
+                auto it = mod_paths.find(dep);
+                if (it == mod_paths.end()) {
+                    throw std::runtime_error(f("unknown module `{}` required by file `{}`", dep, entry.string()));
+                }
+                push_unique(export_link_flags, mod_objs.at(dep));
+                push_unique(pcm_flags, f("-fmodule-file={}='{}'", dep, it->second));
+                collect_modules(dep, mods, mod_paths, mod_objs, visited, pcm_flags, &export_link_flags);
+            }
+
             if (ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
                 cc.command() =
-                    f("{} -std=c++{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
+                    f("{} -std=c++{} {} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
                       CXX,
                       cpp_standard,
                       fmt::join(flags, " "),
+                      fmt::join(pcm_flags, " "),
                       cc.output(),
                       cc.file(),
                       cc.depfile());
@@ -409,7 +451,6 @@ Project::Meta Project::collect_meta(const Profile &profile, Dependency &d) {
 std::pair<bool, Project::Meta> Project::build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build) {
     const auto start = std::chrono::system_clock::now();
 
-    auto m      = collect_meta(profile, lib());
     bool relink = false;
     auto hash   = std::unordered_map<std::string, std::string>();
     for (const auto &m : meta) {
@@ -419,6 +460,7 @@ std::pair<bool, Project::Meta> Project::build(const Profile &profile, std::vecto
         relink |= compile_multi(name, m.precompile_commands, hash, true);
     }
 
+    auto       m    = collect_meta(profile, lib());
     const auto name = m.lib.display_name();
     ccs.insert(ccs.end(), m.precompile_commands.begin(), m.precompile_commands.end());
     ccs.insert(ccs.end(), m.compile_commands.begin(), m.compile_commands.end());

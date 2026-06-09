@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <variant>
 #include <vector>
 #include <chrono>
@@ -165,6 +166,13 @@ struct Project {
     cpx::Tag<Run>      _run      = "opt:`run`";
     cpx::Tag<Manifest> _manifest = "opt:`manifest`";
 
+    std::map<std::string, std::vector<std::string>>  mods;
+    std::map<std::string, std::vector<std::string>> *pmods;
+    std::map<std::string, std::string>               mod_paths;
+    std::map<std::string, std::string>              *pmod_paths;
+    std::map<std::string, std::string>               mod_objs;
+    std::map<std::string, std::string>              *pmod_objs;
+
     std::unordered_map<std::string, Project> *ppackages = nullptr;
     Project                                  *pparent   = nullptr;
 
@@ -200,7 +208,10 @@ std::string resolve_path(const std::string &cache, const std::string &path);
 std::string git_clone(const std::string &cache, const std::string &git, const std::string &tag);
 
 std::vector<std::string> expand_path(const std::string &working_dir, std::vector<std::string> &sources);
-std::vector<std::string> sort_modules(const std::string &working_dir, std::vector<std::string> &sources);
+std::vector<std::string> sort_modules(
+    const std::string &working_dir, std::vector<std::string> &sources, std::map<std::string, std::vector<std::string>> &mods
+);
+std::vector<std::string> collect_module_deps(const std::string &working_dir, const std::string &source);
 
 void push_unique(std::vector<std::string> &vec, const std::string &value, bool front = false);
 void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front = false);
