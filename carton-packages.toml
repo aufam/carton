@@ -23,10 +23,17 @@ description = "String formatter"
 homepage = "https://fmt.dev"
 
 [fmt.lib]
+pre = """
+if [ ! -f .cache/fmt.cppm ]; then
+    mkdir -p .cache
+    sed -E '/^[[:space:]]*import std;[[:space:]]*$/d;s/FMT_HAS_INCLUDE\\("format\\.cc"\\)/0/g;s/FMT_HAS_INCLUDE\\("os\\.cc"\\)/0/g' src/fmt.cc > .cache/fmt.cppm
+fi
+"""
 git = "https://github.com/fmtlib/fmt"
 tag = "{version}"
 src = ["src/format.cc", "src/os.cc"]
-mod = ["src/fmt.cc"]
+mod = [".cache/fmt.cppm"]
+flags = ["-DFMT_ATTACH_TO_GLOBAL_MODULE"]
 
 
 #
