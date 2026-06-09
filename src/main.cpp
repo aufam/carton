@@ -68,6 +68,8 @@ int main(int argc, char **argv) {
         if (do_run)
             return ctx.run(m);
     } catch (std::exception &e) {
+        auto of = std::ofstream("./compile_commands.json");
+        of << cpx::json::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
         spdlog::error("Failed to build: {}", e.what());
         return 1;
     }
