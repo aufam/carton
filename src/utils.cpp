@@ -1,44 +1,71 @@
-#include "main.h"
+module;
+
+#include <cpx/fmt.h>
+#include <cpx/defer.h>
+#include <spdlog/spdlog.h>
 #include <algorithm>
+#include <filesystem>
+#include <string>
+#include <unordered_map>
+#include <variant>
+#include <vector>
+
+module carton;
+
+auto convert_dep(std::variant<std::string, Dependency> &dep) -> Dependency & {
+    if (auto *version = std::get_if<std::string>(&dep)) {
+        Dependency d{};
+        d.version = *version;
+        dep       = d;
+    }
+
+    return std::get<Dependency>(dep);
+}
+
+void push_unique(std::vector<std::string> &vec, const std::string &value, bool front) {
+    if (value.empty())
+        return;
+    if (std::find(vec.begin(), vec.end(), value) == vec.end()) {
+        if (front)
+            vec.insert(vec.begin(), value);
+        else
+            vec.push_back(value);
+    }
+}
+
+void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front) {
+    for (const auto &value : values)
+        push_unique(vec, value, front);
+}
 
 Dependency &Dependency::operator+=(const Dependency &other) {
     if (this == &other)
         return *this;
 
-    push_unique(src(), other.src());
-    push_unique(mod(), other.mod(), true);
-    push_unique(inc(), other.inc());
-    push_unique(flags(), other.flags());
-    push_unique(link_flags(), other.link_flags());
+    push_unique(src, other.src);
+    push_unique(mod, other.mod, true);
+    push_unique(inc, other.inc);
+    push_unique(flags, other.flags);
+    push_unique(link_flags, other.link_flags);
     return *this;
 }
 
 bool Dependency::empty() const {
-    return version().empty() && path().empty() && url().empty() && git().empty();
+    return version.empty() && path.empty() && url.empty() && git.empty();
 }
 
 std::string Dependency::display_name() const {
-    std::string name = this->name();
-    if (!version().empty()) {
-        name += " v" + version();
-    } else if (!tag().empty()) {
-        name += " #" + tag();
-    } else if (!branch().empty()) {
-        name += " " + branch();
+    std::string name = this->name;
+    if (!version.empty()) {
+        name += " v" + version;
+    } else if (!tag.empty()) {
+        name += " #" + tag;
+    } else if (!branch.empty()) {
+        name += " " + branch;
     } else {
-        name += " (" + path() + ")";
+        name += " (" + path + ")";
     }
     return name;
-}
-
-Dependency &convert_dep(Project::Dep &dep) {
-    if (auto *version = std::get_if<std::string>(&dep)) {
-        Dependency d{};
-        d.version() = *version;
-        dep         = d;
-    }
-
-    return std::get<Dependency>(dep);
 }
 
 static void string_replace(
@@ -80,96 +107,121 @@ static void string_replace(
     }
 }
 
-void push_unique(std::vector<std::string> &vec, const std::string &value, bool front) {
-    if (value.empty())
-        return;
-    if (std::find(vec.begin(), vec.end(), value) == vec.end()) {
-        if (front)
-            vec.insert(vec.begin(), value);
-        else
-            vec.push_back(value);
-    }
-}
+void Carton::apply_package_placeholders() {
+    auto &name    = package.name;
+    auto &version = package.version;
+    auto  edition = std::to_string(package.edition);
 
-void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front) {
-    for (const auto &value : values)
-        push_unique(vec, value, front);
-}
-
-void Project::apply_package_placeholders() {
-    auto &name    = package().name();
-    auto &version = package().version();
-    auto  edition = std::to_string(package().edition());
+    std::unordered_map<std::string, std::string> vars;
 
     auto apply_dep = [&](Dependency &d) {
-        string_replace(d.version(), "version", version, vars());
-        string_replace(d.path(), "version", version, vars());
-        string_replace(d.url(), "version", version, vars());
-        string_replace(d.git(), "version", version, vars());
-        string_replace(d.branch(), "version", version, vars());
-        string_replace(d.tag(), "version", version, vars());
-        string_replace(d.subdir(), "version", version, vars());
-        for (auto &str : d.features())
-            string_replace(str, "version", version, vars());
-        for (auto &str : d.src())
-            string_replace(str, "version", version, vars());
-        for (auto &str : d.inc())
-            string_replace(str, "version", version, vars());
-        for (auto &str : d.flags())
-            string_replace(str, "version", version, vars());
-        for (auto &str : d.link_flags())
-            string_replace(str, "version", version, vars());
-        string_replace(d.pre(), "version", version, vars());
+        string_replace(d.version, "version", version, vars);
+        string_replace(d.path, "version", version, vars);
+        string_replace(d.url, "version", version, vars);
+        string_replace(d.git, "version", version, vars);
+        string_replace(d.branch, "version", version, vars);
+        string_replace(d.tag, "version", version, vars);
+        string_replace(d.subdir, "version", version, vars);
+        for (auto &str : d.features)
+            string_replace(str, "version", version, vars);
+        for (auto &str : d.src)
+            string_replace(str, "version", version, vars);
+        for (auto &str : d.inc)
+            string_replace(str, "version", version, vars);
+        for (auto &str : d.flags)
+            string_replace(str, "version", version, vars);
+        for (auto &str : d.link_flags)
+            string_replace(str, "version", version, vars);
+        string_replace(d.pre, "version", version, vars);
 
-        string_replace(d.version(), "name", name, vars());
-        string_replace(d.path(), "name", name, vars());
-        string_replace(d.url(), "name", name, vars());
-        string_replace(d.git(), "name", name, vars());
-        string_replace(d.branch(), "name", name, vars());
-        string_replace(d.tag(), "name", name, vars());
-        string_replace(d.subdir(), "name", name, vars());
-        for (auto &str : d.features())
-            string_replace(str, "name", name, vars());
-        for (auto &str : d.src())
-            string_replace(str, "name", name, vars());
-        for (auto &str : d.inc())
-            string_replace(str, "name", name, vars());
-        for (auto &str : d.flags())
-            string_replace(str, "name", name, vars());
-        for (auto &str : d.link_flags())
-            string_replace(str, "name", name, vars());
-        string_replace(d.pre(), "name", name, vars());
+        string_replace(d.version, "name", name, vars);
+        string_replace(d.path, "name", name, vars);
+        string_replace(d.url, "name", name, vars);
+        string_replace(d.git, "name", name, vars);
+        string_replace(d.branch, "name", name, vars);
+        string_replace(d.tag, "name", name, vars);
+        string_replace(d.subdir, "name", name, vars);
+        for (auto &str : d.features)
+            string_replace(str, "name", name, vars);
+        for (auto &str : d.src)
+            string_replace(str, "name", name, vars);
+        for (auto &str : d.inc)
+            string_replace(str, "name", name, vars);
+        for (auto &str : d.flags)
+            string_replace(str, "name", name, vars);
+        for (auto &str : d.link_flags)
+            string_replace(str, "name", name, vars);
+        string_replace(d.pre, "name", name, vars);
 
-        string_replace(d.version(), "edition", edition, vars());
-        string_replace(d.path(), "edition", edition, vars());
-        string_replace(d.url(), "edition", edition, vars());
-        string_replace(d.git(), "edition", edition, vars());
-        string_replace(d.branch(), "edition", edition, vars());
-        string_replace(d.tag(), "edition", edition, vars());
-        string_replace(d.subdir(), "edition", edition, vars());
-        for (auto &str : d.features())
-            string_replace(str, "edition", edition, vars());
-        for (auto &str : d.src())
-            string_replace(str, "edition", edition, vars());
-        for (auto &str : d.inc())
-            string_replace(str, "edition", edition, vars());
-        for (auto &str : d.flags())
-            string_replace(str, "edition", edition, vars());
-        for (auto &str : d.link_flags())
-            string_replace(str, "edition", edition, vars());
-        string_replace(d.pre(), "edition", edition, vars());
+        string_replace(d.version, "edition", edition, vars);
+        string_replace(d.path, "edition", edition, vars);
+        string_replace(d.url, "edition", edition, vars);
+        string_replace(d.git, "edition", edition, vars);
+        string_replace(d.branch, "edition", edition, vars);
+        string_replace(d.tag, "edition", edition, vars);
+        string_replace(d.subdir, "edition", edition, vars);
+        for (auto &str : d.features)
+            string_replace(str, "edition", edition, vars);
+        for (auto &str : d.src)
+            string_replace(str, "edition", edition, vars);
+        for (auto &str : d.inc)
+            string_replace(str, "edition", edition, vars);
+        for (auto &str : d.flags)
+            string_replace(str, "edition", edition, vars);
+        for (auto &str : d.link_flags)
+            string_replace(str, "edition", edition, vars);
+        string_replace(d.pre, "edition", edition, vars);
     };
-    apply_dep(lib());
+    apply_dep(lib);
 
-    for (auto &[_, dep] : dependencies()) {
+    for (auto &[_, dep] : dependencies) {
         apply_dep(convert_dep(dep));
     }
 
-    for (auto &[_, feats] : features()) {
+    for (auto &[_, feats] : features) {
         for (auto &feat : feats) {
-            string_replace(feat, "name", name, vars());
-            string_replace(feat, "version", version, vars());
-            string_replace(feat, "edition", edition, vars());
+            string_replace(feat, "name", name, vars);
+            string_replace(feat, "version", version, vars);
+            string_replace(feat, "edition", edition, vars);
         }
     }
+}
+
+std::vector<std::string> expand_path(const std::string &working_dir, std::vector<std::string> &sources) {
+    if (sources.empty())
+        return {};
+
+    for (auto &src : sources) {
+        size_t pos = 0;
+        while ((pos = src.find(' ', pos)) != std::string::npos) {
+            src.replace(pos, 1, "\\ ");
+            pos += 2;
+        }
+    }
+
+    std::string cmd = fmt::format(
+        "cd \"{}\" "
+        "&& printf '%s\\n' {}",
+        working_dir,
+        fmt::join(sources, " ")
+    );
+
+    spdlog::debug("expanding: cmd={:?}", cmd);
+    auto       pipe = popen(cmd.c_str(), "r");
+    cpx::defer _    = [&]() { pclose(pipe); };
+
+    std::vector<std::string> res;
+    char                     buffer[4096];
+    while (fgets(buffer, sizeof(buffer), pipe)) {
+        std::string buf = buffer;
+        buf.pop_back();
+
+        std::filesystem::path entry = buf;
+        if (!std::filesystem::exists(std::filesystem::path(working_dir) / entry)) {
+            throw ferr("Expand failed: {:?} does not exist in {:?}", entry.string(), working_dir);
+        }
+        res.push_back(entry.string());
+    }
+
+    return res;
 }

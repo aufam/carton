@@ -1,12 +1,14 @@
+module;
+
 #include <cpx/defer.h>
+#include <cpx/fmt.h>
+#include <fmt/color.h>
+#include <spdlog/spdlog.h>
 #include <filesystem>
 #include <regex>
-#include <spdlog/spdlog.h>
-#include <fmt/ranges.h>
-#include <fmt/color.h>
 
-#define f(...)    fmt::format(__VA_ARGS__)
-#define ferr(...) std::runtime_error(fmt::format(__VA_ARGS__))
+module carton;
+
 namespace fs = std::filesystem;
 
 static std::string extract_host_and_path(const std::string &url) {
@@ -33,7 +35,7 @@ static std::string extract_host_and_path(const std::string &url) {
 }
 
 static bool is_full_url(const std::string &url) {
-    return url.rfind("http://", 0) == 0 || url.rfind("https://", 0) == 0 || url.rfind("git@", 0) == 0;
+    return url.starts_with("http://") || url.starts_with("https://") || url.starts_with("git@");
 }
 
 static bool has_host_prefix(const std::string &url) {

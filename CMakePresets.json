@@ -7,10 +7,14 @@
             "binaryDir": "${sourceDir}/build",
             "generator": "Ninja",
             "cacheVariables": {
-                "CMAKE_CXX_EXTENSIONS": "OFF",
+                "CMAKE_CXX_EXTENSIONS": "ON",
+                "CMAKE_CXX_STANDARD": "26",
+                "CMAKE_CXX_STANDARD_REQUIRED": "ON",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_BUILD_TYPE": "Debug",
-                "CPM_USE_LOCAL_PACKAGES": "OFF"
+                "CPM_USE_LOCAL_PACKAGES": "OFF",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER": "clang"
             }
         },
         {
@@ -19,10 +23,14 @@
             "binaryDir": "${sourceDir}/release",
             "generator": "Ninja",
             "cacheVariables": {
-                "CMAKE_CXX_EXTENSIONS": "OFF",
+                "CMAKE_CXX_EXTENSIONS": "ON",
+                "CMAKE_CXX_STANDARD": "26",
+                "CMAKE_CXX_STANDARD_REQUIRED": "ON",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_BUILD_TYPE": "Release",
-                "CPM_USE_LOCAL_PACKAGES": "OFF"
+                "CPM_USE_LOCAL_PACKAGES": "OFF",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER": "clang"
             }
         }
     ]

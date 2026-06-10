@@ -1,30 +1,25 @@
-#include "main.h"
-
-#include <fmt/ranges.h>
-#include <fmt/color.h>
-#include <spdlog/spdlog.h>
-
-#include <algorithm>
-#include <filesystem>
-#include <fstream>
-#include <sstream>
+module;
 
 #include <cpx/toml/toruniina_toml.h>
 #include <cpx/defer.h>
+#include <cpx/fmt.h>
+#include <fmt/color.h>
+#include <spdlog/spdlog.h>
+#include <filesystem>
 #include <xxhash.h>
+
+module carton;
 
 namespace fs = std::filesystem;
 
 namespace {
-    using namespace cpx;
-
     struct Signature {
-        Tag<std::string> cmd  = "toml:`cmd`";
-        Tag<std::string> file = "toml:`file`";
-        Tag<std::string> deps = "toml:`deps`";
+        std::string cmd;
+        std::string file;
+        std::string deps;
     };
 
-    constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
+    constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
 
     std::unordered_map<std::string, Signature> toml_parse(const fs::path &signature_path) {
         if (!fs::exists(signature_path))
@@ -39,6 +34,17 @@ namespace {
         out << tml;
     }
 } // namespace
+
+template <>
+struct cpx::Reflect<Signature> : Fields<Reflect<Signature>, &Signature::cmd, &Signature::deps, &Signature::file> {
+    static constexpr TagInfo cmd  = "cmd";
+    static constexpr TagInfo deps = "deps";
+    static constexpr TagInfo file = "file";
+
+    static constexpr tags_type tags() {
+        return std::tie(cmd, deps, file);
+    }
+};
 
 static void printProgressBar(size_t current, size_t total) {
     const int barWidth = 27;
@@ -148,7 +154,7 @@ static std::string hash_file_content_hex(const fs::path &p, std::unordered_map<s
 
     auto state = XXH3_createState();
     XXH3_64bits_reset(state);
-    auto _ = defer([state]() { XXH3_freeState(state); });
+    auto _ = cpx::defer([state]() { XXH3_freeState(state); });
     char buffer[4096];
     while (in.read(buffer, sizeof(buffer)) || in.gcount() > 0) {
         std::string_view chunk(buffer, in.gcount());
@@ -169,7 +175,7 @@ hash_deps_snapshot_hex(const fs::path &depfile_abs, std::unordered_map<std::stri
 
     auto state = XXH3_createState();
     XXH3_64bits_reset(state);
-    auto _ = defer([state]() { XXH3_freeState(state); });
+    auto _ = cpx::defer([state]() { XXH3_freeState(state); });
     for (const auto &dep_str : deps) {
         fs::path p = fs::path(dep_str).lexically_normal();
 
@@ -189,22 +195,20 @@ hash_deps_snapshot_hex(const fs::path &depfile_abs, std::unordered_map<std::stri
 }
 
 static Signature make_signature(const CompileCommand &cc, std::unordered_map<std::string, std::string> &hash_history) {
-    const fs::path directory = cc.directory();
-    const fs::path depfile   = cc.depfile();
+    const fs::path directory = cc.directory;
+    const fs::path depfile   = cc.depfile;
     const auto     dep_abs   = (depfile.is_absolute() ? depfile : (directory / depfile)).lexically_normal();
 
     Signature s;
-    s.cmd() = hex64(hash64_pseudo(cc.command()));
+    s.cmd = hex64(hash64_pseudo(cc.command));
 
     // hash SOURCE FILE CONTENT instead of path
     {
-        fs::path file_abs =
-            (fs::path(cc.file()).is_absolute() ? fs::path(cc.file()) : (directory / cc.file())).lexically_normal();
-
-        s.file() = hash_file_content_hex(file_abs, hash_history);
+        fs::path file_abs = (fs::path(cc.file).is_absolute() ? fs::path(cc.file) : (directory / cc.file)).lexically_normal();
+        s.file            = hash_file_content_hex(file_abs, hash_history);
     }
 
-    s.deps() = hash_deps_snapshot_hex(dep_abs, hash_history);
+    s.deps = hash_deps_snapshot_hex(dep_abs, hash_history);
     return s;
 }
 
@@ -213,9 +217,9 @@ static bool needs_rebuild(
     const CompileCommand                             &cc,
     std::unordered_map<std::string, std::string>     &hash_history
 ) {
-    const fs::path output    = cc.output();
-    const fs::path directory = cc.directory();
-    const fs::path depfile   = cc.depfile();
+    const fs::path output    = cc.output;
+    const fs::path directory = cc.directory;
+    const fs::path depfile   = cc.depfile;
 
     const auto out_abs = (output.is_absolute() ? output : (directory / output)).lexically_normal();
     const auto dep_abs = (depfile.is_absolute() ? depfile : (directory / depfile)).lexically_normal();
@@ -223,17 +227,17 @@ static bool needs_rebuild(
     if (!fs::exists(out_abs) || !fs::exists(dep_abs))
         return true;
 
-    auto it = sig_map.find(cc.output());
+    auto it = sig_map.find(cc.output);
     if (it == sig_map.end())
         return true;
 
     const Signature  current = make_signature(cc, hash_history);
     const Signature &old     = it->second;
 
-    return old.cmd() != current.cmd() || old.file() != current.file() || old.deps() != current.deps();
+    return old.cmd != current.cmd || old.file != current.file || old.deps != current.deps;
 }
 
-bool compile_multi(
+bool CompileCommand::compile_multi(
     const std::string                            &name,
     const std::vector<CompileCommand>            &commands,
     std::unordered_map<std::string, std::string> &hash_history,
@@ -242,9 +246,9 @@ bool compile_multi(
     if (commands.empty())
         return false;
 
-    auto &dir = commands[0].directory();
+    auto &dir = commands[0].directory;
     for (const auto &cmd : commands)
-        if (dir != cmd.directory())
+        if (dir != cmd.directory)
             throw std::runtime_error("All CompileCommands in compile_multi must have the same directory");
 
     const fs::path sig_path = signature_path_for(dir);
@@ -268,7 +272,7 @@ bool compile_multi(
     // TODO: parallelize this
     for (size_t i = 0; i < needs_rebuild_ptrs.size(); ++i) {
         const auto    *cmd    = needs_rebuild_ptrs[i];
-        const fs::path output = cmd->output();
+        const fs::path output = cmd->output;
         const fs::path outdir = output.is_absolute() ? output.parent_path() : (fs::path(dir) / output).parent_path();
 
         const std::string full_cmd = fmt::format(
@@ -276,19 +280,19 @@ bool compile_multi(
             "cd \"{1}\" && {2}",
             outdir.string(),
             dir,
-            cmd->command()
+            cmd->command
         );
 
         spdlog::info("compiling: cmd={:?}", full_cmd);
         if (std::system(full_cmd.c_str()) != 0) {
             fmt::println(stderr, "\r\033[2K");
             fflush(stderr);
-            throw std::runtime_error(fmt::format("Failed to compile {}: command={:?}", cmd->file(), full_cmd));
+            throw std::runtime_error(fmt::format("Failed to compile {}: command={:?}", cmd->file, full_cmd));
         }
 
         printProgressBar(i + 1, needs_rebuild_ptrs.size());
         // On success, update this file() entry in the directory-level signature TOML.
-        sig_map[cmd->output()] = make_signature(*cmd, hash_history);
+        sig_map[cmd->output] = make_signature(*cmd, hash_history);
 
         toml_dump(sig_map, sig_path);
     }

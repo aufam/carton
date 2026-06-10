@@ -1,3 +1,5 @@
+module;
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -7,7 +9,8 @@
 #include <fstream>
 #include <stdexcept>
 #include <algorithm>
-#include "main.h"
+
+module carton;
 
 namespace {
     struct Module {
@@ -40,9 +43,9 @@ static Module parse_module(const std::filesystem::path &working_dir, const std::
         if (name.empty()) {
             std::string prefix;
 
-            if (line.rfind("export module ", 0) == 0)
+            if (line.starts_with("export module "))
                 prefix = "export module ";
-            else if (line.rfind("module ", 0) == 0)
+            else if (line.starts_with("module "))
                 prefix = "module ";
 
             if (!prefix.empty()) {
@@ -59,9 +62,9 @@ static Module parse_module(const std::filesystem::path &working_dir, const std::
         // --- import (with optional export) ---
         std::string import_line = line;
 
-        if (import_line.rfind("export import ", 0) == 0) {
+        if (import_line.starts_with("export import ")) {
             import_line = import_line.substr(std::string_view("export import ").length());
-        } else if (import_line.rfind("import ", 0) == 0) {
+        } else if (import_line.starts_with("import ")) {
             import_line = import_line.substr(std::string_view("import ").length());
         } else {
             continue;
@@ -93,7 +96,7 @@ static Module parse_module(const std::filesystem::path &working_dir, const std::
     if (strict && name.empty())
         throw std::runtime_error("No module declaration in: " + file);
 
-    return Module{name, imports, file};
+    return Module{.name = name, .imports = imports, .path = file};
 }
 
 // --- Build graph ---

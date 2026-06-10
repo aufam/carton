@@ -41,14 +41,7 @@ CPMAddPackage(
     GIT_TAG         v4.4.0
     OPTIONS         "TOML11_INSTALL OFF" "TOML11_PRECOMPILE ON"
 )
-
-CPMAddPackage(
-    NAME            pfr
-    GIT_REPOSITORY  "https://github.com/boostorg/pfr"
-    GIT_TAG         boost-1.88.0
-    OPTIONS         "BOOST_USE_MODULES OFF"
-    COMPONENTS      Boost::pfr
-)
+target_compile_options(toml11 PUBLIC "-Wno-deprecated-literal-operator")
 
 CPMAddPackage(
     NAME            magic_enum
@@ -77,8 +70,23 @@ if (REQUIREMENTS)
     return()
 endif()
 
-file(GLOB_RECURSE SOURCES src/*)
-add_executable(carton ${SOURCES})
+
+file(GLOB MODULE_FILES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cppm"
+)
+
+file(GLOB MODULE_IMPL_FILES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+
+add_library(carton)
+target_sources(carton
+    PUBLIC
+    FILE_SET cxx_modules TYPE CXX_MODULES FILES
+        ${MODULE_FILES}
+    PRIVATE
+        ${MODULE_IMPL_FILES}
+)
 
 target_link_libraries(carton PRIVATE
     cpx
@@ -86,7 +94,6 @@ target_link_libraries(carton PRIVATE
     spdlog
     yyjson
     toml11::toml11
-    Boost::pfr
     magic_enum
     CLI11
     xxhash
