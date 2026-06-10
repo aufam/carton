@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
 project(carton
     VERSION     0.1.0
@@ -79,7 +79,7 @@ file(GLOB MODULE_IMPL_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
-add_library(carton)
+add_executable(carton)
 target_sources(carton
     PUBLIC
     FILE_SET cxx_modules TYPE CXX_MODULES FILES
