@@ -2,11 +2,13 @@ module;
 
 #include <cpx/reflect.h>
 #include <cpx/fmt.h>
+#include <fmt/color.h>
 #include <string>
 #include <vector>
 #include <map>
 #include <unordered_map>
 #include <variant>
+#include <filesystem>
 
 export module carton;
 export import :profile;
@@ -18,6 +20,8 @@ export import :cli;
 
 export {
     struct Carton;
+
+    namespace fs = std::filesystem;
 
     auto convert_dep(std::variant<std::string, Dependency> & dep)->Dependency &;
     void push_unique(std::vector<std::string> & vec, const std::string &value, bool front = false);
@@ -43,6 +47,40 @@ export {
     auto ferr(fmt::format_string<Args...> fmt, Args && ...args) {
         return std::runtime_error(fmt::format(fmt, std::forward<Args>(args)...));
     }
+
+    void print_status(const std::string_view title, std::string_view status) {
+        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", title);
+        fmt::println(stderr, "{}", status);
+    }
+
+    void print_progress(const std::string_view title, size_t current, size_t total) {
+        const int   bar_width = 27;
+        const float progress  = total == 0 ? 1.0f : static_cast<float>(current) / static_cast<float>(total);
+
+        const int filled = static_cast<int>(bar_width * progress);
+
+        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::cyan), "\r{:>12} ", title);
+        fmt::print(stderr, "[");
+        for (int i = 0; i < bar_width; ++i) {
+            if (i < filled)
+                fmt::print(stderr, "=");
+            else if (i == filled && current < total)
+                fmt::print(stderr, ">");
+            else
+                fmt::print(stderr, " ");
+        }
+
+        if (total == 100)
+            fmt::print(stderr, "] {}%", current);
+        else
+            fmt::print(stderr, "] {}/{}", current, total);
+        fflush(stderr);
+    }
+
+    void print_end_progress() {
+        fmt::print(stderr, "\r\033[2K");
+        fflush(stderr);
+    }
 }
 
 struct Carton {
@@ -52,13 +90,17 @@ struct Carton {
         Profile dev     = Profile::Dev();
     };
 
-    std::unordered_map<std::string, Carton>                                registry;
-    Profiles                                                               profiles;
-    Package                                                                package;
-    std::unordered_map<std::string, std::variant<std::string, Dependency>> dependencies;
-    Dependency                                                             lib;
-    std::unordered_map<std::string, std::vector<std::string>>              features;
-    bool                                                                   no_default_features;
+    using Registry     = std::unordered_map<std::string, Carton>;
+    using Dependencies = std::unordered_map<std::string, std::variant<std::string, Dependency>>;
+    using Features     = std::unordered_map<std::string, std::vector<std::string>>;
+
+    Package      package;
+    Registry     registry;
+    Profiles     profiles;
+    Dependencies dependencies;
+    Dependency   lib;
+    Features     features;
+    bool         no_default_features;
 
     Carton    *pparent = nullptr;
     Cache     *cache   = nullptr;
@@ -78,9 +120,9 @@ template <>
 struct cpx::Reflect<Carton> //
     : Fields<
           Reflect<Carton>,
+          &Carton::package,
           &Carton::registry,
           &Carton::profiles,
-          &Carton::package,
           &Carton::dependencies,
           &Carton::lib,
           &Carton::features,

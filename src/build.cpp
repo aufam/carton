@@ -1,13 +1,11 @@
 module;
 
 #include <cpx/fmt.h>
-#include <fmt/color.h>
 #include <spdlog/spdlog.h>
+#include <reproc++/run.hpp>
 #include <filesystem>
 
 module carton;
-
-namespace fs = std::filesystem;
 
 std::pair<bool, Cache::Meta> Carton::build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build) {
     const auto start = std::chrono::system_clock::now();
@@ -47,13 +45,24 @@ std::pair<bool, Cache::Meta> Carton::build(const Profile &profile, std::vector<C
               fmt::join(profile.link_flags, " "));
 
         fs::create_directories(output.parent_path());
-        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Linking");
-        fmt::println(stderr, "{}", lib.display_name());
 
         auto link_cmd = f("{} -o '{}' {} {}", LINK, output.string(), fmt::join(m.link_flags, " "), m.main_o);
         spdlog::debug("linking cmd={}", link_cmd);
-        if (std::system(link_cmd.c_str()) != 0)
-            throw ferr("linking failed: name={}, cmd=`{}`", m.lib.name, link_cmd);
+        print_status("Linking", lib.display_name());
+
+        reproc::options opt;
+        opt.redirect.out.type = reproc::redirect::pipe;
+        opt.redirect.err.type = reproc::redirect::pipe;
+
+        std::string errmsg;
+        auto [status, ec] = reproc::run(
+            std::vector<std::string_view>{"sh", "-c", link_cmd}, opt, reproc::sink::null, reproc::sink::string(errmsg)
+        );
+
+        if (!errmsg.empty())
+            fmt::println(stderr, "\n{}", errmsg);
+        if (status != 0 || ec)
+            throw ferr("Failed to link: name={} command=`{}`", m.lib.name, link_cmd);
     }
 
     std::string profile_info = profile.opt_level == 0 ? "unoptimized" : "optimized";
@@ -63,8 +72,7 @@ std::pair<bool, Cache::Meta> Carton::build(const Profile &profile, std::vector<C
         profile_info += " + asan";
 
     std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
-    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Finished");
-    fmt::println(stderr, "`{}` profile [{}] target(s) in {:.2f}", profile.id, profile_info, elapsed.count());
+    print_status("Finished", f("`{}` profile [{}] target(s) in {:.2f}", profile.id, profile_info, elapsed.count()));
 
     return std::make_pair(relink, std::move(m));
 }

@@ -21,10 +21,10 @@ namespace {
 } // namespace
 
 // TODO: use clang-scan-deps
-static Module parse_module(const std::filesystem::path &working_dir, const std::string &file, bool strict = true) {
+static Module parse_module(const fs::path &working_dir, const std::string &file, bool strict = true) {
     std::ifstream in(working_dir / file);
     if (!in)
-        throw std::runtime_error("Failed to open: " + file);
+        throw ferr("Failed to open: {}", file);
 
     std::string              line;
     std::string              name;
@@ -94,7 +94,7 @@ static Module parse_module(const std::filesystem::path &working_dir, const std::
     }
 
     if (strict && name.empty())
-        throw std::runtime_error("No module declaration in: " + file);
+        throw ferr("No module declaration in: {}", file);
 
     return Module{.name = name, .imports = imports, .path = file};
 }
@@ -122,7 +122,7 @@ dfs(const std::string               &node,
         return;
 
     if (visiting.count(node))
-        throw std::runtime_error("Cycle detected at module: " + node);
+        throw ferr("Cycle detected at module: {}", node);
 
     visiting.insert(node);
 

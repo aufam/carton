@@ -3,6 +3,7 @@ module;
 #include <cpx/fmt.h>
 #include <cpx/defer.h>
 #include <spdlog/spdlog.h>
+#include <reproc++/run.hpp>
 #include <algorithm>
 #include <filesystem>
 #include <string>
@@ -206,20 +207,33 @@ std::vector<std::string> expand_path(const std::string &working_dir, std::vector
         fmt::join(sources, " ")
     );
 
+    reproc::options options;
+    options.redirect.out.type = reproc::redirect::pipe;
+    options.redirect.err.type = reproc::redirect::discard;
+
+    reproc::process process;
+
     spdlog::debug("expanding: cmd={:?}", cmd);
-    auto       pipe = popen(cmd.c_str(), "r");
-    cpx::defer _    = [&]() { pclose(pipe); };
+    std::error_code ec = process.start(std::vector<std::string_view>{"sh", "-c", cmd}, options);
+    if (ec) {
+        throw ferr("Failed to start expanding: {}", ec.message());
+    }
 
+    std::array<char, 4096>   buffer;
     std::vector<std::string> res;
-    char                     buffer[4096];
-    while (fgets(buffer, sizeof(buffer), pipe)) {
-        std::string buf = buffer;
-        buf.pop_back();
+    while (true) {
+        auto [bytes_read, read_ec] = process.read(reproc::stream::out, reinterpret_cast<uint8_t *>(buffer.data()), buffer.size());
+        if (read_ec == std::errc::broken_pipe)
+            break;
 
-        std::filesystem::path entry = buf;
-        if (!std::filesystem::exists(std::filesystem::path(working_dir) / entry)) {
+        if (read_ec)
+            throw ferr("Failed to read expand result: {}", read_ec.message());
+
+        std::string_view      line(buffer.data(), bytes_read - 1ul);
+        std::filesystem::path entry = line;
+        if (!std::filesystem::exists(std::filesystem::path(working_dir) / entry))
             throw ferr("Expand failed: {:?} does not exist in {:?}", entry.string(), working_dir);
-        }
+
         res.push_back(entry.string());
     }
 

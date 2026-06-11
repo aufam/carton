@@ -24,7 +24,7 @@ export struct Cli {
     std::optional<Run>        run;
     std::optional<Manifest>   manifest;
     spdlog::level::level_enum log_level = spdlog::level::warn;
-    std::string               cache     = "~/.carton";
+    std::string               cache;
 };
 
 template <>

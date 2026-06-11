@@ -17,8 +17,10 @@ int main(int argc, char **argv) {
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("cpp++", std::move(sink)));
     spdlog::set_pattern("%^%l%$: %v");
 
-    Cli cli = {};
-    cpx::cli::cli11::parse_with_subcommands("C++ package manager", argc, argv, cli);
+    Cli cli   = {};
+    cli.cache = std::getenv("HOME") + std::string("/.carton");
+
+    cpx::cli11::parse_with_subcommands("C++ package manager", argc, argv, cli);
     spdlog::set_level(cli.log_level);
 
     Cache  cache = {};
@@ -28,17 +30,18 @@ int main(int argc, char **argv) {
     ctx.cache = &cache;
 
     try {
-        auto packages = "carton-packages.toml";
-        cpx::toml::toruniina_toml::parse_from_file(
-            fmt::format("{}{}", std::filesystem::exists(packages) ? "" : cli.cache + "/", packages), ctx.registry, toml_version
-        );
+        fs::path registry = "carton-packages.toml";
+        if (!fs::exists(registry))
+            registry = fs::path(cli.cache) / registry;
+
+        cpx::toruniina_toml::parse_from_file(registry.string(), ctx.registry, toml_version);
     } catch (std::exception &e) {
         spdlog::error("Failed to parse carton packages: {}", e.what());
         return 1;
     }
 
     try {
-        cpx::toml::toruniina_toml::parse_from_file("./carton.toml", ctx, toml_version);
+        cpx::toruniina_toml::parse_from_file("./carton.toml", ctx, toml_version);
         if (fs::path(ctx.lib.path).is_absolute() && fs::path(ctx.lib.subdir).is_absolute())
             throw ferr("Path must be relative");
     } catch (std::exception &e) {
@@ -68,16 +71,16 @@ int main(int argc, char **argv) {
             return ctx.run(m);
     } catch (std::exception &e) {
         auto of = std::ofstream("./compile_commands.json");
-        of << cpx::json::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
+        of << cpx::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
         spdlog::error("Failed to build: {}", e.what());
         return 1;
     }
 
     auto of = std::ofstream("./compile_commands.json");
-    of << cpx::json::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
+    of << cpx::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
 
     if (cli.manifest.has_value())
-        fmt::println("{}", cpx::json::yy_json::dump(ctx));
+        fmt::println("{}", cpx::yy_json::dump(ctx));
 
     return 0;
 }

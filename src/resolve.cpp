@@ -3,10 +3,11 @@ module;
 #include <cpx/fmt.h>
 #include <cpx/toml/toruniina_toml.h>
 #include <cpx/defer.h>
-#include <fmt/color.h>
+#include <reproc++/run.hpp>
 #include <spdlog/spdlog.h>
 #include <filesystem>
 #include <unordered_set>
+#include <regex>
 
 module carton;
 
@@ -32,6 +33,7 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
         p.no_default_features = !d.default_features.value_or(true);
         p.profiles            = profiles;
         try {
+            p.configure(profile, d.features);
         } catch (const std::exception &e) {
             throw ferr("Error building dependency package={} `{}`: {}", p.package.name, name, e.what());
         }
@@ -49,7 +51,7 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
         spdlog::info("resolving dep={:?} git={:?} tag={:?}", name, d.git, tag);
         d.path = git_clone(cli->cache, d.git, tag);
     } else if (d.version.empty()) {
-        throw std::runtime_error("path|git|version is not defined");
+        throw ferr("path|git|version is not defined");
     } else {
         spdlog::info("resolving dep={:?} version={:?}", name, d.version);
         auto &packages = pparent ? pparent->registry : this->registry;
@@ -57,11 +59,11 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
         auto &name_ = d.name.empty() ? name : d.name;
         auto  it    = packages.find(name_);
         if (it == packages.end())
-            throw std::runtime_error("Cannot find `" + name_ + "` in the package registry");
+            throw ferr("Cannot find `{}` in the package registry", name_);
 
         auto p = it->second;
         if (p.lib.empty())
-            throw std::runtime_error("The package `" + name_ + "` does not have a library target");
+            throw ferr("The package `{}` does not have a library target", name_);
 
         p.package.version = d.version;
         auto &lib         = configure_subpackage(p);
@@ -127,34 +129,6 @@ static fs::path get_top_level_path_from_tar(const std::string &tar_file) {
     return result.front();
 }
 
-constexpr char awk[] = R"sh(|
-	awk -v width=27 '
-function bar(p,    i, filled, res) {
-    filled = int(p * width / 100)
-    res = "["
-    for (i = 0; i < width; i++) {
-        if (i < filled) res = res "="
-        else if (i == filled) res = res ">"
-        else res = res " "
-    }
-    res = res "]"
-    return res
-}
-
-{
-    # extract percentage like "12%" or "100%"
-    if (match($0, /([0-9]+)%/, m)) {
-        p = m[1]
-
-        printf "\r \033[1;34mDownloading\033[0m %s %s%%", bar(p), p
-        fflush()
-    }
-}
-END {
-    printf "\r\033[K"
-}
-' >&2)sh";
-
 std::string resolve_path(const std::string &cache, const std::string &path_str) {
     const auto [path, is_remote] = [&]() {
         for (std::string prefix : {"https://", "http://", "sftp://", "ftp://"})
@@ -172,24 +146,73 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
         const fs::path     out = fs::path(cache) / "src" / path;
         const fs::path     dir = out.parent_path();
 
-        if (std::string cmd = fmt::format("[ -f \"{}\" ]", out.string()); std::system(cmd.c_str()) != 0) {
-            cmd = fmt::format(
-                "mkdir -p \"{0}\" && "
-                "wget --quiet --show-progress "
-                "--https-only "
-                "--timeout=10 "
-                "--tries=3 "
-                "-O \"{1}\" \"{2}\" 2>&1 {3}",
-                dir.string(),
-                out.string(),
-                url,
-                awk
+        if (!fs::exists(out)) {
+            fs::create_directories(dir);
+
+            spdlog::debug("downloading: url={} out={}", url, out.string());
+            print_status("Downloading", url);
+
+            reproc::options options;
+            options.redirect.out.type = reproc::redirect::discard;
+            options.redirect.err.type = reproc::redirect::pipe;
+
+            reproc::process process;
+
+            std::error_code ec = process.start(
+                std::vector<std::string>{
+                    "wget", "--quiet", "--show-progress", "--https-only", "--timeout=10", "--tries=3", "-O", out.string(), url
+                },
+                options
             );
 
-            spdlog::debug("downloading: cmd={:?}", cmd);
-            if (int res = std::system(cmd.c_str()); res)
-                throw ferr("Failed to download archive from {:?}, return code: {}", path_str, res);
+            if (ec) {
+                throw ferr("Failed to start wget: {}", ec.message());
+            }
+
+            std::array<char, 4096> buffer;
+            std::string            line;
+
+            // wget progress goes to stderr
+            while (true) {
+                auto [bytes_read, read_ec] =
+                    process.read(reproc::stream::err, reinterpret_cast<uint8_t *>(buffer.data()), buffer.size());
+
+                if (read_ec == std::errc::broken_pipe)
+                    break;
+
+                if (read_ec)
+                    throw ferr("Failed to read wget output: {}", read_ec.message());
+
+                line.append(buffer.data(), bytes_read);
+
+                size_t pos = 0;
+                while ((pos = line.find('\n')) != std::string::npos) {
+                    std::string current = line.substr(0, pos);
+                    line.erase(0, pos + 1);
+
+                    // Example:
+                    // " 45% [=========>      ] 1.23M ..."
+                    static const std::regex percent_re(R"((\d+)%)");
+
+                    std::smatch match;
+                    if (std::regex_search(current, match, percent_re)) {
+                        const size_t percent = std::stoul(match[1]);
+                        print_progress("Downloading", percent, 100);
+                    }
+                }
+            }
+
+            int exit_code           = 0;
+            std::tie(exit_code, ec) = process.wait(reproc::infinite);
+
+            // finish progress line
+            print_end_progress();
+
+            if (ec || exit_code != 0) {
+                throw ferr("Failed to download archive from {}, exit code={}", path_str, exit_code);
+            }
         }
+
         return resolve_path(cache, out.string());
     }
 
@@ -218,8 +241,7 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
                 path_str,
                 get_tar_flag()
             );
-            fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Extracting");
-            fmt::println(stderr, "{}", path_str);
+            print_status("Extracting", path_str);
             spdlog::debug("extracting: {:?}", cmd);
             if (int res = std::system(cmd.c_str()); res)
                 throw ferr("Failed to extract {:?}, return code: {}", path_str, res);

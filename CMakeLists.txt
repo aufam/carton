@@ -65,6 +65,13 @@ CPMAddPackage(
 add_library(xxhash STATIC ${xxhash_SOURCE_DIR}/xxhash.c)
 target_include_directories(xxhash PUBLIC ${xxhash_SOURCE_DIR})
 
+CPMAddPackage(
+    NAME            reproc
+    GIT_REPOSITORY  "https://github.com/daandemeyer/reproc"
+    GIT_TAG         v14.2.7
+    OPTIONS         "REPROC++ ON" "REPROC_INSTALL OFF" "REPROC_INSTALL_PKGCONFIG OFF"
+)
+
 # only setup the exeternal libraries
 if (REQUIREMENTS)
     return()
@@ -97,6 +104,7 @@ target_link_libraries(carton PRIVATE
     magic_enum
     CLI11
     xxhash
+    reproc++
 )
 
 target_compile_options(carton PRIVATE

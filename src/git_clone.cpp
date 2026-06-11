@@ -9,8 +9,6 @@ module;
 
 module carton;
 
-namespace fs = std::filesystem;
-
 static std::string extract_host_and_path(const std::string &url) {
     std::string cleaned = url;
 
@@ -70,11 +68,10 @@ std::string git_clone(const std::string &cache, const std::string &git, const st
             url
         );
 
-        fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", "Cloning");
-        fmt::println(stderr, "{}", url);
+        print_status("Cloning", url);
         spdlog::debug("git clone: cmd={:?}", cmd);
         if (int res = std::system(cmd.c_str()); res)
-            throw std::runtime_error(fmt::format("Failed to clone repo from {:?}, return code: {}", url, res));
+            throw ferr("Failed to clone repo from {:?}, return code: {}", url, res);
     } else {
         // check if the existing directory is a valid git repo with the correct remote and tag
         // const std::string check_cmd = fmt::format(

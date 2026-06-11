@@ -2,14 +2,13 @@ module;
 
 #include <cpx/fmt.h>
 #include <spdlog/spdlog.h>
+#include <reproc++/run.hpp>
 #include <algorithm>
 #include <filesystem>
 #include <map>
 #include <unordered_set>
 
 module carton;
-
-namespace fs = std::filesystem;
 
 static void collect_modules(
     const std::string                                     &mod,
@@ -25,12 +24,12 @@ static void collect_modules(
 
     auto it_mod = mods.find(mod);
     if (it_mod == mods.end())
-        throw std::runtime_error("unknown module `" + mod + "`");
+        throw ferr("unknown module `{}`", mod);
 
     for (const auto &dep : it_mod->second) {
         auto it_path = mod_paths.find(dep);
         if (it_path == mod_paths.end()) {
-            throw std::runtime_error(f("unknown module `{}` required by module `{}`", dep, mod));
+            throw ferr("unknown module `{}` required by module `{}`", dep, mod);
         }
         if (obj_flags) {
             push_unique(*obj_flags, mod_objs.at(dep));
@@ -62,9 +61,21 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
 
     if (!d.pre.empty()) {
         spdlog::info("running pre command for package={:?} dep={:?} pre={:?}", package.name, d.name, d.pre);
-        std::string cmd = f("cd '{}' && ({}) > /dev/null 2>&1", working_dir.string(), d.pre);
-        if (std::system(cmd.c_str()) != 0)
+
+        std::string     working_dir_str = working_dir.string();
+        reproc::options opt;
+        opt.redirect.out.type = reproc::redirect::pipe;
+        opt.redirect.err.type = reproc::redirect::pipe;
+        opt.working_directory = working_dir_str.c_str();
+
+        std::string errmsg;
+        auto [status, ec] =
+            reproc::run(std::vector<std::string_view>{"sh", "-c", d.pre}, opt, reproc::sink::null, reproc::sink::string(errmsg));
+
+        if (status != 0 || ec) {
+            fmt::println(stderr, "{}", errmsg);
             throw ferr("pre command failed for dep={}: {}", d.name, d.pre);
+        }
     }
 
     const auto flags_ =
@@ -180,7 +191,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             for (auto &dep : collect_module_deps(working_dir.string(), entry.string())) {
                 auto it = mod_paths.find(dep);
                 if (it == mod_paths.end()) {
-                    throw std::runtime_error(f("unknown module `{}` required by file `{}`", dep, entry.string()));
+                    throw ferr("unknown module `{}` required by file `{}`", dep, entry.string());
                 }
                 push_unique(export_link_flags, mod_objs.at(dep));
                 push_unique(pcm_flags, f("-fmodule-file={}='{}'", dep, it->second));

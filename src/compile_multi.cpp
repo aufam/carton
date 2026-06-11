@@ -3,6 +3,7 @@ module;
 #include <cpx/toml/toruniina_toml.h>
 #include <cpx/defer.h>
 #include <cpx/fmt.h>
+#include <reproc++/run.hpp>
 #include <fmt/color.h>
 #include <spdlog/spdlog.h>
 #include <filesystem>
@@ -45,29 +46,6 @@ struct cpx::Reflect<Signature> : Fields<Reflect<Signature>, &Signature::cmd, &Si
         return std::tie(cmd, deps, file);
     }
 };
-
-static void printProgressBar(size_t current, size_t total) {
-    const int barWidth = 27;
-
-    const float progress = total == 0 ? 1.0f : static_cast<float>(current) / static_cast<float>(total);
-
-    const int filled = static_cast<int>(barWidth * progress);
-
-    fmt::print(stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::cyan), "\r{:>12} ", "Building");
-    fmt::print(stderr, "[");
-    for (int i = 0; i < barWidth; ++i) {
-        if (i < filled)
-            fmt::print(stderr, "=");
-        else if (i == filled && current < total)
-            fmt::print(stderr, ">");
-        else
-            fmt::print(stderr, " ");
-    }
-
-    fmt::print(stderr, "] {}/{}", current, total);
-
-    fflush(stderr);
-}
 
 static std::vector<std::string> parse_depfile(const std::string &path) {
     std::ifstream in(path);
@@ -249,7 +227,7 @@ bool CompileCommand::compile_multi(
     auto &dir = commands[0].directory;
     for (const auto &cmd : commands)
         if (dir != cmd.directory)
-            throw std::runtime_error("All CompileCommands in compile_multi must have the same directory");
+            throw ferr("All CompileCommands in compile_multi must have the same directory");
 
     const fs::path sig_path = signature_path_for(dir);
 
@@ -263,11 +241,8 @@ bool CompileCommand::compile_multi(
     if (needs_rebuild_ptrs.empty())
         return false; // all up-to-date
 
-    fmt::print(
-        stderr, fmt::emphasis::bold | fmt::fg(fmt::terminal_color::green), "{:>12} ", precompile ? "Precompiling" : "Compiling"
-    );
-    fmt::println(stderr, "{}", name);
-    printProgressBar(0, needs_rebuild_ptrs.size());
+    print_status(precompile ? "Precompiling" : "Compiling", name);
+    print_progress("Building", 0, needs_rebuild_ptrs.size());
 
     // TODO: parallelize this
     for (size_t i = 0; i < needs_rebuild_ptrs.size(); ++i) {
@@ -277,28 +252,35 @@ bool CompileCommand::compile_multi(
 
         const std::string full_cmd = fmt::format(
             "mkdir -p \"{0}\" && "
-            "cd \"{1}\" && {2}",
+            "cd \"{1}\" && {2} -fdiagnostics-color=always",
             outdir.string(),
             dir,
             cmd->command
         );
 
         spdlog::info("compiling: cmd={:?}", full_cmd);
-        if (std::system(full_cmd.c_str()) != 0) {
-            fmt::println(stderr, "\r\033[2K");
-            fflush(stderr);
-            throw std::runtime_error(fmt::format("Failed to compile {}: command={:?}", cmd->file, full_cmd));
-        }
 
-        printProgressBar(i + 1, needs_rebuild_ptrs.size());
-        // On success, update this file() entry in the directory-level signature TOML.
+        reproc::options opt;
+        opt.redirect.out.type = reproc::redirect::pipe;
+        opt.redirect.err.type = reproc::redirect::pipe;
+
+        std::string errmsg;
+        auto [status, ec] = reproc::run(
+            std::vector<std::string_view>{"sh", "-c", full_cmd}, opt, reproc::sink::null, reproc::sink::string(errmsg)
+        );
+
+        if (!errmsg.empty())
+            fmt::println(stderr, "\n{}", errmsg);
+        if (status != 0 || ec)
+            throw ferr("Failed to compile {}: command={:?}", cmd->file, full_cmd);
+
+        print_progress("Building", i + 1, needs_rebuild_ptrs.size());
+
         sig_map[cmd->output] = make_signature(*cmd, hash_history);
-
         toml_dump(sig_map, sig_path);
     }
 
-    fmt::print(stderr, "\r\033[2K");
-    fflush(stderr);
+    print_end_progress();
 
     return true;
 }
