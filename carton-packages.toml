@@ -797,3 +797,30 @@ flags = ["public:-DASIO_SEPARATE_COMPILATION"]
 link-flags = ["-lssl", "-lcrypto"]
 src = ["asio/src/*"]
 inc = ["public:asio/include"]
+
+
+[reproc.package]
+name = "reproc"
+edition = 11
+
+[reproc.lib]
+git = "https://github.com/daandemeyer/reproc"
+tag = "v{version}"
+src = [
+    "reproc++/src/*",
+    "reproc/src/clock.posix.c",
+    "reproc/src/drain.c",
+    "reproc/src/error.posix.c",
+    "reproc/src/handle.posix.c",
+    "reproc/src/init.posix.c",
+    "reproc/src/options.c",
+    "reproc/src/pipe.posix.c",
+    "reproc/src/process.posix.c",
+    "reproc/src/redirect.c",
+    "reproc/src/redirect.posix.c",
+    "reproc/src/reproc.c",
+    "reproc/src/run.c",
+    "reproc/src/strv.c",
+    "reproc/src/utf.posix.c",
+]
+inc = ["public:reproc++/include", "reproc/include"]
