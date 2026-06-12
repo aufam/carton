@@ -5,6 +5,7 @@ module;
 #include <string>
 #include <optional>
 #include <vector>
+#include "macro.h"
 
 export module carton:cli;
 
@@ -18,7 +19,7 @@ export struct Cli {
         std::vector<std::string> args;
     };
 
-    struct Manifest {};
+    using Manifest = std::tuple<>;
 
     std::optional<Build>      build;
     std::optional<Run>        run;
@@ -27,34 +28,27 @@ export struct Cli {
     std::string               cache;
 };
 
-template <>
-struct cpx::Reflect<Cli> : Fields<Reflect<Cli>, &Cli::build, &Cli::run, &Cli::manifest, &Cli::log_level, &Cli::cache> {
-    static constexpr TagInfo build     = "build";
-    static constexpr TagInfo run       = "run";
-    static constexpr TagInfo manifest  = "manifest";
-    static constexpr TagInfo log_level = "log-level,skipmissing";
-    static constexpr TagInfo cache     = "cache,skipmissing,env=CARTON_CACHE";
+// clang-format off
+CPX_REFLECT(
+    (Cli, ),
 
-    static constexpr tags_type tags() {
-        return std::tie(build, run, manifest, log_level, cache);
-    }
-};
+    ((build     , "build                                     "))
+    ((run       , "run                                       "))
+    ((manifest  , "manifest                                  "))
+    ((log_level , "log-level , skipmissing                   "))
+    ((cache     , "cache     , skipmissing , env=CARTON_CACHE"))
+);
 
-template <>
-struct cpx::Reflect<Cli::Build> : Fields<Reflect<Cli::Build>, &Cli::Build::release> {
-    static constexpr TagInfo release = "release";
+CPX_REFLECT(
+    (Cli::Build, ),
 
-    static constexpr tags_type tags() {
-        return std::tie(release);
-    }
-};
+    ((release , "release"))
+);
 
-template <>
-struct cpx::Reflect<Cli::Run> : Fields<Reflect<Cli::Run>, &Cli::Run::release, &Cli::Run::args> {
-    static constexpr TagInfo release = "release";
-    static constexpr TagInfo args    = "args";
+CPX_REFLECT(
+    (Cli::Run, ),
 
-    static constexpr tags_type tags() {
-        return std::tie(release, args);
-    }
-};
+    ((release , "release"))
+    ((args    , "args   "))
+);
+// clang-format on

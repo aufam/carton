@@ -3,6 +3,7 @@ module;
 #include <cpx/reflect.h>
 #include <string>
 #include <vector>
+#include "macro.h"
 
 export module carton:profile;
 
@@ -43,32 +44,19 @@ export struct Profile {
     }
 };
 
-template <>
-struct cpx::Reflect<Profile> //
-    : Fields<
-          Reflect<Profile>,
-          &Profile::id,
-          &Profile::cxx,
-          &Profile::c,
-          &Profile::modules,
-          &Profile::debug,
-          &Profile::asan,
-          &Profile::lto,
-          &Profile::opt_level,
-          &Profile::flags,
-          &Profile::link_flags> {
-    static constexpr TagInfo id         = "id";
-    static constexpr TagInfo cxx        = "cxx,skipmissing";
-    static constexpr TagInfo c          = "c,skipmissing";
-    static constexpr TagInfo modules    = "modules,skipmissing";
-    static constexpr TagInfo debug      = "debug,skipmissing";
-    static constexpr TagInfo asan       = "asan,skipmissing";
-    static constexpr TagInfo lto        = "lto,skipmissing";
-    static constexpr TagInfo opt_level  = "opt-level,skipmissing";
-    static constexpr TagInfo flags      = "flags,skipmissing";
-    static constexpr TagInfo link_flags = "link-flags,skipmissing";
+// clang-format off
+CPX_REFLECT(
+    (Profile, ),
 
-    static constexpr tags_type tags() {
-        return std::tie(id, cxx, c, modules, debug, asan, lto, opt_level, flags, link_flags);
-    }
-};
+    ((id         , "id        , skipmissing"))
+    ((cxx        , "cxx       , skipmissing"))
+    ((c          , "c         , skipmissing"))
+    ((modules    , "modules   , skipmissing"))
+    ((debug      , "debug     , skipmissing"))
+    ((asan       , "asan      , skipmissing"))
+    ((lto        , "lto       , skipmissing"))
+    ((opt_level  , "opt-level , skipmissing"))
+    ((flags      , "flags     , skipmissing"))
+    ((link_flags , "link-flags, skipmissing"))
+);
+// clang-format on

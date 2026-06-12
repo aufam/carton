@@ -171,6 +171,18 @@ tag = "boost-{version}"
 
 
 #
+# Boost.preprocessor
+#
+[preprocessor.package]
+name = "preprocessor"
+edition = 11
+
+[preprocessor.lib]
+git = "https://github.com/boostorg/preprocessor"
+tag = "boost-{version}"
+
+
+#
 # Magic Enum
 #
 [magic_enum.package]

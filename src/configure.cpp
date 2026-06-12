@@ -18,7 +18,7 @@ find_extra_features(Carton &p, const std::string &feat, std::vector<std::string>
         auto d = p.dependencies.find(feat);
         if (d == p.dependencies.end())
             return f("Error building {:?}: feature `{}` is not defined in the package or dependencies", p.package.name, feat);
-        else if (convert_dep(d->second).optional)
+        else if (d->second.optional)
             push_unique(required_features, feat);
     } else {
         for (auto &dep : it->second)
@@ -64,8 +64,7 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
     }
 
     spdlog::info("resolving: dep={:?} extra_features={}", package.name, extra_features);
-    for (auto &[name, dep] : dependencies) {
-        auto &d = convert_dep(dep);
+    for (auto &[name, d] : dependencies) {
         if (d.name.empty())
             d.name = name;
         if (no_default_features && name == "default")
@@ -87,7 +86,7 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
                 auto it = pparent->dependencies.find(d.name);
                 if (it == pparent->dependencies.end())
                     throw ferr("dep={:?} must be in the parent project", d.name);
-                d = convert_dep(it->second);
+                d = it->second;
             }
         }
 

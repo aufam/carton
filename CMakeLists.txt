@@ -72,6 +72,12 @@ CPMAddPackage(
     OPTIONS         "REPROC++ ON" "REPROC_INSTALL OFF" "REPROC_INSTALL_PKGCONFIG OFF"
 )
 
+CPMAddPackage(
+    NAME            preprocessor
+    GIT_REPOSITORY  "https://github.com/boostorg/preprocessor"
+    GIT_TAG         boost-1.88.0
+)
+
 # only setup the exeternal libraries
 if (REQUIREMENTS)
     return()
@@ -105,6 +111,7 @@ target_link_libraries(carton PRIVATE
     CLI11
     xxhash
     reproc++
+    Boost::preprocessor
 )
 
 target_compile_options(carton PRIVATE

@@ -3,6 +3,7 @@ module;
 #include <cpx/reflect.h>
 #include <string>
 #include <vector>
+#include "macro.h"
 
 export module carton:package;
 
@@ -15,24 +16,14 @@ export struct Package {
     std::string              license;
 };
 
-template <>
-struct cpx::Reflect<Package> //
-    : Fields<
-          Reflect<Package>, //
-          &Package::name,
-          &Package::version,
-          &Package::edition,
-          &Package::authors,
-          &Package::description,
-          &Package::license> {
-    static constexpr TagInfo name        = "name";
-    static constexpr TagInfo version     = "version,skipmissing";
-    static constexpr TagInfo edition     = "edition,skipmissing";
-    static constexpr TagInfo authors     = "authors,skipmissing";
-    static constexpr TagInfo description = "description,skipmissing";
-    static constexpr TagInfo license     = "license,skipmissing";
-
-    static constexpr tags_type tags() {
-        return std::tie(name, version, edition, authors, description, license);
-    }
-};
+// clang-format off
+CPX_REFLECT(
+    (Package, ),
+    ((name        , "name"))
+    ((version     , "version,skipmissing"))
+    ((edition     , "edition,skipmissing"))
+    ((authors     , "authors,skipmissing"))
+    ((description , "description,skipmissing"))
+    ((license     , "license,skipmissing"))
+);
+// clang-format on

@@ -1,9 +1,11 @@
 module;
 
 #include <cpx/reflect.h>
+#include <cpx/toml/toruniina_toml.h>
 #include <string>
 #include <optional>
 #include <vector>
+#include "macro.h"
 
 export module carton:dependency;
 
@@ -36,68 +38,68 @@ export struct Dependency {
     std::string display_name() const;
 };
 
+// clang-format off
+CPX_REFLECT(
+    (Dependency, ),
+
+    ((name            , "name            , oneof=version|path|url|git"))
+    ((version         , "version         , oneof=version|path|url|git"))
+    ((path            , "path            , oneof=version|path|url|git"))
+    ((url             , "url             , oneof=version|path|url|git"))
+    ((git             , "git             , oneof=version|path|url|git"))
+    ((branch          , "branch          , oneof=branch|tag          "))
+    ((tag             , "tag             , oneof=branch|tag          "))
+
+    ((subdir          , "subdir          , skipmissing               "))
+    ((features        , "features        , skipmissing               "))
+    ((optional        , "optional        , skipmissing               "))
+    ((default_features, "default-features, skipmissing               "))
+
+    ((src             , "src             , skipmissing               "))
+    ((inc             , "inc             , skipmissing               "))
+    ((lib             , "lib             , skipmissing               "))
+    ((mod             , "mod             , skipmissing               "))
+    ((flags           , "flags           , skipmissing               "))
+    ((link_flags      , "link-flags      , skipmissing               "))
+    ((pre             , "pre             , skipmissing               "))
+);
+// clang-format on
+
 template <>
-struct cpx::Reflect<Dependency> //
-    : Fields<
-          Reflect<Dependency>,
-          &Dependency::name,
-          &Dependency::version,
-          &Dependency::path,
-          &Dependency::url,
-          &Dependency::git,
-          &Dependency::branch,
-          &Dependency::tag,
-          &Dependency::subdir,
-          &Dependency::features,
-          &Dependency::optional,
-          &Dependency::default_features,
-          &Dependency::src,
-          &Dependency::inc,
-          &Dependency::lib,
-          &Dependency::mod,
-          &Dependency::flags,
-          &Dependency::link_flags,
-          &Dependency::pre> {
+struct cpx::toml::Reflect<Dependency> : cpx::Reflect<Dependency> {
+    /* serialize */
+    using const_type = Fields::const_type;
 
-    static constexpr TagInfo name             = "name,skipmissing";
-    static constexpr TagInfo version          = "version,oneof=version|path|url|git";
-    static constexpr TagInfo path             = "path,oneof=version|path|url|git";
-    static constexpr TagInfo url              = "url,oneof=version|path|url|git";
-    static constexpr TagInfo git              = "git,oneof=version|path|url|git";
-    static constexpr TagInfo branch           = "branch,oneof=branch|tag";
-    static constexpr TagInfo tag              = "tag,oneof=branch|tag";
-    static constexpr TagInfo subdir           = "subdir,skipmissing";
-    static constexpr TagInfo features         = "features,skipmissing";
-    static constexpr TagInfo optional         = "optional,skipmissing";
-    static constexpr TagInfo default_features = "default-features,skipmissing";
-    static constexpr TagInfo src              = "src,skipmissing";
-    static constexpr TagInfo inc              = "inc,skipmissing";
-    static constexpr TagInfo lib              = "lib,skipmissing";
-    static constexpr TagInfo mod              = "mod,skipmissing";
-    static constexpr TagInfo flags            = "flags,skipmissing";
-    static constexpr TagInfo link_flags       = "link-flags,skipmissing";
-    static constexpr TagInfo pre              = "pre,skipmissing";
+    static constexpr const_type of(const Dependency &d) {
+        return Fields::of(d);
+    }
 
-    static constexpr tags_type tags() {
-        return std::tie(
-            name,
-            version,
-            path,
-            url,
-            git,
-            branch,
-            tag,
-            subdir,
-            features,
-            optional,
-            default_features,
-            src,
-            inc,
-            lib,
-            mod,
-            flags,
-            link_flags,
-            pre
-        );
+    /* deserialize */
+    using fields_type = Fields::type;
+
+    class type {
+    public:
+        explicit constexpr type(Dependency &d)
+            : name(d.name)
+            , fields(Fields::of(d)) {}
+
+        std::string &name;
+        fields_type  fields;
+    };
+
+    static constexpr type of(Dependency &d) {
+        return type(d);
+    }
+};
+
+template <>
+struct cpx::serde::Deserialize<__toml11::value, cpx::toml::Reflect<Dependency>::type> {
+    const __toml11::value &node;
+
+    void into(cpx::toml::Reflect<Dependency>::type &v) {
+        if (node.is_string())
+            v.name = node.as_string(std::nothrow);
+        else
+            Deserialize<__toml11::value, cpx::toml::Reflect<Dependency>::fields_type>{node}.into(v.fields);
     }
 };

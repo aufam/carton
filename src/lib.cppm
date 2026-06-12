@@ -7,8 +7,7 @@ module;
 #include <vector>
 #include <map>
 #include <unordered_map>
-#include <variant>
-#include <filesystem>
+#include "macro.h"
 
 export module carton;
 export import :profile;
@@ -23,7 +22,6 @@ export {
 
     namespace fs = std::filesystem;
 
-    auto convert_dep(std::variant<std::string, Dependency> & dep)->Dependency &;
     void push_unique(std::vector<std::string> & vec, const std::string &value, bool front = false);
     void push_unique(std::vector<std::string> & vec, const std::vector<std::string> &values, bool front = false);
 
@@ -91,7 +89,7 @@ struct Carton {
     };
 
     using Registry     = std::unordered_map<std::string, Carton>;
-    using Dependencies = std::unordered_map<std::string, std::variant<std::string, Dependency>>;
+    using Dependencies = std::unordered_map<std::string, Dependency>;
     using Features     = std::unordered_map<std::string, std::vector<std::string>>;
 
     Package      package;
@@ -116,27 +114,23 @@ private:
     auto collect_meta(const Profile &profile, Dependency &dep) -> Cache::Meta;
 };
 
-template <>
-struct cpx::Reflect<Carton> //
-    : Fields<
-          Reflect<Carton>,
-          &Carton::package,
-          &Carton::registry,
-          &Carton::profiles,
-          &Carton::dependencies,
-          &Carton::lib,
-          &Carton::features,
-          &Carton::no_default_features> {
+// clang-format off
+CPX_REFLECT(
+    (Carton, ),
 
-    static constexpr TagInfo package             = "package";
-    static constexpr TagInfo registry            = "registry,skipmissing";
-    static constexpr TagInfo profiles            = "profiles,skipmissing";
-    static constexpr TagInfo dependencies        = "dependencies,skipmissing";
-    static constexpr TagInfo lib                 = "lib,skipmissing";
-    static constexpr TagInfo features            = "features,skipmissing";
-    static constexpr TagInfo no_default_features = "no-default-features,skipmissing";
+    ((package            , "package"                         ))
+    ((registry           , "registry           , skipmissing"))
+    ((profiles           , "profile            , skipmissing"))
+    ((dependencies       , "dependencies       , skipmissing"))
+    ((lib                , "lib                , skipmissing"))
+    ((features           , "features           , skipmissing"))
+    ((no_default_features, "no-default-features, skipmissing"))
+);
 
-    static constexpr tags_type tags() {
-        return std::tie(package, registry, profiles, dependencies, lib, features, no_default_features);
-    }
-};
+CPX_REFLECT(
+    (Carton::Profiles, ),
+
+    ((release , "release, skipmissing"))
+    ((dev     , "dev    , skipmissing"))
+);
+// clang-format on

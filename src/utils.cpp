@@ -13,16 +13,6 @@ module;
 
 module carton;
 
-auto convert_dep(std::variant<std::string, Dependency> &dep) -> Dependency & {
-    if (auto *version = std::get_if<std::string>(&dep)) {
-        Dependency d{};
-        d.version = *version;
-        dep       = d;
-    }
-
-    return std::get<Dependency>(dep);
-}
-
 void push_unique(std::vector<std::string> &vec, const std::string &value, bool front) {
     if (value.empty())
         return;
@@ -176,7 +166,7 @@ void Carton::apply_package_placeholders() {
     apply_dep(lib);
 
     for (auto &[_, dep] : dependencies) {
-        apply_dep(convert_dep(dep));
+        apply_dep(dep);
     }
 
     for (auto &[_, feats] : features) {

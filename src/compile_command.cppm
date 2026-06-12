@@ -4,6 +4,7 @@ module;
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "macro.h"
 
 export module carton:compile_command;
 
@@ -22,20 +23,13 @@ export struct CompileCommand {
     );
 };
 
-template <>
-struct cpx::Reflect<CompileCommand> //
-    : Fields<
-          Reflect<CompileCommand>,
-          &CompileCommand::file,
-          &CompileCommand::directory,
-          &CompileCommand::command,
-          &CompileCommand::output> {
-    static constexpr TagInfo file      = "file";
-    static constexpr TagInfo directory = "directory";
-    static constexpr TagInfo command   = "command";
-    static constexpr TagInfo output    = "output";
+// clang-format off
+CPX_REFLECT(
+    (CompileCommand , ),
 
-    static constexpr tags_type tags() {
-        return std::tie(file, directory, command, output);
-    }
-};
+    ((file      , "file     "))
+    ((directory , "directory"))
+    ((command   , "command  "))
+    ((output    , "output   "))
+);
+// clang-format on
