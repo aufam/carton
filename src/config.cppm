@@ -7,11 +7,6 @@ export module carton:config;
 import :profile;
 
 export struct Config {
-    struct Profiles {
-        Profile release = Profile::Release();
-        Profile dev     = Profile::Dev();
-    };
-
     Profiles profiles;
 };
 
@@ -19,13 +14,6 @@ export struct Config {
 CPX_REFLECT(
     (Config, ),
 
-    ((profiles, "profiles, skipmissing"))
-);
-
-CPX_REFLECT(
-    (Config::Profiles, ),
-
-    ((release , "release, skipmissing"))
-    ((dev     , "dev    , skipmissing"))
+    ((profiles, "profile, skipmissing"))
 );
 // clang-format on

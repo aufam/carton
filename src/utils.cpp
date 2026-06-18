@@ -8,7 +8,6 @@ module;
 #include <filesystem>
 #include <string>
 #include <unordered_map>
-#include <variant>
 #include <vector>
 
 module carton;
@@ -41,22 +40,17 @@ Dependency &Dependency::operator+=(const Dependency &other) {
     return *this;
 }
 
-bool Dependency::empty() const {
-    return version.empty() && path.empty() && url.empty() && git.empty();
-}
+void Profiles::check_module_support() {
+    // TODO: check clang support module
+    auto create_cmd = [](const std::string &cxx) {
+        return std::vector<std::string>{"sh", "-c", f("{0} --version | grep clang > /dev/null", cxx)};
+    };
 
-std::string Dependency::display_name() const {
-    std::string name = this->name;
-    if (!version.empty()) {
-        name += " v" + version;
-    } else if (!tag.empty()) {
-        name += " #" + tag;
-    } else if (!branch.empty()) {
-        name += " " + branch;
-    } else {
-        name += " (" + path + ")";
-    }
-    return name;
+    dev._module_support     = dev.modules == "auto" && reproc::run(create_cmd(dev.cxx)).first == 0;
+    release._module_support = release.modules == "auto" && reproc::run(create_cmd(release.cxx)).first == 0;
+
+    spdlog::info("profile.dev._module_support={}", dev._module_support);
+    spdlog::info("profile.release._module_support={}", release._module_support);
 }
 
 static void string_replace(

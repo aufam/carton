@@ -86,7 +86,6 @@ struct Carton {
     using Registry     = std::unordered_map<std::string, Carton>;
     using Dependencies = std::unordered_map<std::string, Dependency>;
     using Features     = std::unordered_map<std::string, std::vector<std::string>>;
-    using Profiles     = Config::Profiles;
 
     Package      package;
     Registry     registry;
@@ -120,6 +119,5 @@ CPX_REFLECT(
     ((dependencies       , "dependencies       , skipmissing"))
     ((lib                , "lib                , skipmissing"))
     ((features           , "features           , skipmissing"))
-    ((no_default_features, "no-default-features, skipmissing"))
 );
 // clang-format on

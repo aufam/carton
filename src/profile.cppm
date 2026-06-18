@@ -44,6 +44,13 @@ export struct Profile {
     }
 };
 
+export struct Profiles {
+    Profile release = Profile::Release();
+    Profile dev     = Profile::Dev();
+
+    void check_module_support();
+};
+
 // clang-format off
 CPX_REFLECT(
     (Profile, ),
@@ -58,5 +65,12 @@ CPX_REFLECT(
     ((opt_level  , "opt-level , skipmissing"))
     ((flags      , "flags     , skipmissing"))
     ((link_flags , "link-flags, skipmissing"))
+);
+
+CPX_REFLECT(
+    (Profiles, ),
+
+    ((release , "release, skipmissing"))
+    ((dev     , "dev    , skipmissing"))
 );
 // clang-format on
