@@ -30,8 +30,8 @@ export struct Dependency {
     std::vector<std::string> link_flags;
     std::string              pre;
 
-    std::string        name;
-    std::optional<int> cpp_standard = std::nullopt;
+    std::string name;
+    int         cpp_standard;
 
     Dependency &operator+=(const Dependency &other);
 

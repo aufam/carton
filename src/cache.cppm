@@ -14,8 +14,6 @@ export struct Cache {
         Dependency                  lib;
         std::vector<std::string>    flags;
         std::vector<std::string>    link_flags;
-        std::vector<std::string>    module_flags;
-        std::vector<std::string>    include_flags;
         std::string                 main_o;
         std::vector<CompileCommand> compile_commands;
         std::vector<CompileCommand> precompile_commands;

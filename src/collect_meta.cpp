@@ -41,11 +41,6 @@ static void collect_modules(
 }
 
 Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
-    [[maybe_unused]]
-    const auto lib = 1;
-
-    const auto cpp_standard = d.cpp_standard.value_or(package.edition);
-
     std::sort(d.features.begin(), d.features.end());
     std::string feature_name = f("{}", fmt::join(d.features, "-"));
     if (!d.default_features.value_or(true))
@@ -97,8 +92,6 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
 
     std::vector<std::string> flags;
     std::vector<std::string> export_flags;
-    std::vector<std::string> export_inc_flags;
-    std::vector<std::string> export_module_flags;
     std::vector<std::string> export_link_flags;
     std::string              main_o;
     for (auto &str : d.flags) {
@@ -114,7 +107,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
         if (str.starts_with("public:")) {
             auto inc = "-I" + (working_dir / str.substr(std::string("public:").size())).string();
             push_unique(flags, inc);
-            push_unique(export_inc_flags, inc);
+            push_unique(export_flags, inc);
         } else {
             push_unique(flags, "-I" + (working_dir / str).string());
         }
@@ -164,7 +157,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             ccm.command =
                 f("{} -std=c++{} -x c++-module {} {} -fmodule-output='{}' -o '{}' -c '{}' -MMD -MP -MF '{}'",
                   CXX,
-                  std::max(package.edition, 20),
+                  std::max(d.cpp_standard, 20),
                   fmt::join(flags, " "),
                   fmt::join(pcm_flags, " "),
                   pcm,
@@ -202,7 +195,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
                 cc.command =
                     f("{} -std=c++{} {} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
                       CXX,
-                      cpp_standard,
+                      d.cpp_standard,
                       fmt::join(flags, " "),
                       fmt::join(pcm_flags, " "),
                       cc.output,
@@ -229,8 +222,6 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
         m.lib                 = d;
         m.flags               = std::move(export_flags);
         m.link_flags          = std::move(export_link_flags);
-        m.include_flags       = std::move(export_inc_flags);
-        m.module_flags        = std::move(export_module_flags);
         m.main_o              = std::move(main_o);
         m.compile_commands    = std::move(ccs);
         m.precompile_commands = std::move(ccms);

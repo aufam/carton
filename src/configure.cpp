@@ -107,9 +107,6 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
         if (existing) {
             push_unique(lib.flags, existing->flags);
             push_unique(lib.link_flags, existing->link_flags);
-            if (package.edition >= 20 && profile._module_support)
-                push_unique(lib.flags, existing->module_flags);
-            push_unique(lib.flags, existing->include_flags);
             continue;
         }
 
@@ -123,9 +120,6 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
             auto m = collect_meta(profile, d);
             push_unique(lib.flags, m.flags);
             push_unique(lib.link_flags, m.link_flags);
-            if (package.edition >= 20 && profile._module_support)
-                push_unique(lib.flags, m.module_flags);
-            push_unique(lib.flags, m.include_flags);
             cache->meta.push_back(std::move(m));
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of {:?} required by {:?}: {}", name, package.name, e.what());
