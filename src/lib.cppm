@@ -16,6 +16,7 @@ export import :package;
 export import :compile_command;
 export import :cache;
 export import :cli;
+export import :config;
 
 export {
     struct Carton;
@@ -82,15 +83,10 @@ export {
 }
 
 struct Carton {
-
-    struct Profiles {
-        Profile release = Profile::Release();
-        Profile dev     = Profile::Dev();
-    };
-
     using Registry     = std::unordered_map<std::string, Carton>;
     using Dependencies = std::unordered_map<std::string, Dependency>;
     using Features     = std::unordered_map<std::string, std::vector<std::string>>;
+    using Profiles     = Config::Profiles;
 
     Package      package;
     Registry     registry;
@@ -125,12 +121,5 @@ CPX_REFLECT(
     ((lib                , "lib                , skipmissing"))
     ((features           , "features           , skipmissing"))
     ((no_default_features, "no-default-features, skipmissing"))
-);
-
-CPX_REFLECT(
-    (Carton::Profiles, ),
-
-    ((release , "release, skipmissing"))
-    ((dev     , "dev    , skipmissing"))
 );
 // clang-format on

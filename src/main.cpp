@@ -14,13 +14,13 @@ constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
 
 int main(int argc, char **argv) {
     auto sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
-    spdlog::set_default_logger(std::make_shared<spdlog::logger>("cpp++", std::move(sink)));
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>("carton", std::move(sink)));
     spdlog::set_pattern("%^%l%$: %v");
 
     Cli cli   = {};
     cli.cache = std::getenv("HOME") + std::string("/.carton");
 
-    cpx::cli11::parse_with_subcommands("C++ package manager", argc, argv, cli);
+    cpx::cli11::parse("C++ package manager", argc, argv, cli);
     spdlog::set_level(cli.log_level);
 
     Cache  cache = {};
@@ -29,11 +29,11 @@ int main(int argc, char **argv) {
     ctx.cli   = &cli;
     ctx.cache = &cache;
 
-    try {
-        fs::path registry = "carton-packages.toml";
-        if (!fs::exists(registry))
-            registry = fs::path(cli.cache) / registry;
+    fs::path registry = "registry.toml";
+    if (!fs::exists(registry))
+        registry = fs::path(cli.cache) / registry;
 
+    try {
         cpx::toruniina_toml::parse_from_file(registry.string(), ctx.registry, toml_version);
     } catch (std::exception &e) {
         spdlog::error("Failed to parse carton packages: {}", e.what());
