@@ -195,28 +195,36 @@ std::vector<std::string> expand_path(const std::string &working_dir, std::vector
     options.redirect.out.type = reproc::redirect::pipe;
     options.redirect.err.type = reproc::redirect::discard;
 
-    reproc::process process;
-
     spdlog::debug("expanding: cmd={:?}", cmd);
+    reproc::process process;
     std::error_code ec = process.start(std::vector<std::string_view>{"sh", "-c", cmd}, options);
-    if (ec) {
+    if (ec)
         throw ferr("Failed to start expanding: {}", ec.message());
-    }
 
-    std::array<char, 4096>   buffer;
+    std::string output;
+    ec = reproc::drain(process, reproc::sink::string(output), reproc::sink::null);
+    if (ec)
+        throw ferr("Failed to read expand result: {}", ec.message());
+
+    auto [status, wait_ec] = process.wait(reproc::infinite);
+    if (wait_ec)
+        throw ferr("Failed waiting for expand process: {}", wait_ec.message());
+
+    if (status != 0)
+        throw ferr("Expand command failed with exit code {}", status);
+
     std::vector<std::string> res;
-    while (true) {
-        auto [bytes_read, read_ec] = process.read(reproc::stream::out, reinterpret_cast<uint8_t *>(buffer.data()), buffer.size());
-        if (read_ec == std::errc::broken_pipe)
-            break;
+    std::istringstream       iss(output);
+    std::string              line;
+    while (std::getline(iss, line)) {
+        if (line.empty())
+            continue;
 
-        if (read_ec)
-            throw ferr("Failed to read expand result: {}", read_ec.message());
-
-        std::string_view      line(buffer.data(), bytes_read - 1ul);
         std::filesystem::path entry = line;
-        if (!std::filesystem::exists(std::filesystem::path(working_dir) / entry))
+
+        if (!std::filesystem::exists(std::filesystem::path(working_dir) / entry)) {
             throw ferr("Expand failed: {:?} does not exist in {:?}", entry.string(), working_dir);
+        }
 
         res.push_back(entry.string());
     }
