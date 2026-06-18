@@ -10,7 +10,6 @@ module;
 export module carton:dependency;
 
 export struct Dependency {
-    std::string name;
     std::string version;
     std::string path;
     std::string url;
@@ -31,18 +30,34 @@ export struct Dependency {
     std::vector<std::string> link_flags;
     std::string              pre;
 
+    std::string        name;
     std::optional<int> cpp_standard = std::nullopt;
 
     Dependency &operator+=(const Dependency &other);
-    bool        empty() const;
-    std::string display_name() const;
+
+    bool empty() const {
+        return version.empty() && path.empty() && url.empty() && git.empty();
+    }
+
+    std::string display_name() const {
+        std::string name = this->name;
+        if (!version.empty()) {
+            name += " v" + version;
+        } else if (!tag.empty()) {
+            name += " #" + tag;
+        } else if (!branch.empty()) {
+            name += " " + branch;
+        } else {
+            name += " (" + path + ")";
+        }
+        return name;
+    }
 };
 
 // clang-format off
 CPX_REFLECT(
     (Dependency, ),
 
-    ((name            , "name            , oneof=version|path|url|git"))
     ((version         , "version         , oneof=version|path|url|git"))
     ((path            , "path            , oneof=version|path|url|git"))
     ((url             , "url             , oneof=version|path|url|git"))
@@ -80,10 +95,10 @@ struct cpx::toml::Reflect<Dependency> : cpx::Reflect<Dependency> {
     class type {
     public:
         explicit constexpr type(Dependency &d)
-            : name(d.name)
+            : version(d.version)
             , fields(Fields::of(d)) {}
 
-        std::string &name;
+        std::string &version;
         fields_type  fields;
     };
 
@@ -98,7 +113,7 @@ struct cpx::serde::Deserialize<__toml11::value, cpx::toml::Reflect<Dependency>::
 
     void into(cpx::toml::Reflect<Dependency>::type &v) {
         if (node.is_string())
-            v.name = node.as_string(std::nothrow);
+            v.version = node.as_string(std::nothrow);
         else
             Deserialize<__toml11::value, cpx::toml::Reflect<Dependency>::fields_type>{node}.into(v.fields);
     }
