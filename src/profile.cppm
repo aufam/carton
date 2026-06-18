@@ -8,7 +8,7 @@ module;
 export module carton:profile;
 
 export struct Profile {
-    std::string              id;
+    std::string              name;
     std::string              cxx       = "c++";
     std::string              c         = "cc";
     std::string              modules   = "auto";
@@ -23,7 +23,7 @@ export struct Profile {
 
     static Profile Release() {
         Profile t;
-        t.id        = "release";
+        t.name      = "release";
         t.debug     = false;
         t.lto       = false;
         t.asan      = false;
@@ -34,7 +34,7 @@ export struct Profile {
 
     static Profile Dev() {
         Profile t;
-        t.id        = "dev";
+        t.name      = "dev";
         t.debug     = true;
         t.lto       = false;
         t.asan      = true;
@@ -48,7 +48,7 @@ export struct Profile {
 CPX_REFLECT(
     (Profile, ),
 
-    ((id         , "id        , skipmissing"))
+    ((name       , "name      , skipmissing"))
     ((cxx        , "cxx       , skipmissing"))
     ((c          , "c         , skipmissing"))
     ((modules    , "modules   , skipmissing"))

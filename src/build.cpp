@@ -72,7 +72,7 @@ std::pair<bool, Cache::Meta> Carton::build(const Profile &profile, std::vector<C
         profile_info += " + asan";
 
     std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - start;
-    print_status("Finished", f("`{}` profile [{}] target(s) in {:.2f}", profile.id, profile_info, elapsed.count()));
+    print_status("Finished", f("`{}` profile [{}] target(s) in {:.2f}", profile.name, profile_info, elapsed.count()));
 
     return std::make_pair(relink, std::move(m));
 }

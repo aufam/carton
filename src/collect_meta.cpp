@@ -88,7 +88,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
     const auto     CXX       = f("{} {}", profile.cxx, flags_);
     const auto     C         = f("{} {}", profile.c, flags_);
     const fs::path cache     = cli->cache;
-    const fs::path build_dir = cache / "build" / profile.id /
+    const fs::path build_dir = cache / "build" / profile.name /
                                (d.name + "-" +
                                 (d.branch.empty() && d.tag.empty() ? d.version
                                  : d.branch.empty()                ? d.tag
