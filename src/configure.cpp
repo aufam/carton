@@ -53,10 +53,10 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
     resolve_remote_dep(profile, package.name, lib);
 
     std::vector<std::string> extra_features;
-    if (!no_default_features)
-        std::ignore = find_extra_features(*this, "default", extra_features);
-    else
+    if (no_default_features)
         std::ignore = find_extra_features(*this, "nodefault", extra_features);
+    else
+        std::ignore = find_extra_features(*this, "default", extra_features);
     for (auto &feat : features) {
         auto err = find_extra_features(*this, feat, extra_features);
         if (!err.empty())
@@ -84,9 +84,13 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
                 d.version = d.version.substr(1);
             } else {
                 auto it = pparent->dependencies.find(d.name);
-                if (it == pparent->dependencies.end())
-                    throw ferr("dep={:?} must be in the parent project", d.name);
-                d = it->second;
+                if (it != pparent->dependencies.end()) {
+                    auto &dep = it->second;
+                    if (dep.version.empty())
+                        throw ferr("`{}` version cannot be empty", d.name);
+                    d = dep;
+                } else
+                    d.version = d.version.substr(1);
             }
         }
 
