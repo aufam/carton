@@ -58,6 +58,12 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
 
         auto &name_ = d.name.empty() ? name : d.name;
         auto  it    = packages.find(name_);
+        while (it != packages.end()) {
+            auto i = packages.find(it->second.package.name);
+            if (i == it)
+                break;
+            it = i;
+        }
         if (it == packages.end())
             throw ferr("Cannot find `{}` in the package registry", name_);
 

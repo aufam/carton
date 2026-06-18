@@ -105,7 +105,7 @@ edition = 11
 
 [rapidjson.lib]
 git = "https://github.com/Tencent/rapidjson"
-tag = "v{version}"
+branch = "master"
 
 
 #
@@ -124,6 +124,9 @@ flags = ["public:-DTOML_HEADER_ONLY=0", "-DTOML_IMPLEMENTATION"]
 #
 # toml11
 #
+[toml.package]
+name = "toml11"
+
 [toml11.package]
 name = "toml11"
 edition = 11
@@ -131,29 +134,20 @@ edition = 11
 [toml11.lib]
 git = "https://github.com/ToruNiina/toml11"
 tag = "v{version}"
-flags = ["public:-DTOML11_COMPILE_SOURCES", "-Wno-deprecated-literal-operator"]
-
-#
-# toml
-#
-[toml.package]
-name = "toml"
-edition = 11
-
-[toml.lib]
-git = "https://github.com/ToruNiina/toml11"
-tag = "v{version}"
-flags = ["public:-DTOML11_COMPILE_SOURCES"]
+flags = ["public:-DTOML11_COMPILE_SOURCES", "public:-Wno-deprecated-literal-operator"]
 
 
 #
 # yaml-cpp
 #
 [yaml.package]
-name = "yaml"
+name = "yaml-cpp"
+
+[yaml-cpp.package]
+name = "yaml-cpp"
 edition = 11
 
-[yaml.lib]
+[yaml-cpp.lib]
 git = "https://github.com/jbeder/yaml-cpp"
 tag = "yaml-cpp-{version}"
 
@@ -185,6 +179,9 @@ tag = "boost-{version}"
 #
 # Magic Enum
 #
+[magic-enum.package]
+name = "magic_enum"
+
 [magic_enum.package]
 name = "magic_enum"
 edition = 17
@@ -195,20 +192,14 @@ tag = "v{version}"
 
 
 #
-# Magic Enum
-#
-[magic-enum.package]
-name = "magic-enum"
-edition = 17
-
-[magic-enum.lib]
-git = "https://github.com/Neargye/magic_enum"
-tag = "v{version}"
-
-
-#
 # CLI11
 #
+[cli.package]
+name = "CLI11"
+
+[cli11.package]
+name = "CLI11"
+
 [CLI11.package]
 name = "CLI11"
 edition = 11
@@ -221,22 +212,11 @@ mod = ["src/modules/CLI11.cppm"]
 
 
 #
-# CLI11
-#
-[cli11.package]
-name = "cli11"
-edition = 11
-
-[cli11.lib]
-git = "https://github.com/CLIUtils/CLI11"
-tag = "v{version}"
-flags = ["public:-DCLI11_PRECOMPILE"]
-mod = ["src/modules/CLI11.cppm"]
-
-
-#
 # cpp-httplib
 #
+[http.package]
+name = "httplib"
+
 [httplib.package]
 name = "httplib"
 edition = 11
@@ -253,27 +233,7 @@ pre = "python3 split.py -o build && python3 generate_module.py -o build"
 ssl = { flags = ["public:-DCPPHTTPLIB_OPENSSL_SUPPORT"], link-flags = ["-lssl", "-lcrypto"], optional = true }
 z = { flags = ["public:-DCPPHTTPLIB_ZLIB_SUPPORT"], link-flags = ["-lz"], optional = true }
 
-
-#
-# cpp-httplib
-#
-[http.package]
-name = "http"
-edition = 11
-
-[http.lib]
-git = "https://github.com/yhirose/cpp-httplib"
-tag = "v{version}"
-src = ["build/httplib.cc"]
-inc = ["public:build"]
-mod = ["build/httplib.cppm"]
-pre = "python3 split.py -o build && python3 generate_module.py -o build"
-
-[http.dependencies]
-ssl = { flags = ["public:-DCPPHTTPLIB_OPENSSL_SUPPORT"], link-flags = ["-lssl", "-lcrypto"], optional = true }
-z = { flags = ["public:-DCPPHTTPLIB_ZLIB_SUPPORT"], link-flags = ["-lz"], optional = true }
-
-[http.features]
+[httplib.features]
 full = ["ssl", "z"]
 
 
