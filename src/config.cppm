@@ -5,6 +5,7 @@ module;
 
 export module carton:config;
 import :profile;
+import cpx;
 
 export struct Config {
     Profiles profiles;

@@ -1,13 +1,15 @@
 module;
 
-#include <cpx/reflect.h>
-#include <cpx/toml/toruniina_toml.h>
 #include <string>
 #include <optional>
 #include <vector>
+#include <toml.hpp>
 #include "macro.h"
 
 export module carton:dependency;
+import cpx;
+import cpx.toruniina_toml;
+import cpx.serde;
 
 export struct Dependency {
     std::string version;
@@ -108,13 +110,13 @@ struct cpx::toml::Reflect<Dependency> : cpx::Reflect<Dependency> {
 };
 
 template <>
-struct cpx::serde::Deserialize<__toml11::value, cpx::toml::Reflect<Dependency>::type> {
-    const __toml11::value &node;
+struct cpx::serde::Deserialize<::toml::value, cpx::toml::Reflect<Dependency>::type> {
+    const ::toml::value &node;
 
     void into(cpx::toml::Reflect<Dependency>::type &v) {
         if (node.is_string())
             v.version = node.as_string(std::nothrow);
         else
-            Deserialize<__toml11::value, cpx::toml::Reflect<Dependency>::fields_type>{node}.into(v.fields);
+            Deserialize<::toml::value, cpx::toml::Reflect<Dependency>::fields_type>{node}.into(v.fields);
     }
 };

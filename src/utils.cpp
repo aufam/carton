@@ -1,7 +1,5 @@
 module;
 
-#include <cpx/fmt.h>
-#include <cpx/defer.h>
 #include <spdlog/spdlog.h>
 #include <reproc++/run.hpp>
 #include <algorithm>
@@ -11,6 +9,7 @@ module;
 #include <vector>
 
 module carton;
+import fmt;
 
 void push_unique(std::vector<std::string> &vec, const std::string &value, bool front) {
     if (value.empty())

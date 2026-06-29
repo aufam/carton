@@ -1,6 +1,5 @@
 module;
 
-#include <cpx/reflect.h>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <optional>
@@ -8,6 +7,7 @@ module;
 #include "macro.h"
 
 export module carton:cli;
+import cpx;
 
 export struct Cli {
     struct Manifest {

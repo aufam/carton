@@ -1,11 +1,11 @@
 module;
 
-#include <cpx/reflect.h>
 #include <string>
 #include <vector>
 #include "macro.h"
 
 export module carton:profile;
+import cpx;
 
 export struct Profile {
     std::string              name;

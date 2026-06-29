@@ -8,24 +8,18 @@ project(carton
 include(cmake/CPM.cmake)
 
 CPMAddPackage(
-    NAME            cpx
-    GIT_REPOSITORY  "https://github.com/aufam/cpx"
-    GIT_TAG         v0.1.0
-)
-
-CPMAddPackage(
     NAME            fmt
     GIT_REPOSITORY  "https://github.com/fmtlib/fmt"
     GIT_TAG         12.1.0
-    COMPONENTS      fmt
+    OPTIONS         "FMT_MODULE ON"
 )
+target_compile_definitions(fmt PRIVATE FMT_ATTACH_TO_GLOBAL_MODULE=1)
 
 CPMAddPackage(
     NAME            spdlog
     GIT_REPOSITORY  "https://github.com/gabime/spdlog"
     GIT_TAG         v1.15.3
     OPTIONS         "SPDLOG_FMT_EXTERNAL ON"
-    COMPONENTS      spdlog
 )
 
 CPMAddPackage(
@@ -78,6 +72,13 @@ CPMAddPackage(
     GIT_TAG         boost-1.88.0
 )
 
+CPMAddPackage(
+    NAME            cpx
+    GIT_REPOSITORY  "https://github.com/aufam/cpx"
+    GIT_TAG         v0.1.0
+    OPTIONS         "CPX_MODULES ON"
+)
+
 # only setup the exeternal libraries
 if (REQUIREMENTS)
     return()
@@ -102,7 +103,7 @@ target_sources(carton
 )
 
 target_link_libraries(carton PRIVATE
-    cpx
+    cpx_mod
     fmt
     spdlog
     yyjson

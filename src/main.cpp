@@ -1,15 +1,15 @@
-#include <cpx/cli/cli11.h>
-#include <cpx/toml/toruniina_toml.h>
-#include <cpx/json/yy_json.h>
-#include <cpx/fmt.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <filesystem>
 #include <reproc++/run.hpp>
 
 import carton;
-
-namespace fs = std::filesystem;
+import fmt;
+import cpx;
+import cpx.fmt;
+import cpx.yy_json;
+import cpx.toruniina_toml;
+import cpx.cli11;
+import std.fs;
 
 constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
 
@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     Cli cli   = {};
     cli.cache = std::getenv("HOME") + std::string("/.carton");
 
-    cpx::cli11::parse("C++ package manager", argc, argv, cli);
+    cpx::cli11::parse("C++ package manager and build system", argc, argv, cli);
     spdlog::set_level(cli.log_level);
 
     // context
@@ -105,13 +105,13 @@ int main(int argc, char **argv) {
             return ctx.run(m);
     } catch (std::exception &e) {
         auto of = std::ofstream("./compile_commands.json");
-        of << cpx::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
+        of << cpx::yy_json::dump(ccs, cpx::yy_json::write_flag::pretty_two_spaces);
         spdlog::error("Failed to build: {}", e.what());
         return 1;
     }
 
     auto of = std::ofstream("./compile_commands.json");
-    of << cpx::yy_json::dump(ccs, YYJSON_WRITE_PRETTY_TWO_SPACES);
+    of << cpx::yy_json::dump(ccs, cpx::yy_json::write_flag::pretty_two_spaces);
 
     if (manifest)
         fmt::println("{}", cpx::yy_json::dump(ctx));

@@ -1,12 +1,12 @@
 module;
 
-#include <cpx/reflect.h>
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include "macro.h"
 
 export module carton:compile_command;
+import cpx;
 
 export struct CompileCommand {
     std::string file;

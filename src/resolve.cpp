@@ -1,17 +1,15 @@
 module;
 
-#include <cpx/fmt.h>
-#include <cpx/toml/toruniina_toml.h>
-#include <cpx/defer.h>
 #include <reproc++/run.hpp>
 #include <spdlog/spdlog.h>
-#include <filesystem>
 #include <unordered_set>
 #include <regex>
 
 module carton;
-
-namespace fs = std::filesystem;
+import std.fs;
+import fmt;
+import cpx;
+import cpx.toruniina_toml;
 
 void Carton::resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &d) {
     if (d.empty())
@@ -83,9 +81,9 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
 
     fs::path working_dir = fs::path(d.path) / d.subdir;
     if (auto sub = working_dir / "carton.toml"; &lib != &d && fs::exists(sub)) {
-        constexpr auto toml_version = cpx::toml::toruniina_toml::spec::v(1, 1, 0);
+        constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
 
-        auto p = cpx::toml::toruniina_toml::parse_from_file<Carton>(sub.string(), toml_version);
+        auto p = cpx::toruniina_toml::parse_from_file<Carton>(sub.string(), toml_version);
         if (fs::path(p.lib.path).is_absolute() && fs::path(p.lib.subdir).is_absolute())
             throw ferr("Path must be relative");
         p.lib.path = (working_dir / p.lib.path).string();

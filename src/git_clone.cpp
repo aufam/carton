@@ -1,13 +1,10 @@
 module;
 
-#include <cpx/defer.h>
-#include <cpx/fmt.h>
-#include <fmt/color.h>
 #include <spdlog/spdlog.h>
-#include <filesystem>
 #include <regex>
 
 module carton;
+import std.fs;
 
 static std::string extract_host_and_path(const std::string &url) {
     std::string cleaned = url;
@@ -60,13 +57,12 @@ std::string git_clone(const std::string &cache, const std::string &git, const st
     spdlog::debug("url={:?} host={:?} path={:?}", url, host, result_path.string());
 
     if (!fs::is_directory(result_path)) {
-        const std::string cmd = fmt::format(
-            ""
-            "git -c advice.detachedHead=false clone --quiet --depth 1 {1}\"{2}\" \"{0}\"",
-            result_path.string(),
-            tag.empty() ? "" : "--branch \"" + tag + "\" ",
-            url
-        );
+        const std::string cmd =
+            f(""
+              "git -c advice.detachedHead=false clone --quiet --depth 1 {1}\"{2}\" \"{0}\"",
+              result_path.string(),
+              tag.empty() ? "" : "--branch \"" + tag + "\" ",
+              url);
 
         print_status("Cloning", url);
         spdlog::debug("git clone: cmd={:?}", cmd);
@@ -94,12 +90,11 @@ std::string git_clone(const std::string &cache, const std::string &git, const st
         // }
 
         // check if the existing repo is dirty
-        const std::string dirty_check_cmd = fmt::format(
-            "cd \"{0}\" && "
-            "git diff --quiet 2>/dev/null && "
-            "git diff --cached --quiet 2>/dev/null",
-            result_path.string()
-        );
+        const std::string dirty_check_cmd =
+            f("cd \"{0}\" && "
+              "git diff --quiet 2>/dev/null && "
+              "git diff --cached --quiet 2>/dev/null",
+              result_path.string());
 
         spdlog::debug("checking dirty repo: cmd={:?}", dirty_check_cmd);
         if (int res = std::system(dirty_check_cmd.c_str()); res) {

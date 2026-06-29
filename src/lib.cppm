@@ -1,12 +1,10 @@
 module;
 
-#include <cpx/reflect.h>
-#include <cpx/fmt.h>
-#include <fmt/color.h>
 #include <string>
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <stdexcept>
 #include "macro.h"
 
 export module carton;
@@ -17,14 +15,15 @@ export import :compile_command;
 export import :cache;
 export import :cli;
 export import :config;
+import cpx;
+import fmt;
+import cpx.fmt;
 
 export {
     struct Carton;
 
-    namespace fs = std::filesystem;
-
-    void push_unique(std::vector<std::string> & vec, const std::string &value, bool front = false);
-    void push_unique(std::vector<std::string> & vec, const std::vector<std::string> &values, bool front = false);
+    void push_unique(std::vector<std::string> &vec, const std::string &value, bool front = false);
+    void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front = false);
 
     auto git_clone(const std::string &cache, const std::string &git, const std::string &tag) -> std::string;
     auto expand_path(const std::string &working_dir, std::vector<std::string> &sources) -> std::vector<std::string>;
@@ -38,12 +37,12 @@ export {
     auto collect_module_deps(const std::string &working_dir, const std::string &source) -> std::vector<std::string>;
 
     template <typename... Args>
-    auto f(fmt::format_string<Args...> fmt, Args && ...args) {
+    auto f(fmt::format_string<Args...> fmt, Args &&...args) {
         return fmt::format(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    auto ferr(fmt::format_string<Args...> fmt, Args && ...args) {
+    auto ferr(fmt::format_string<Args...> fmt, Args &&...args) {
         return std::runtime_error(fmt::format(fmt, std::forward<Args>(args)...));
     }
 
