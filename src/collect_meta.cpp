@@ -74,11 +74,13 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
     }
 
     const auto flags_ =
-        f("{} -O{} {} {} {}",
+        f("{} -O{} {} {} -fmacro-prefix-map=\"{}\"=\"{}\" -march=native {}",
           profile.debug ? "-g" : "-DNDEBUG",
           profile.opt_level,
           profile.lto ? "-flto" : "",
           profile.asan ? "-fsanitize=address,undefined" : "",
+          working_dir.string(),
+          package.name,
           fmt::join(profile.flags, " "));
     const auto     CXX       = f("{} {}", profile.cxx, flags_);
     const auto     C         = f("{} {}", profile.c, flags_);

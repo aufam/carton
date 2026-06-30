@@ -3,6 +3,8 @@ module;
 #include <reproc++/run.hpp>
 #include <spdlog/spdlog.h>
 #include <unordered_set>
+#include <algorithm>
+#include <filesystem>
 #include <regex>
 
 module carton;
@@ -11,33 +13,27 @@ import fmt;
 import cpx;
 import cpx.toruniina_toml;
 
+static std::vector<std::string> collect_cppm_globs(const fs::path &working_dir, const fs::path &src_dir) {
+    std::vector<std::string> result;
+
+    for (const auto &entry : fs::recursive_directory_iterator(src_dir)) {
+        if (!entry.is_regular_file())
+            continue;
+
+        if (entry.path().filename() != "lib.cppm")
+            continue;
+
+        auto relative_dir = fs::relative(entry.path().parent_path(), working_dir);
+        result.push_back((relative_dir / "*.cppm").generic_string());
+    }
+
+    std::sort(result.begin(), result.end());
+    return result;
+}
+
 void Carton::resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &d, bool from_registry) {
     if (d.empty())
         throw ferr("assertion failed: {:?} cannot be empty", d.name);
-
-    auto configure_subpackage = [&](Carton &p, bool from_registry) -> Dependency & {
-        if (p.package.edition > package.edition)
-            throw ferr(
-                "Error building dependency package={0:?}: {0:?} required std=c++{1} but {2:?} only supports std=c++{3}",
-                p.package.name,
-                p.package.edition,
-                package.name,
-                package.edition
-            );
-
-        p.pparent             = this;
-        p.cache               = this->cache;
-        p.cli                 = this->cli;
-        p.no_default_features = !d.default_features.value_or(true);
-        p.profiles            = profiles;
-        p.lib.features        = d.features;
-        try {
-            p.configure(profile, d.features, from_registry);
-        } catch (const std::exception &e) {
-            throw ferr("Error building dependency package={}: {}", p.package.name, e.what());
-        }
-        return p.lib;
-    };
 
     if (!d.path.empty()) {
         spdlog::info("resolving dep={:?} path={:?}", name, d.path);
@@ -71,9 +67,28 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
             throw ferr("The package `{}` does not have a library target", name_);
 
         p.package.version = d.version;
-        auto &lib         = configure_subpackage(p, true);
-        d                 = std::move(lib);
-        d.name            = name;
+        if (p.package.edition > package.edition)
+            throw ferr(
+                "Error building dependency package={0:?}: {0:?} required std=c++{1} but {2:?} only supports std=c++{3}",
+                p.package.name,
+                p.package.edition,
+                package.name,
+                package.edition
+            );
+
+        p.pparent             = this;
+        p.cache               = this->cache;
+        p.cli                 = this->cli;
+        p.no_default_features = !d.default_features.value_or(true);
+        p.profiles            = profiles;
+        try {
+            p.configure(profile, d.features, from_registry);
+        } catch (const std::exception &e) {
+            throw ferr("Error building dependency package={}: {}", p.package.name, e.what());
+        }
+
+        d      = std::move(p.lib);
+        d.name = name;
         return;
     }
 
@@ -87,22 +102,23 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
         auto p = cpx::toruniina_toml::parse_from_file<Carton>(sub.string(), toml_version);
         if (fs::path(p.lib.path).is_absolute() || fs::path(p.lib.subdir).is_absolute())
             throw ferr("Path must be relative");
-        p.lib.path = (working_dir / p.lib.path).string();
 
-        spdlog::info("got custom config for: p.name={:?}", p.package.name);
-        auto &lib    = configure_subpackage(p, false);
-        d            = std::move(lib);
-        d.name       = name;
-        dependencies = std::move(p.dependencies);
-        features     = std::move(p.features);
-    } else {
-        if (d.mod.empty() && fs::exists(working_dir / "src" / "lib.cppm"))
-            d.mod = {"src/*.cppm"};
-        if (d.src.empty() && fs::is_directory(working_dir / "src"))
-            d.src = {"src/*"};
-        if (d.inc.empty() && fs::is_directory(working_dir / "include"))
-            d.inc = {"public:include"};
+        p.lib.path = (working_dir / p.lib.path).string();
+        if (&d == &lib) {
+            package      = std::move(p.package);
+            dependencies = std::move(p.dependencies);
+            features     = std::move(p.features);
+        }
+        d      = std::move(p.lib);
+        d.name = name;
     }
+
+    if (d.mod.empty() && fs::exists(working_dir / "src" / "lib.cppm"))
+        d.mod = collect_cppm_globs(working_dir, "src");
+    if (d.src.empty() && fs::is_directory(working_dir / "src"))
+        d.src = {"src/*"};
+    if (d.inc.empty() && fs::is_directory(working_dir / "include"))
+        d.inc = {"public:include"};
 }
 
 static fs::path get_top_level_path_from_tar(const std::string &tar_file) {

@@ -3,6 +3,7 @@ module;
 #include <reproc++/run.hpp>
 #include <spdlog/spdlog.h>
 #include <xxhash.h>
+#include <algorithm>
 
 module carton;
 import std.fs;

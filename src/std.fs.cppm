@@ -14,6 +14,8 @@ export namespace fs {
     using ::std::filesystem::exists;
     using ::std::filesystem::is_directory;
     using ::std::filesystem::read_symlink;
+    using ::std::filesystem::recursive_directory_iterator;
+    using ::std::filesystem::relative;
     using ::std::filesystem::remove;
     using ::std::filesystem::remove_all;
     using ::std::filesystem::rename;
