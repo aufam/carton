@@ -5,7 +5,6 @@ module;
 #include <algorithm>
 #include <filesystem>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 module carton;
@@ -52,41 +51,61 @@ void Profiles::check_module_support() {
     spdlog::info("profile.release._module_support={}", release._module_support);
 }
 
-static void string_replace(
-    std::string &str, const std::string &key, const std::string &value, const std::unordered_map<std::string, std::string> &vars
-) {
-    std::string pattern = "{" + key + "}";
-    for (size_t pos = str.find(pattern); pos != std::string::npos; pos = str.find(pattern))
-        str.replace(pos, pattern.length(), value);
+static std::string apply_function(std::string value, std::string_view fn) {
+    if (fn.empty()) {
+        return value;
+    }
 
-    size_t pos = 0;
+    if (fn == "underscore") {
+        std::replace(value.begin(), value.end(), '.', '_');
+        return value;
+    }
+
+    if (fn == "dash") {
+        std::replace(value.begin(), value.end(), '.', '-');
+        return value;
+    }
+
+    if (fn == "lower") {
+        std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return std::tolower(c); });
+        return value;
+    }
+
+    if (fn == "upper") {
+        std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return std::toupper(c); });
+        return value;
+    }
+
+    // Unknown function: leave unchanged.
+    return value;
+}
+
+static void string_replace(std::string &str, std::string_view key, std::string_view value) {
+    std::size_t pos = 0;
+
     while ((pos = str.find('{', pos)) != std::string::npos) {
-        size_t end_pos = str.find('}', pos);
-        if (end_pos == std::string::npos) {
-            break; // Unclosed brace, treat as literal
+        auto end = str.find('}', pos);
+        if (end == std::string::npos)
+            break;
+
+        std::string_view placeholder(str.data() + pos + 1, end - pos - 1);
+
+        auto colon = placeholder.find(':');
+
+        std::string_view placeholder_key = placeholder;
+        std::string_view fn;
+
+        if (colon != std::string_view::npos) {
+            placeholder_key = placeholder.substr(0, colon);
+            fn              = placeholder.substr(colon + 1);
         }
 
-        std::string placeholder = str.substr(pos + 1, end_pos - pos - 1);
-        std::string key;
-        std::string default_value;
-        size_t      colon_pos = placeholder.find(':');
-
-        if (colon_pos != std::string::npos) {
-            key           = placeholder.substr(0, colon_pos);
-            default_value = placeholder.substr(colon_pos + 1);
+        if (placeholder_key == key) {
+            std::string replacement = apply_function(std::string(value), fn);
+            str.replace(pos, end - pos + 1, replacement);
+            pos += replacement.size();
         } else {
-            key = placeholder;
-        }
-
-        auto it = vars.find(key);
-        if (it != vars.end()) {
-            str.replace(pos, end_pos - pos + 1, it->second);
-            pos += it->second.length(); // Move past the replaced string
-        } else if (!default_value.empty()) {
-            str.replace(pos, end_pos - pos + 1, default_value);
-            pos += default_value.length();
-        } else {
-            pos = end_pos + 1; // Move past the placeholder
+            pos = end + 1;
         }
     }
 }
@@ -96,65 +115,63 @@ void Carton::apply_package_placeholders() {
     auto &version = package.version;
     auto  edition = std::to_string(package.edition);
 
-    std::unordered_map<std::string, std::string> vars;
-
     auto apply_dep = [&](Dependency &d) {
-        string_replace(d.version, "version", version, vars);
-        string_replace(d.path, "version", version, vars);
-        string_replace(d.url, "version", version, vars);
-        string_replace(d.git, "version", version, vars);
-        string_replace(d.branch, "version", version, vars);
-        string_replace(d.tag, "version", version, vars);
-        string_replace(d.subdir, "version", version, vars);
+        string_replace(d.version, "version", version);
+        string_replace(d.path, "version", version);
+        string_replace(d.url, "version", version);
+        string_replace(d.git, "version", version);
+        string_replace(d.branch, "version", version);
+        string_replace(d.tag, "version", version);
+        string_replace(d.subdir, "version", version);
         for (auto &str : d.features)
-            string_replace(str, "version", version, vars);
+            string_replace(str, "version", version);
         for (auto &str : d.src)
-            string_replace(str, "version", version, vars);
+            string_replace(str, "version", version);
         for (auto &str : d.inc)
-            string_replace(str, "version", version, vars);
+            string_replace(str, "version", version);
         for (auto &str : d.flags)
-            string_replace(str, "version", version, vars);
+            string_replace(str, "version", version);
         for (auto &str : d.link_flags)
-            string_replace(str, "version", version, vars);
-        string_replace(d.pre, "version", version, vars);
+            string_replace(str, "version", version);
+        string_replace(d.pre, "version", version);
 
-        string_replace(d.version, "name", name, vars);
-        string_replace(d.path, "name", name, vars);
-        string_replace(d.url, "name", name, vars);
-        string_replace(d.git, "name", name, vars);
-        string_replace(d.branch, "name", name, vars);
-        string_replace(d.tag, "name", name, vars);
-        string_replace(d.subdir, "name", name, vars);
+        string_replace(d.version, "name", name);
+        string_replace(d.path, "name", name);
+        string_replace(d.url, "name", name);
+        string_replace(d.git, "name", name);
+        string_replace(d.branch, "name", name);
+        string_replace(d.tag, "name", name);
+        string_replace(d.subdir, "name", name);
         for (auto &str : d.features)
-            string_replace(str, "name", name, vars);
+            string_replace(str, "name", name);
         for (auto &str : d.src)
-            string_replace(str, "name", name, vars);
+            string_replace(str, "name", name);
         for (auto &str : d.inc)
-            string_replace(str, "name", name, vars);
+            string_replace(str, "name", name);
         for (auto &str : d.flags)
-            string_replace(str, "name", name, vars);
+            string_replace(str, "name", name);
         for (auto &str : d.link_flags)
-            string_replace(str, "name", name, vars);
-        string_replace(d.pre, "name", name, vars);
+            string_replace(str, "name", name);
+        string_replace(d.pre, "name", name);
 
-        string_replace(d.version, "edition", edition, vars);
-        string_replace(d.path, "edition", edition, vars);
-        string_replace(d.url, "edition", edition, vars);
-        string_replace(d.git, "edition", edition, vars);
-        string_replace(d.branch, "edition", edition, vars);
-        string_replace(d.tag, "edition", edition, vars);
-        string_replace(d.subdir, "edition", edition, vars);
+        string_replace(d.version, "edition", edition);
+        string_replace(d.path, "edition", edition);
+        string_replace(d.url, "edition", edition);
+        string_replace(d.git, "edition", edition);
+        string_replace(d.branch, "edition", edition);
+        string_replace(d.tag, "edition", edition);
+        string_replace(d.subdir, "edition", edition);
         for (auto &str : d.features)
-            string_replace(str, "edition", edition, vars);
+            string_replace(str, "edition", edition);
         for (auto &str : d.src)
-            string_replace(str, "edition", edition, vars);
+            string_replace(str, "edition", edition);
         for (auto &str : d.inc)
-            string_replace(str, "edition", edition, vars);
+            string_replace(str, "edition", edition);
         for (auto &str : d.flags)
-            string_replace(str, "edition", edition, vars);
+            string_replace(str, "edition", edition);
         for (auto &str : d.link_flags)
-            string_replace(str, "edition", edition, vars);
-        string_replace(d.pre, "edition", edition, vars);
+            string_replace(str, "edition", edition);
+        string_replace(d.pre, "edition", edition);
     };
     apply_dep(lib);
 
@@ -164,9 +181,9 @@ void Carton::apply_package_placeholders() {
 
     for (auto &[_, feats] : features) {
         for (auto &feat : feats) {
-            string_replace(feat, "name", name, vars);
-            string_replace(feat, "version", version, vars);
-            string_replace(feat, "edition", edition, vars);
+            string_replace(feat, "name", name);
+            string_replace(feat, "version", version);
+            string_replace(feat, "edition", edition);
         }
     }
 }

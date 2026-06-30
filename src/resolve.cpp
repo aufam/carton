@@ -11,11 +11,11 @@ import fmt;
 import cpx;
 import cpx.toruniina_toml;
 
-void Carton::resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &d) {
+void Carton::resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &d, bool from_registry) {
     if (d.empty())
         throw ferr("assertion failed: {:?} cannot be empty", d.name);
 
-    auto configure_subpackage = [&](Carton &p) -> Dependency & {
+    auto configure_subpackage = [&](Carton &p, bool from_registry) -> Dependency & {
         if (p.package.edition > package.edition)
             throw ferr(
                 "Error building dependency package={0:?}: {0:?} required std=c++{1} but {2:?} only supports std=c++{3}",
@@ -30,10 +30,11 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
         p.cli                 = this->cli;
         p.no_default_features = !d.default_features.value_or(true);
         p.profiles            = profiles;
+        p.lib.features        = d.features;
         try {
-            p.configure(profile, d.features);
+            p.configure(profile, d.features, from_registry);
         } catch (const std::exception &e) {
-            throw ferr("Error building dependency package={} `{}`: {}", p.package.name, name, e.what());
+            throw ferr("Error building dependency package={}: {}", p.package.name, e.what());
         }
         return p.lib;
     };
@@ -70,9 +71,9 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
             throw ferr("The package `{}` does not have a library target", name_);
 
         p.package.version = d.version;
-        auto &lib         = configure_subpackage(p);
+        auto &lib         = configure_subpackage(p, true);
         d                 = std::move(lib);
-        resolve_remote_dep(profile, name, d);
+        d.name            = name;
         return;
     }
 
@@ -80,16 +81,20 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
         d.path = (fs::path(lib.path) / lib.subdir / path).lexically_normal().string();
 
     fs::path working_dir = fs::path(d.path) / d.subdir;
-    if (auto sub = working_dir / "carton.toml"; &lib != &d && fs::exists(sub)) {
+    if (auto sub = working_dir / "carton.toml"; from_registry && fs::exists(sub)) {
         constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
 
         auto p = cpx::toruniina_toml::parse_from_file<Carton>(sub.string(), toml_version);
-        if (fs::path(p.lib.path).is_absolute() && fs::path(p.lib.subdir).is_absolute())
+        if (fs::path(p.lib.path).is_absolute() || fs::path(p.lib.subdir).is_absolute())
             throw ferr("Path must be relative");
         p.lib.path = (working_dir / p.lib.path).string();
 
-        auto &lib = configure_subpackage(p);
-        d         = std::move(lib);
+        spdlog::info("got custom config for: p.name={:?}", p.package.name);
+        auto &lib    = configure_subpackage(p, false);
+        d            = std::move(lib);
+        d.name       = name;
+        dependencies = std::move(p.dependencies);
+        features     = std::move(p.features);
     } else {
         if (d.mod.empty() && fs::exists(working_dir / "src" / "lib.cppm"))
             d.mod = {"src/*.cppm"};

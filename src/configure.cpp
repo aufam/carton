@@ -25,7 +25,7 @@ find_extra_features(Carton &p, const std::string &feat, std::vector<std::string>
     return "";
 }
 
-void Carton::configure(const Profile &profile, const std::vector<std::string> &features) {
+void Carton::configure(const Profile &profile, const std::vector<std::string> &features, bool from_registry) {
     if (package.name.empty())
         throw ferr("Error building {:?}: name is required", package.name);
 
@@ -48,8 +48,9 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
 
     if (lib.name.empty())
         lib.name = package.name;
-    resolve_remote_dep(profile, package.name, lib);
+    resolve_remote_dep(profile, package.name, lib, from_registry);
 
+    spdlog::info("finding extra features for {}, total_features={}", package.name, this->features.size());
     std::vector<std::string> extra_features;
     if (no_default_features)
         std::ignore = find_extra_features(*this, "nodefault", extra_features);
@@ -109,7 +110,7 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
         }
 
         try {
-            resolve_remote_dep(profile, name, d);
+            resolve_remote_dep(profile, name, d, true);
         } catch (const std::exception &e) {
             throw ferr("Error resolving {:?} required by {:?}: {}", name, package.name, e.what());
         }
@@ -118,6 +119,7 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
             auto m = collect_meta(profile, d);
             push_unique(lib.flags, m.flags);
             push_unique(lib.link_flags, m.link_flags);
+            spdlog::info("storing into cache: d.name={} m.lib.name={}", d.name, m.lib.name);
             cache->meta.push_back(std::move(m));
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of {:?} required by {:?}: {}", name, package.name, e.what());

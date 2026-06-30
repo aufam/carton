@@ -98,13 +98,13 @@ struct Carton {
     Cache     *cache   = nullptr;
     const Cli *cli     = nullptr;
 
-    void configure(const Profile &profile, const std::vector<std::string> &features = {});
+    void configure(const Profile &profile, const std::vector<std::string> &features = {}, bool from_registry = false);
     auto build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build) -> std::pair<bool, Cache::Meta>;
     int  run(const Cache::Meta &m);
 
 private:
     void apply_package_placeholders();
-    void resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &dep);
+    void resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &dep, bool from_registry = false);
     auto collect_meta(const Profile &profile, Dependency &dep) -> Cache::Meta;
 };
 
