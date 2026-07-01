@@ -7,10 +7,12 @@ export module std.fs;
 export namespace fs {
     using ::std::filesystem::path;
 
+    using ::std::filesystem::begin;
     using ::std::filesystem::copy;
     using ::std::filesystem::copy_file;
     using ::std::filesystem::create_directories;
     using ::std::filesystem::current_path;
+    using ::std::filesystem::end;
     using ::std::filesystem::exists;
     using ::std::filesystem::is_directory;
     using ::std::filesystem::read_symlink;

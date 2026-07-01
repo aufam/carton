@@ -50,6 +50,8 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
     if (feature_name.empty())
         feature_name = "-";
 
+    const int cppm_standard = std::max(20, pparent ? pparent->package.edition : package.edition);
+
     fs::path working_dir = fs::path(d.path) / d.subdir;
     if (working_dir.empty())
         throw ferr("path and subdir is empty for dep={}", d.name);
@@ -74,13 +76,14 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
     }
 
     const auto flags_ =
-        f("{} -O{} {} {} -fmacro-prefix-map=\"{}\"=\"{}\" -march=native {}",
+        f("{} -O{} {} {} "
+          "-fmacro-prefix-map=\"{}\"=\"{}\" -march=native {}",
           profile.debug ? "-g" : "-DNDEBUG",
           profile.opt_level,
           profile.lto ? "-flto" : "",
           profile.asan ? "-fsanitize=address,undefined" : "",
           working_dir.string(),
-          package.name,
+          d.name,
           fmt::join(profile.flags, " "));
     const auto     CXX       = f("{} {}", profile.cxx, flags_);
     const auto     C         = f("{} {}", profile.c, flags_);
@@ -149,7 +152,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             ccm.output    = mod_path.string() + ".o";
             ccm.depfile   = mod_path.string() + ".d";
 
-            auto pcm = f("{}.pcm", mod_name);
+            auto pcm = f("{}-{}.pcm", cppm_standard, mod_name);
             std::replace(pcm.begin(), pcm.end(), ':', '-');
 
             std::vector<std::string>        pcm_flags;
@@ -159,7 +162,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             ccm.command =
                 f("{} -std=c++{} -x c++-module {} {} -fmodule-output='{}' -o '{}' -c '{}' -MMD -MP -MF '{}'",
                   CXX,
-                  std::max(d.cpp_standard, 20),
+                  cppm_standard,
                   fmt::join(flags, " "),
                   fmt::join(pcm_flags, " "),
                   pcm,
@@ -181,19 +184,19 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
 
             const auto ext = entry.extension();
 
-            std::vector<std::string>        pcm_flags;
-            std::unordered_set<std::string> visited;
-            for (auto &dep : collect_module_deps(working_dir.string(), entry.string())) {
-                auto it = mod_paths.find(dep);
-                if (it == mod_paths.end()) {
-                    throw ferr("unknown module `{}` required by file `{}`", dep, entry.string());
-                }
-                push_unique(export_link_flags, mod_objs.at(dep));
-                push_unique(pcm_flags, f("-fmodule-file={}='{}'", dep, it->second));
-                collect_modules(dep, mods, mod_paths, mod_objs, visited, pcm_flags, &export_link_flags);
-            }
-
             if (ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
+                std::vector<std::string>        pcm_flags;
+                std::unordered_set<std::string> visited;
+                for (auto &dep : collect_module_deps(working_dir.string(), entry.string())) {
+                    auto it = mod_paths.find(dep);
+                    if (it == mod_paths.end()) {
+                        throw ferr("unknown module `{}` required by file `{}`", dep, entry.string());
+                    }
+                    push_unique(export_link_flags, mod_objs.at(dep));
+                    push_unique(pcm_flags, f("-fmodule-file={}='{}'", dep, it->second));
+                    collect_modules(dep, mods, mod_paths, mod_objs, visited, pcm_flags, &export_link_flags);
+                }
+
                 cc.command =
                     f("{} -std=c++{} {} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
                       CXX,

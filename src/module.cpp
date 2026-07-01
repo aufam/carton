@@ -188,7 +188,7 @@ std::vector<std::string> sort_modules(
 }
 
 std::vector<std::string> collect_module_deps(const std::string &working_dir, const std::string &source) {
-    auto module = parse_module(working_dir, source, false);
-    push_unique(module.imports, module.name);
-    return std::move(module.imports);
+    auto mod = parse_module(working_dir, source, false);
+    push_unique(mod.imports, mod.name);
+    return std::move(mod.imports);
 }

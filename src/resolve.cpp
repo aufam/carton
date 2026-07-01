@@ -3,8 +3,8 @@ module;
 #include <reproc++/run.hpp>
 #include <spdlog/spdlog.h>
 #include <unordered_set>
+#include <unordered_map>
 #include <algorithm>
-#include <filesystem>
 #include <regex>
 
 module carton;
@@ -16,10 +16,9 @@ import cpx.toruniina_toml;
 static std::vector<std::string> collect_cppm_globs(const fs::path &working_dir, const fs::path &src_dir) {
     std::vector<std::string> result;
 
-    for (const auto &entry : fs::recursive_directory_iterator(src_dir)) {
-        if (!entry.is_regular_file())
-            continue;
-
+    auto it = fs::recursive_directory_iterator(working_dir / src_dir);
+    for (auto ptr = fs::begin(it); ptr != fs::end(it); ++ptr) {
+        const auto &entry = *ptr;
         if (entry.path().filename() != "lib.cppm")
             continue;
 
@@ -82,7 +81,7 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
         p.no_default_features = !d.default_features.value_or(true);
         p.profiles            = profiles;
         try {
-            p.configure(profile, d.features, from_registry);
+            p.configure(profile, d.features, true);
         } catch (const std::exception &e) {
             throw ferr("Error building dependency package={}: {}", p.package.name, e.what());
         }
@@ -108,6 +107,26 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
             package      = std::move(p.package);
             dependencies = std::move(p.dependencies);
             features     = std::move(p.features);
+        } else {
+            if (p.package.edition > package.edition)
+                throw ferr(
+                    "Error building dependency package={0:?}: {0:?} required std=c++{1} but {2:?} only supports std=c++{3}",
+                    p.package.name,
+                    p.package.edition,
+                    package.name,
+                    package.edition
+                );
+
+            p.pparent             = this;
+            p.cache               = this->cache;
+            p.cli                 = this->cli;
+            p.no_default_features = !d.default_features.value_or(true);
+            p.profiles            = profiles;
+            try {
+                p.configure(profile, d.features);
+            } catch (const std::exception &e) {
+                throw ferr("Error building dependency package={}: {}", p.package.name, e.what());
+            }
         }
         d      = std::move(p.lib);
         d.name = name;
@@ -121,9 +140,17 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
         d.inc = {"public:include"};
 }
 
-static fs::path get_top_level_path_from_tar(const std::string &tar_file) {
+static fs::path get_top_level_path_from_tar(const fs::path &extract_dir, const std::string &tar_file) {
     std::vector<std::string>        result;
     std::unordered_set<std::string> unique_entries;
+
+    auto cache      = std::unordered_map<std::string, std::string>();
+    auto cache_path = extract_dir / "cache.toml";
+    if (fs::exists(cache_path)) {
+        cpx::toruniina_toml::parse_from_file(cache_path.string(), cache);
+        if (auto it = cache.find(tar_file); it != cache.end())
+            return it->second;
+    }
 
     std::string command = fmt::format("tar tf \"{}\" | cut -d/ -f1 | uniq", tar_file);
     spdlog::debug("checking tar content: cmd={:?}", command);
@@ -151,6 +178,10 @@ static fs::path get_top_level_path_from_tar(const std::string &tar_file) {
     if (result.size() > 1)
         throw ferr("Multiple top level paths from {:?} are not supported. The paths are: {}", tar_file, fmt::join(result, " "));
 
+    cache[tar_file] = result.front();
+    fs::create_directories(extract_dir);
+    std::ofstream os(cache_path);
+    os << cpx::toruniina_toml::io << cache;
     return result.front();
 }
 
@@ -243,7 +274,7 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
 
     if (is_compressed) {
         const auto extract_dir  = fs::path(cache) / "src" / "extracted";
-        const auto extract_path = extract_dir / get_top_level_path_from_tar(path_str);
+        const auto extract_path = extract_dir / get_top_level_path_from_tar(extract_dir, path_str);
         const auto get_tar_flag = [&]() {
             if (extension == ".tar") {
                 return "-xf";
