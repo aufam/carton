@@ -98,6 +98,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
     std::vector<std::string> flags;
     std::vector<std::string> export_flags;
     std::vector<std::string> export_link_flags;
+    std::vector<std::string> export_mod_flags;
     std::string              main_o;
     for (auto &str : d.flags) {
         if (str.starts_with("public:")) {
@@ -123,6 +124,9 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
     }
     for (auto &str : d.link_flags) {
         push_unique(export_link_flags, str);
+    }
+    for (auto &str : d.mod_flags) {
+        push_unique(export_mod_flags, str);
     }
 
     if (!profile._module_support)
@@ -158,13 +162,14 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             std::vector<std::string>        pcm_flags;
             std::unordered_set<std::string> visited;
             collect_modules(mod_name, mods, mod_paths, mod_objs, visited, pcm_flags, nullptr);
+            push_unique(export_mod_flags, pcm_flags);
 
             ccm.command =
                 f("{} -std=c++{} -x c++-module {} {} -fmodule-output='{}' -o '{}' -c '{}' -MMD -MP -MF '{}'",
                   CXX,
                   cppm_standard,
                   fmt::join(flags, " "),
-                  fmt::join(pcm_flags, " "),
+                  fmt::join(export_mod_flags, " "),
                   pcm,
                   ccm.output,
                   ccm.file,
@@ -173,6 +178,8 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             mod_paths[mod_name] = (build_dir / pcm).string();
             mod_objs[mod_name]  = (build_dir / ccm.output).string();
             ccms.push_back(ccm);
+            push_unique(export_mod_flags, f("-fmodule-file={}='{}'", mod_name, mod_paths.at(mod_name)));
+            push_unique(export_link_flags, mod_objs.at(mod_name));
         }
 
         for (const fs::path entry : expand_path(working_dir.string(), d.src)) {
@@ -185,16 +192,12 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             const auto ext = entry.extension();
 
             if (ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
-                std::vector<std::string>        pcm_flags;
-                std::unordered_set<std::string> visited;
                 for (auto &dep : collect_module_deps(working_dir.string(), entry.string())) {
                     auto it = mod_paths.find(dep);
                     if (it == mod_paths.end()) {
                         throw ferr("unknown module `{}` required by file `{}`", dep, entry.string());
                     }
                     push_unique(export_link_flags, mod_objs.at(dep));
-                    push_unique(pcm_flags, f("-fmodule-file={}='{}'", dep, it->second));
-                    collect_modules(dep, mods, mod_paths, mod_objs, visited, pcm_flags, &export_link_flags);
                 }
 
                 cc.command =
@@ -202,7 +205,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
                       CXX,
                       d.cpp_standard,
                       fmt::join(flags, " "),
-                      fmt::join(pcm_flags, " "),
+                      fmt::join(export_mod_flags, " "),
                       cc.output,
                       cc.file,
                       cc.depfile);
@@ -227,6 +230,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
         m.lib                 = d;
         m.flags               = std::move(export_flags);
         m.link_flags          = std::move(export_link_flags);
+        m.mod_flags           = std::move(export_mod_flags);
         m.main_o              = std::move(main_o);
         m.compile_commands    = std::move(ccs);
         m.precompile_commands = std::move(ccms);

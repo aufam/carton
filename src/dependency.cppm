@@ -32,8 +32,9 @@ export struct Dependency {
     std::vector<std::string> link_flags;
     std::string              pre;
 
-    std::string name;
-    int         cpp_standard;
+    std::string              name;
+    int                      cpp_standard;
+    std::vector<std::string> mod_flags;
 
     Dependency &operator+=(const Dependency &other);
 

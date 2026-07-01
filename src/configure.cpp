@@ -106,6 +106,7 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
         if (existing) {
             push_unique(lib.flags, existing->flags);
             push_unique(lib.link_flags, existing->link_flags);
+            push_unique(lib.mod_flags, existing->mod_flags);
             continue;
         }
 
@@ -119,6 +120,7 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
             auto m = collect_meta(profile, d);
             push_unique(lib.flags, m.flags);
             push_unique(lib.link_flags, m.link_flags);
+            push_unique(lib.mod_flags, m.mod_flags);
             spdlog::info("storing into cache: d.name={} m.lib.name={}", d.name, m.lib.name);
             cache->meta.push_back(std::move(m));
         } catch (const std::exception &e) {
