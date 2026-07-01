@@ -4,7 +4,6 @@ module;
 #include <spdlog/spdlog.h>
 #include <unordered_set>
 #include <unordered_map>
-#include <algorithm>
 #include <regex>
 
 module carton;
@@ -13,7 +12,8 @@ import fmt;
 import cpx;
 import cpx.toruniina_toml;
 
-static std::vector<std::string> collect_cppm_globs(const fs::path &working_dir, const fs::path &src_dir) {
+static std::vector<std::string>
+collect_cppm_globs(const fs::path &working_dir, const fs::path &src_dir, std::vector<std::string> *cpps) {
     std::vector<std::string> result;
 
     auto it = fs::recursive_directory_iterator(working_dir / src_dir);
@@ -24,9 +24,10 @@ static std::vector<std::string> collect_cppm_globs(const fs::path &working_dir, 
 
         auto relative_dir = fs::relative(entry.path().parent_path(), working_dir);
         result.push_back((relative_dir / "*.cppm").generic_string());
+        if (cpps)
+            cpps->push_back((relative_dir / "*").generic_string());
     }
 
-    std::sort(result.begin(), result.end());
     return result;
 }
 
@@ -133,7 +134,7 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
     }
 
     if (d.mod.empty() && fs::exists(working_dir / "src" / "lib.cppm"))
-        d.mod = collect_cppm_globs(working_dir, "src");
+        d.mod = collect_cppm_globs(working_dir, "src", d.src.empty() ? &d.src : nullptr);
     if (d.src.empty() && fs::is_directory(working_dir / "src"))
         d.src = {"src/*"};
     if (d.inc.empty() && fs::is_directory(working_dir / "include"))
