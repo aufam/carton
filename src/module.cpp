@@ -1,6 +1,8 @@
 module;
 
+#include <reproc++/run.hpp>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <unordered_map>
 #include <map>
@@ -9,7 +11,9 @@ module;
 #include <algorithm>
 
 module carton;
+import :p1689;
 import std.fs;
+import cpx.yy_json;
 
 namespace {
     struct Module {
@@ -19,7 +23,33 @@ namespace {
     };
 } // namespace
 
-// TODO: use clang-scan-deps
+static Module parse_module_p1689(const fs::path &working_dir, const std::string &file, const std::string &cc) {
+    std::string     working_dir_str = working_dir.string();
+    reproc::options opt;
+    opt.redirect.out.type = reproc::redirect::pipe;
+    opt.redirect.err.type = reproc::redirect::pipe;
+    opt.working_directory = working_dir_str.c_str();
+
+    std::string json;
+    std::string errmsg;
+    auto [status, ec] = reproc::run(
+        std::vector<std::string>{"sh", "-c", f("clang-scan-deps -format=p1689 -- {}", cc)},
+        opt,
+        reproc::sink::string(json),
+        reproc::sink::string(errmsg)
+    );
+
+    if (status != 0 || ec) {
+        fmt::println(stderr, "{}", errmsg);
+        throw ferr("clang-scan-deps failed: file={:?} cc={:?}: {}", file, cc, errmsg);
+    }
+
+    // fmt::println(stderr, "{}", json);
+    auto p = cpx::yy_json::parse<p1689>(json);
+    // fmt::println(stderr, "{}:{}", p.version, p.revision);
+    return {.name = p.name(), .imports = p.deps(), .path = file};
+}
+
 static Module parse_module(const fs::path &working_dir, const std::string &file, bool strict = true) {
     std::ifstream in(working_dir / file);
     if (!in)
@@ -149,6 +179,45 @@ static std::vector<std::string> topo_sort(const Graph &g) {
     }
 
     return result;
+}
+
+std::vector<std::string> sort_modules_p1689(
+    const std::string                               &working_dir,
+    std::vector<std::string>                        &files,
+    std::vector<std::string>                        &ccs,
+    std::map<std::string, std::vector<std::string>> &mods
+) {
+    std::vector<Module> modules;
+    modules.reserve(files.size());
+
+    for (size_t i = 0; i < files.size(); ++i) {
+        auto mod       = parse_module_p1689(working_dir, files[i], ccs[i]);
+        mods[mod.name] = mod.imports;
+        modules.push_back(mod);
+    }
+
+    auto graph = build_graph(modules);
+    auto order = topo_sort(graph);
+
+    std::unordered_map<std::string, Module> map;
+    for (auto &m : modules)
+        map[m.name] = m;
+
+    std::vector<Module> sorted;
+    sorted.reserve(order.size());
+    for (const auto &name : order) {
+        sorted.push_back(map.at(name));
+    }
+
+    std::unordered_map<std::string, size_t> rank;
+    rank.reserve(order.size());
+    for (size_t i = 0; i < order.size(); ++i) {
+        rank[sorted[i].path] = i;
+    }
+
+    std::sort(files.begin(), files.end(), [&](const std::string &a, const std::string &b) { return rank.at(a) < rank.at(b); });
+
+    return order;
 }
 
 std::vector<std::string> sort_modules(

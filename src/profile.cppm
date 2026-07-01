@@ -19,7 +19,8 @@ export struct Profile {
     std::vector<std::string> flags;
     std::vector<std::string> link_flags;
 
-    bool _module_support = false;
+    bool        _module_support = false;
+    std::string _module_compiler;
 
     static Profile Release() {
         Profile t;

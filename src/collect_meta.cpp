@@ -144,8 +144,21 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
     auto &mod_paths = this->cache->mod_paths;
     auto &mod_objs  = this->cache->mod_objs;
     try {
-        auto modules   = expand_path(working_dir.string(), d.mod);
-        auto mod_names = sort_modules(working_dir, modules, mods);
+        auto modules = expand_path(working_dir.string(), d.mod);
+
+        std::vector<std::string> module_ccs;
+        module_ccs.reserve(modules.size());
+        for (const auto &mod : modules) {
+            auto cc =
+                f("{} -std=c++{} -x c++-module {} -c '{}'", profile._module_compiler, cppm_standard, fmt::join(flags, " "), mod);
+            module_ccs.emplace_back(std::move(cc));
+        }
+
+        auto mod_names = sort_modules_p1689(working_dir, modules, module_ccs, mods);
+
+        // auto modules   = expand_path(working_dir.string(), d.mod);
+        // auto mod_names = sort_modules(working_dir, modules, mods);
+
         for (size_t i = 0; i < modules.size(); ++i) {
             const std::string &mod_name = mod_names[i];
             const fs::path     mod_path = modules[i];
@@ -192,14 +205,6 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             const auto ext = entry.extension();
 
             if (ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
-                for (auto &dep : collect_module_deps(working_dir.string(), entry.string())) {
-                    auto it = mod_paths.find(dep);
-                    if (it == mod_paths.end()) {
-                        throw ferr("unknown module `{}` required by file `{}`", dep, entry.string());
-                    }
-                    push_unique(export_link_flags, mod_objs.at(dep));
-                }
-
                 cc.command =
                     f("{} -std=c++{} {} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
                       CXX,
