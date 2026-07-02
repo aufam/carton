@@ -75,6 +75,6 @@ CPX_REFLECT(
     ((release            , "release                                            "))
     ((no_default_features, "no-default-features                                "))
     ((features           , "features                                           "))
-    ((args               , "args                                               "))
+    ((args               , "args                , positional                   "))
 );
 // clang-format on

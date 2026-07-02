@@ -77,19 +77,13 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
             continue;
         }
 
-        // TODO: what if the subpackage got discovered first?
-        if (!d.version.empty() && d.version.front() == '?') {
-            if (pparent == nullptr) {
-                d.version = d.version.substr(1);
-            } else {
-                auto it = pparent->dependencies.find(d.name);
-                if (it != pparent->dependencies.end()) {
-                    auto &dep = it->second;
-                    if (dep.version.empty())
-                        throw ferr("`{}` version cannot be empty", d.name);
-                    d = dep;
-                } else
-                    d.version = d.version.substr(1);
+        // TODO: version comparison
+        if (!d.version.empty() && pparent != nullptr) {
+            if (auto it = pparent->dependencies.find(d.name); it != pparent->dependencies.end()) {
+                auto &dep = it->second;
+                if (dep.version.empty())
+                    throw ferr("`{}` version cannot be empty", d.name);
+                d = dep;
             }
         }
 

@@ -13,7 +13,7 @@ documentation = "<todo>"
 license = "MIT"
 
 [dependencies]
-cpx = { version = "0.1.0", features = ["fmt", "spdlog", "json", "toml", "magic_enum", "cli"] }
+cpx = { version = "0.1.0", features = ["fmt", "json", "toml", "magic_enum", "cli"] }
 fmt = "12.1.0"
 spdlog = { version = "1.17.0", default-features = false }
 yyjson = "0.12.0"
