@@ -105,6 +105,28 @@ static fs::path resolve_compiler(std::string_view compiler) {
     throw std::runtime_error("Compiler '" + std::string(compiler) + "' not found in PATH");
 }
 
+constexpr std::string_view os_name() {
+#if defined(_WIN32)
+    return "win";
+#elif defined(__APPLE__)
+    return "osx";
+#elif defined(__linux__)
+    return "linux";
+#else
+    return "unknown";
+#endif
+}
+
+constexpr std::string_view arch_name() {
+#if defined(__x86_64__) || defined(_M_X64)
+    return "x64";
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    return "arm64";
+#else
+    return "unknown";
+#endif
+}
+
 void Profiles::check_module_support() {
     dev._module_compiler     = resolve_compiler(dev.cxx);
     release._module_compiler = resolve_compiler(release.cxx);

@@ -52,11 +52,26 @@
       },
       "oneOf": [
         {
+          "required": ["version"],
+          "not": {
+            "anyOf": [
+              { "required": ["path"] },
+              { "required": ["url"] },
+              { "required": ["git"] },
+              { "required": ["tag"] },
+              { "required": ["branch"] }
+            ]
+          }
+        },
+        {
           "required": ["path"],
           "not": {
             "anyOf": [
+              { "required": ["version"] },
               { "required": ["url"] },
-              { "required": ["git"] }
+              { "required": ["git"] },
+              { "required": ["tag"] },
+              { "required": ["branch"] }
             ]
           }
         },
@@ -64,6 +79,7 @@
           "required": ["url"],
           "not": {
             "anyOf": [
+              { "required": ["version"] },
               { "required": ["path"] },
               { "required": ["git"] },
               { "required": ["tag"] },
@@ -74,12 +90,28 @@
         {
           "required": ["git"],
           "not": {
-            "required": ["path"]
+            "anyOf": [
+              { "required": ["version"] },
+              { "required": ["path"] },
+              { "required": ["url"] }
+            ]
           },
           "anyOf": [
             { "required": ["tag"] },
             { "required": ["branch"] }
           ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              { "required": ["version"] },
+              { "required": ["path"] },
+              { "required": ["url"] },
+              { "required": ["git"] },
+              { "required": ["tag"] },
+              { "required": ["branch"] }
+            ]
+          }
         }
       ]
     },
