@@ -34,7 +34,7 @@
         "readme": { "type": "string" },
         "repository": { "type": "string" },
         "homepage": { "type": "string" },
-        "documentation": { "type": "string" },
+        "documentation": { "type": "string" }
       }
     },
 
@@ -59,13 +59,29 @@
         "link-flags": { "type": "array", "items": { "type": "string" } },
         "pre": { "type": "string" }
       },
-      "oneOf": [
+      "anyOf": [
+        { "oneOf": [
+        {
+          "required": ["version"],
+          "not": {
+            "anyOf": [
+              { "required": ["path"] },
+              { "required": ["url"] },
+              { "required": ["git"] },
+              { "required": ["tag"] },
+              { "required": ["branch"] }
+            ]
+          }
+        },
         {
           "required": ["path"],
           "not": {
             "anyOf": [
+              { "required": ["version"] },
               { "required": ["url"] },
-              { "required": ["git"] }
+              { "required": ["git"] },
+              { "required": ["tag"] },
+              { "required": ["branch"] }
             ]
           }
         },
@@ -73,6 +89,7 @@
           "required": ["url"],
           "not": {
             "anyOf": [
+              { "required": ["version"] },
               { "required": ["path"] },
               { "required": ["git"] },
               { "required": ["tag"] },
@@ -83,13 +100,24 @@
         {
           "required": ["git"],
           "not": {
-            "required": ["path"]
+            "anyOf": [
+              { "required": ["version"] },
+              { "required": ["path"] },
+              { "required": ["url"] }
+            ]
           },
-          "anyOf": [
-            { "required": ["tag"] },
-            { "required": ["branch"] }
+          "oneOf": [
+            { "required": ["tag"], "not": { "required": ["branch"] } },
+            { "required": ["branch"], "not": { "required": ["tag"] } }
           ]
         }
+        ] },
+        { "required": ["src"] },
+        { "required": ["inc"] },
+        { "required": ["lib"] },
+        { "required": ["mod"]  },
+        { "required": ["flags"] },
+        { "required": ["link-flags"] }
       ]
     },
 

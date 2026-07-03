@@ -314,13 +314,16 @@ name = "onnx"
 edition = 17
 
 [onnx.lib]
-url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-linux-x64-{version}.tgz"
+url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os}-{arch}-{version}.tgz"
 
 [onnx.dependencies]
 default = { lib = ["lib/libonnxruntime.so.{version}"] }
 cuda = {
-    url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-linux-x64-gpu-{version}.tgz",
-    lib = ["lib/libonnxruntime.so.{version}"]
+    url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os}-{arch}-gpu-{version}.tgz",
+    lib = [
+        "linux:lib/libonnxruntime.so.{version}",
+        "osx:lib/libonnxruntime.{version}.dylib",
+    ]
 }
 
 
@@ -329,8 +332,11 @@ name = "onnx-cuda"
 edition = 17
 
 ['onnx-cuda'.lib]
-url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-linux-x64-gpu-{version}.tgz"
-lib = ["lib/libonnxruntime.so.{version}"]
+url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os}-{arch}-gpu-{version}.tgz"
+lib = [
+    "linux:lib/libonnxruntime.so.{version}",
+    "osx:lib/libonnxruntime.{version}.dylib",
+]
 
 
 #
@@ -581,6 +587,9 @@ default = ["screen", "dom", "component", "util"]
 #
 # async_simple
 #
+[async.package]
+name = "async_simple"
+
 [async_simple.package]
 name = "async_simple"
 edition = 20
@@ -588,21 +597,7 @@ edition = 20
 [async_simple.lib]
 git = "https://github.com/alibaba/async_simple"
 tag = "v{version}"
-src = ["async_simple/uthread/internal/thread.cc", "async_simple/uthread/internal/Linux/x86_64/*"]
-inc = ["public:"]
-
-
-#
-# async_simple
-#
-[async.package]
-name = "async"
-edition = 20
-
-[async.lib]
-git = "https://github.com/alibaba/async_simple"
-tag = "{version}"
-src = ["async_simple/uthread/internal/thread.cc", "async_simple/uthread/internal/Linux/x86_64/*"]
+src = ["async_simple/uthread/internal/thread.cc", "async_simple/uthread/internal/{os.name}/{arch.gnu}/*"]
 inc = ["public:"]
 
 

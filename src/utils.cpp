@@ -105,28 +105,6 @@ static fs::path resolve_compiler(std::string_view compiler) {
     throw std::runtime_error("Compiler '" + std::string(compiler) + "' not found in PATH");
 }
 
-constexpr std::string_view os_name() {
-#if defined(_WIN32)
-    return "win";
-#elif defined(__APPLE__)
-    return "osx";
-#elif defined(__linux__)
-    return "linux";
-#else
-    return "unknown";
-#endif
-}
-
-constexpr std::string_view arch_name() {
-#if defined(__x86_64__) || defined(_M_X64)
-    return "x64";
-#elif defined(__aarch64__) || defined(_M_ARM64)
-    return "arm64";
-#else
-    return "unknown";
-#endif
-}
-
 void Profiles::check_module_support() {
     dev._module_compiler     = resolve_compiler(dev.cxx);
     release._module_compiler = resolve_compiler(release.cxx);
@@ -202,6 +180,54 @@ static void string_replace(std::string &str, std::string_view key, std::string_v
     }
 }
 
+static constexpr std::string_view os =
+#if defined(_WIN32)
+    "win";
+#elif defined(__APPLE__)
+    "osx";
+#elif defined(__linux__)
+    "linux";
+#else
+    "unknown";
+#endif
+
+
+static constexpr std::string_view os_name =
+#if defined(_WIN32)
+    "Windows";
+#elif defined(__APPLE__)
+    "Darwin";
+#elif defined(__linux__)
+    "Linux";
+#else
+    "unknown";
+#endif
+
+static constexpr std::string_view arch =
+#if defined(__x86_64__) || defined(_M_X64)
+    "x64";
+#elif defined(__aarch64__)
+    "aarch64";
+#elif defined(_M_ARM64)
+    "arm64";
+#else
+    "unknown";
+#endif
+
+static constexpr std::string_view arch_gnu =
+#if defined(__x86_64__) || defined(_M_X64)
+    "x86_64";
+#elif defined(__aarch64__)
+    arch;
+#endif
+
+static constexpr std::string_view arch_amd =
+#if defined(__x86_64__) || defined(_M_X64)
+    "amd64";
+#elif defined(__aarch64__)
+    arch;
+#endif
+
 void Carton::apply_package_placeholders() {
     auto &name    = package.name;
     auto &version = package.version;
@@ -264,6 +290,101 @@ void Carton::apply_package_placeholders() {
         for (auto &str : d.link_flags)
             string_replace(str, "edition", edition);
         string_replace(d.pre, "edition", edition);
+
+        string_replace(d.version, "os", os);
+        string_replace(d.path, "os", os);
+        string_replace(d.url, "os", os);
+        string_replace(d.git, "os", os);
+        string_replace(d.branch, "os", os);
+        string_replace(d.tag, "os", os);
+        string_replace(d.subdir, "os", os);
+        for (auto &str : d.features)
+            string_replace(str, "os", os);
+        for (auto &str : d.src)
+            string_replace(str, "os", os);
+        for (auto &str : d.inc)
+            string_replace(str, "os", os);
+        for (auto &str : d.flags)
+            string_replace(str, "os", os);
+        for (auto &str : d.link_flags)
+            string_replace(str, "os", os);
+        string_replace(d.pre, "os", os);
+
+        string_replace(d.version, "os.name", os_name);
+        string_replace(d.path, "os.name", os_name);
+        string_replace(d.url, "os.name", os_name);
+        string_replace(d.git, "os.name", os_name);
+        string_replace(d.branch, "os.name", os_name);
+        string_replace(d.tag, "os.name", os_name);
+        string_replace(d.subdir, "os.name", os_name);
+        for (auto &str : d.features)
+            string_replace(str, "os.name", os_name);
+        for (auto &str : d.src)
+            string_replace(str, "os.name", os_name);
+        for (auto &str : d.inc)
+            string_replace(str, "os.name", os_name);
+        for (auto &str : d.flags)
+            string_replace(str, "os.name", os_name);
+        for (auto &str : d.link_flags)
+            string_replace(str, "os.name", os_name);
+        string_replace(d.pre, "os.name", os_name);
+
+        string_replace(d.version, "arch", arch);
+        string_replace(d.path, "arch", arch);
+        string_replace(d.url, "arch", arch);
+        string_replace(d.git, "arch", arch);
+        string_replace(d.branch, "arch", arch);
+        string_replace(d.tag, "arch", arch);
+        string_replace(d.subdir, "arch", arch);
+        for (auto &str : d.features)
+            string_replace(str, "arch", arch);
+        for (auto &str : d.src)
+            string_replace(str, "arch", arch);
+        for (auto &str : d.inc)
+            string_replace(str, "arch", arch);
+        for (auto &str : d.flags)
+            string_replace(str, "arch", arch);
+        for (auto &str : d.link_flags)
+            string_replace(str, "arch", arch);
+        string_replace(d.pre, "arch", arch);
+
+        string_replace(d.version, "arch.gnu", arch_gnu);
+        string_replace(d.path, "arch.gnu", arch_gnu);
+        string_replace(d.url, "arch.gnu", arch_gnu);
+        string_replace(d.git, "arch.gnu", arch_gnu);
+        string_replace(d.branch, "arch.gnu", arch_gnu);
+        string_replace(d.tag, "arch.gnu", arch_gnu);
+        string_replace(d.subdir, "arch.gnu", arch_gnu);
+        for (auto &str : d.features)
+            string_replace(str, "arch.gnu", arch_gnu);
+        for (auto &str : d.src)
+            string_replace(str, "arch.gnu", arch_gnu);
+        for (auto &str : d.inc)
+            string_replace(str, "arch.gnu", arch_gnu);
+        for (auto &str : d.flags)
+            string_replace(str, "arch.gnu", arch_gnu);
+        for (auto &str : d.link_flags)
+            string_replace(str, "arch.gnu", arch_gnu);
+        string_replace(d.pre, "arch.gnu", arch_gnu);
+
+        string_replace(d.version, "arch.amd", arch_amd);
+        string_replace(d.path, "arch.amd", arch_amd);
+        string_replace(d.url, "arch.amd", arch_amd);
+        string_replace(d.git, "arch.amd", arch_amd);
+        string_replace(d.branch, "arch.amd", arch_amd);
+        string_replace(d.tag, "arch.amd", arch_amd);
+        string_replace(d.subdir, "arch.amd", arch_amd);
+        for (auto &str : d.features)
+            string_replace(str, "arch.amd", arch_amd);
+        for (auto &str : d.src)
+            string_replace(str, "arch.amd", arch_amd);
+        for (auto &str : d.inc)
+            string_replace(str, "arch.amd", arch_amd);
+        for (auto &str : d.flags)
+            string_replace(str, "arch.amd", arch_amd);
+        for (auto &str : d.link_flags)
+            string_replace(str, "arch.amd", arch_amd);
+        string_replace(d.pre, "arch.amd", arch_amd);
     };
     apply_dep(lib);
 

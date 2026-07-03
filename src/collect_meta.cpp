@@ -119,6 +119,23 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
         }
     }
     for (auto &str : d.lib) {
+        if (str.find(':') != std::string::npos) {
+            std::string_view os =
+#if defined(_WIN32)
+                "win:";
+#elif defined(__APPLE__)
+                "osx:";
+#elif defined(__linux__)
+                "linux:";
+#else
+#    error "unknown OS"
+#endif
+            if (str.starts_with(os)) {
+                str = str.substr(os.size());
+            } else {
+                continue;
+            }
+        }
         auto lib = (working_dir / str).string();
         push_unique(export_link_flags, lib);
     }
