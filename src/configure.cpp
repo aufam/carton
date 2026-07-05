@@ -12,6 +12,17 @@ find_extra_features(Carton &p, const std::string &feat, std::vector<std::string>
     if (feat.starts_with("dep:"))
         return find_extra_features(p, feat.substr(4), required_features, true);
 
+    if (auto pos = feat.find('/'); pos != std::string::npos) {
+        auto a  = feat.substr(0, pos);
+        auto b  = feat.substr(pos + 1);
+        auto it = p.dependencies.find(a);
+        if (it == p.dependencies.end())
+            return f("Dependency `{}` not found", a);
+
+        push_unique(it->second.features, b);
+        return "";
+    }
+
     if (auto it = p.features.find(feat); dep || it == p.features.end()) {
         auto d = p.dependencies.find(feat);
         if (d == p.dependencies.end())

@@ -118,7 +118,8 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             push_unique(flags, "-I" + (working_dir / str).string());
         }
     }
-    for (auto &str : d.lib) {
+
+    const auto check_os_continue = [](std::string &str) {
         if (str.find(':') != std::string::npos) {
             std::string_view os =
 #if defined(_WIN32)
@@ -133,13 +134,21 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
             if (str.starts_with(os)) {
                 str = str.substr(os.size());
             } else {
-                continue;
+                return true;
             }
         }
+        return false;
+    };
+
+    for (auto &str : d.lib) {
+        if (check_os_continue(str))
+            continue;
         auto lib = (working_dir / str).string();
         push_unique(export_link_flags, lib);
     }
     for (auto &str : d.link_flags) {
+        if (check_os_continue(str))
+            continue;
         push_unique(export_link_flags, str);
     }
     for (auto &str : d.mod_flags) {
@@ -167,7 +176,12 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
         module_ccs.reserve(modules.size());
         for (const auto &mod : modules) {
             auto cc =
-                f("{} -std=c++{} -x c++-module {} -c '{}'", profile._module_compiler, cppm_standard, fmt::join(flags, " "), mod);
+                f("{} {} -std=c++{} -x c++-module {} -c '{}'",
+                  profile._module_compiler,
+                  fmt::join(profile.flags, " "),
+                  cppm_standard,
+                  fmt::join(flags, " "),
+                  mod);
             module_ccs.emplace_back(std::move(cc));
         }
 
@@ -221,7 +235,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
 
             const auto ext = entry.extension();
 
-            if (ext == ".cpp" || ext == ".cxx" || ext == ".cc") {
+            if (ext == ".cpp" || ext == ".cxx" || ext == ".cc" || ext == ".mm") {
                 cc.command =
                     f("{} -std=c++{} {} {} -o '{}' -c '{}' -MMD -MP -MF '{}'",
                       CXX,
@@ -231,7 +245,7 @@ Cache::Meta Carton::collect_meta(const Profile &profile, Dependency &d) {
                       cc.output,
                       cc.file,
                       cc.depfile);
-            } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S") {
+            } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S" || ext == ".m") {
                 cc.command =
                     f("{} {} -o '{}' -c '{}' -MMD -MP -MF '{}'", C, fmt::join(flags, " "), cc.output, cc.file, cc.depfile);
             }

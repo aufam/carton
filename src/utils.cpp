@@ -206,10 +206,21 @@ static constexpr std::string_view os_name =
 static constexpr std::string_view arch =
 #if defined(__x86_64__) || defined(_M_X64)
     "x64";
-#elif defined(__aarch64__)
-    "aarch64";
 #elif defined(_M_ARM64)
-    "arm64";
+    "arm64"; // Windows
+#elif defined(__aarch64__) && defined(__APPLE__)
+    "arm64"; // macOS
+#elif defined(__aarch64__)
+    "aarch64"; // Linux, BSD, etc.
+#else
+            "unknown";
+#endif
+
+static constexpr std::string_view arch_family =
+#if defined(__x86_64__) || defined(_M_X64)
+    "x86";
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    "arm";
 #else
     "unknown";
 #endif
@@ -347,6 +358,25 @@ void Carton::apply_package_placeholders() {
         for (auto &str : d.link_flags)
             string_replace(str, "arch", arch);
         string_replace(d.pre, "arch", arch);
+
+        string_replace(d.version, "arch.family", arch_family);
+        string_replace(d.path, "arch.family", arch_family);
+        string_replace(d.url, "arch.family", arch_family);
+        string_replace(d.git, "arch.family", arch_family);
+        string_replace(d.branch, "arch.family", arch_family);
+        string_replace(d.tag, "arch.family", arch_family);
+        string_replace(d.subdir, "arch.family", arch_family);
+        for (auto &str : d.features)
+            string_replace(str, "arch.family", arch_family);
+        for (auto &str : d.src)
+            string_replace(str, "arch.family", arch_family);
+        for (auto &str : d.inc)
+            string_replace(str, "arch.family", arch_family);
+        for (auto &str : d.flags)
+            string_replace(str, "arch.family", arch_family);
+        for (auto &str : d.link_flags)
+            string_replace(str, "arch.family", arch_family);
+        string_replace(d.pre, "arch.family", arch_family);
 
         string_replace(d.version, "arch.gnu", arch_gnu);
         string_replace(d.path, "arch.gnu", arch_gnu);
