@@ -834,13 +834,15 @@ flags = [
     "-DGGML_BUILD",
     "-DGGML_COMMIT=\\\"{version}\\\"",
     "-DGGML_VERSION=\\\"{version}\\\"",
-    "-DGGML_SCHED_MAX_COPIES=4"
+    "-DGGML_SCHED_MAX_COPIES=4",
+    "-D_GNU_SOURCE",
 ]
 
 [ggml.dependencies]
 cpu = {
     src = ["src/ggml-cpu/*", "src/ggml-cpu/arch/{arch.family}/*", "src/ggml-cpu/amx/*"],
     inc = ["src/ggml-cpu"],
+    flags = ["-DGGML_USE_CPU"],
     optional = true,
 }
 blas = {
@@ -883,3 +885,14 @@ flags = [
 
 [whisper.dependencies]
 ggml = "0.15.3"
+
+
+[miniaudio.package]
+name = "miniaudio"
+edition = 11
+
+[miniaudio.lib]
+git = "https://github.com/mackron/miniaudio"
+tag = "{version}"
+src = ["miniaudio.c"]
+inc = ["public:"]
