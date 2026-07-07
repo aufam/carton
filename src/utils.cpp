@@ -37,11 +37,18 @@ Dependency &Dependency::operator+=(const Dependency &other) {
     if (this == &other)
         return *this;
 
-    push_unique(src, other.src);
-    push_unique(mod, other.mod, true);
-    push_unique(inc, other.inc);
-    push_unique(flags, other.flags);
-    push_unique(link_flags, other.link_flags);
+    if (other.empty()) {
+        push_unique(src, other.src);
+        push_unique(mod, other.mod, true);
+        push_unique(inc, other.inc);
+        push_unique(flags, other.flags);
+        push_unique(link_flags, other.link_flags);
+    } else {
+        push_unique(flags, other.public_flags);
+        push_unique(link_flags, other.link_flags);
+        push_unique(mod_flags, other.mod_flags);
+        push_unique(mod_names, other.mod_names);
+    }
     return *this;
 }
 

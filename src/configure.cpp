@@ -8,20 +8,8 @@ module carton;
 
 static std::string
 find_extra_features(Carton &p, const std::string &feat, std::vector<std::string> &required_features, bool dep = false) {
-    // TODO: support "feat1/feat2" syntax for features of dependencies
     if (feat.starts_with("dep:"))
         return find_extra_features(p, feat.substr(4), required_features, true);
-
-    if (auto pos = feat.find('/'); pos != std::string::npos) {
-        auto a  = feat.substr(0, pos);
-        auto b  = feat.substr(pos + 1);
-        auto it = p.dependencies.find(a);
-        if (it == p.dependencies.end())
-            return f("Dependency `{}` not found", a);
-
-        push_unique(it->second.features, b);
-        return "";
-    }
 
     if (auto it = p.features.find(feat); dep || it == p.features.end()) {
         auto d = p.dependencies.find(feat);
@@ -34,6 +22,13 @@ find_extra_features(Carton &p, const std::string &feat, std::vector<std::string>
             find_extra_features(p, dep, required_features, dep == feat);
     }
     return "";
+}
+
+static std::string make_feature_signature(std::vector<std::string> &feats) {
+    if (feats.empty())
+        return "-";
+    std::sort(feats.begin(), feats.end());
+    return f("{}", fmt::join(feats, "-"));
 }
 
 void Carton::configure(const Profile &profile, const std::vector<std::string> &features, bool from_registry) {
@@ -57,9 +52,8 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
     if (!lib.version.empty())
         throw ferr("Error building {:?}: lib version is already set to {}", package.name, lib.version);
 
-    if (lib.name.empty())
-        lib.name = package.name;
-    resolve_remote_dep(profile, package.name, lib, from_registry);
+    lib.name = package.name;
+    resolve_remote_dep(profile, lib, from_registry);
 
     spdlog::info("finding extra features for {}, total_features={}", package.name, this->features.size());
     std::vector<std::string> extra_features;
@@ -67,7 +61,18 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
         std::ignore = find_extra_features(*this, "nodefault", extra_features);
     else
         std::ignore = find_extra_features(*this, "default", extra_features);
+
     for (auto &feat : features) {
+        if (auto pos = feat.find('/'); pos != std::string::npos) {
+            auto subdep  = feat.substr(0, pos);
+            auto subfeat = feat.substr(pos + 1);
+            if (auto it = dependencies.find(subdep); it != dependencies.end())
+                push_unique(it->second.features, subfeat);
+            else
+                throw ferr("Cannot find `{}` in the dependency table", subdep);
+            continue;
+        }
+
         auto err = find_extra_features(*this, feat, extra_features);
         if (!err.empty())
             throw std::runtime_error(err);
@@ -75,8 +80,7 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
 
     spdlog::info("resolving: dep={:?} extra_features={}", package.name, extra_features);
     for (auto &[name, d] : dependencies) {
-        if (d.name.empty())
-            d.name = name;
+        // skip if
         if (no_default_features && name == "default")
             continue;
         if (!no_default_features && name == "nodefault")
@@ -88,53 +92,77 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
             continue;
         }
 
-        // TODO: version comparison
-        if (!d.version.empty() && pparent != nullptr) {
-            if (auto it = pparent->dependencies.find(d.name); it != pparent->dependencies.end()) {
-                auto &dep = it->second;
-                if (dep.version.empty())
-                    throw ferr("`{}` version cannot be empty", d.name);
-                d = dep;
+        auto dp = &d;
+        if (!d.version.empty()) {
+            // configure from registry
+            auto &r = pparent ? pparent->registry : this->registry;
+
+            // follow alias
+            auto it = r.find(name);
+            auto pp = it != r.end() ? &it->second : nullptr;
+            while (pp != nullptr) {
+                auto it = r.find(pp->package.name);
+                auto op = it != r.end() ? &it->second : nullptr;
+                if (pp == op)
+                    break;
+                pp = op;
+            }
+
+            if (pp == nullptr)
+                throw ferr("Cannot find `{}` in the package registry", name);
+
+            const auto feature_signature = make_feature_signature(d.features);
+
+            auto &p = *pp;
+
+            if (p.package.version == d.version && feature_signature == p.lib.feature_signature) {
+                lib += p.lib;
+                continue;
+            } else if (!p.package.version.empty() && p.package.version != d.version)
+                throw ferr("Found multiple version of `{}`: [{}, {}]", p.package.name, p.package.version, d.version);
+            else if (!p.lib.feature_signature.empty() && p.lib.feature_signature != feature_signature)
+                throw ferr("Found multiple feature list of package `{}`: [{}, {}]", p.package.name, p.lib.features, d.features);
+
+            if (p.package.edition > package.edition)
+                throw ferr(
+                    "Error building dependency package={0:?}: {0:?} required std=c++{1} but {2:?} only supports std=c++{3}",
+                    p.package.name,
+                    p.package.edition,
+                    package.name,
+                    package.edition
+                );
+
+            p.pparent             = this;
+            p.cache               = this->cache;
+            p.cli                 = this->cli;
+            p.no_default_features = !d.default_features.value_or(true);
+            p.profiles            = profiles;
+            p.package.version     = d.version;
+            p.configure(profile, d.features, true);
+
+            dp = &p.lib;
+        } else {
+            d.name = package.name + "." + name;
+            try {
+                resolve_remote_dep(profile, d, true);
+            } catch (const std::exception &e) {
+                throw ferr("Error resolving {:?} required by {:?}: {}", name, package.name, e.what());
             }
         }
 
-        const Cache::Meta *existing = nullptr;
-        for (const auto &m : cache->meta)
-            if (m.lib.name == d.name) {
-                if (m.lib.version != d.version)
-                    throw ferr("version already exist");
-                spdlog::info("found {} v{}", m.lib.name, m.lib.version);
-                existing = &m;
-                break;
-            }
-
-        if (existing) {
-            push_unique(lib.flags, existing->flags);
-            push_unique(lib.link_flags, existing->link_flags);
-            push_unique(lib.mod_flags, existing->mod_flags);
-            continue;
-        }
-
         try {
-            resolve_remote_dep(profile, name, d, true);
-        } catch (const std::exception &e) {
-            throw ferr("Error resolving {:?} required by {:?}: {}", name, package.name, e.what());
-        }
-
-        try {
-            auto m = collect_meta(profile, d);
-            push_unique(lib.flags, m.flags);
-            push_unique(lib.link_flags, m.link_flags);
-            push_unique(lib.mod_flags, m.mod_flags);
-            spdlog::info("storing into cache: d.name={} m.lib.name={}", d.name, m.lib.name);
-            cache->meta.push_back(std::move(m));
+            collect_meta(profile, *dp);
         } catch (const std::exception &e) {
             throw ferr("Error collecting meta of {:?} required by {:?}: {}", name, package.name, e.what());
         }
+
+        lib += *dp;
+        cache->dependencies.push_back(dp);
     }
 
-    lib.version          = package.version;
-    lib.cpp_standard     = package.edition;
-    lib.features         = std::move(extra_features);
-    lib.default_features = !no_default_features;
+    lib.version           = package.version;
+    lib.cpp_standard      = package.edition;
+    lib.features          = features;
+    lib.default_features  = !no_default_features;
+    lib.feature_signature = make_feature_signature(lib.features);
 }

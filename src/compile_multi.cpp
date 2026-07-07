@@ -4,6 +4,8 @@ module;
 #include <spdlog/spdlog.h>
 #include <xxhash.h>
 #include <algorithm>
+#include <map>
+#include <unordered_map>
 
 module carton;
 import std.fs;
@@ -15,6 +17,7 @@ namespace {
         std::string cmd;
         std::string file;
         std::string deps;
+        std::string mods;
     };
 
     constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
@@ -34,13 +37,15 @@ namespace {
 } // namespace
 
 template <>
-struct cpx::Reflect<Signature> : Fields<Reflect<Signature>, &Signature::cmd, &Signature::deps, &Signature::file> {
-    static constexpr TagInfo cmd  = "cmd";
-    static constexpr TagInfo deps = "deps";
-    static constexpr TagInfo file = "file";
+struct cpx::Reflect<Signature>
+    : Fields<Reflect<Signature>, &Signature::cmd, &Signature::deps, &Signature::file, &Signature::mods> {
+    static constexpr TagInfo cmd  = "cmd  , skipmissing";
+    static constexpr TagInfo file = "file , skipmissing";
+    static constexpr TagInfo deps = "deps , skipmissing";
+    static constexpr TagInfo mods = "mods , skipmissing";
 
     static constexpr tags_type tags() {
-        return std::tie(cmd, deps, file);
+        return std::tie(cmd, file, deps, mods);
     }
 };
 
@@ -142,8 +147,7 @@ static std::string hash_file_content_hex(const fs::path &p, std::unordered_map<s
 }
 
 static std::string
-hash_deps_snapshot_hex(const fs::path &depfile_abs, std::unordered_map<std::string, std::string> &hash_history) {
-    std::vector<std::string> deps = parse_depfile(depfile_abs.string());
+hash_deps_snapshot_hex(std::vector<std::string> deps, std::unordered_map<std::string, std::string> &hash_history) {
     std::sort(deps.begin(), deps.end());
 
     uint64_t h = 1469598103934665603ull;
@@ -169,7 +173,11 @@ hash_deps_snapshot_hex(const fs::path &depfile_abs, std::unordered_map<std::stri
     return hex64(h);
 }
 
-static Signature make_signature(const CompileCommand &cc, std::unordered_map<std::string, std::string> &hash_history) {
+static Signature make_signature(
+    const CompileCommand                         &cc,
+    const std::map<std::string, std::string>     &mod_names,
+    std::unordered_map<std::string, std::string> &hash_history
+) {
     const fs::path directory = cc.directory;
     const fs::path depfile   = cc.depfile;
     const auto     dep_abs   = (depfile.is_absolute() ? depfile : (directory / depfile)).lexically_normal();
@@ -183,13 +191,22 @@ static Signature make_signature(const CompileCommand &cc, std::unordered_map<std
         s.file            = hash_file_content_hex(file_abs, hash_history);
     }
 
-    s.deps = hash_deps_snapshot_hex(dep_abs, hash_history);
+    std::vector<std::string> depfiles = parse_depfile(dep_abs.string());
+    std::vector<std::string> modfiles;
+    modfiles.reserve(cc.modnames.size());
+    for (auto &name : cc.modnames) {
+        modfiles.push_back(mod_names.at(name));
+    }
+
+    s.deps = hash_deps_snapshot_hex(std::move(depfiles), hash_history);
+    s.mods = hash_deps_snapshot_hex(std::move(modfiles), hash_history);
     return s;
 }
 
 static bool needs_rebuild(
     const std::unordered_map<std::string, Signature> &sig_map,
     const CompileCommand                             &cc,
+    const std::map<std::string, std::string>         &mod_names,
     std::unordered_map<std::string, std::string>     &hash_history
 ) {
     const fs::path output    = cc.output;
@@ -206,15 +223,16 @@ static bool needs_rebuild(
     if (it == sig_map.end())
         return true;
 
-    const Signature  current = make_signature(cc, hash_history);
+    const Signature  current = make_signature(cc, mod_names, hash_history);
     const Signature &old     = it->second;
 
-    return old.cmd != current.cmd || old.file != current.file || old.deps != current.deps;
+    return old.cmd != current.cmd || old.file != current.file || old.deps != current.deps || old.mods != current.mods;
 }
 
 bool CompileCommand::compile_multi(
     const std::string                            &name,
     const std::vector<CompileCommand>            &commands,
+    const std::map<std::string, std::string>     &mod_names,
     std::unordered_map<std::string, std::string> &hash_history,
     bool                                          precompile
 ) {
@@ -232,7 +250,7 @@ bool CompileCommand::compile_multi(
 
     std::vector<const CompileCommand *> needs_rebuild_ptrs;
     for (const auto &cmd : commands)
-        if (needs_rebuild(sig_map, cmd, hash_history))
+        if (needs_rebuild(sig_map, cmd, mod_names, hash_history))
             needs_rebuild_ptrs.push_back(&cmd);
 
     if (needs_rebuild_ptrs.empty())
@@ -273,7 +291,7 @@ bool CompileCommand::compile_multi(
 
         print_progress("Building", i + 1, needs_rebuild_ptrs.size());
 
-        sig_map[cmd->output] = make_signature(*cmd, hash_history);
+        sig_map[cmd->output] = make_signature(*cmd, mod_names, hash_history);
         toml_dump(sig_map, sig_path);
     }
 

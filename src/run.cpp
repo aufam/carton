@@ -7,8 +7,8 @@ module carton;
 import std.fs;
 import fmt;
 
-int Carton::run(const Cache::Meta &m) {
-    const auto output = fs::path(m.build_dir) / m.lib.name;
+int Carton::run() {
+    const auto output = fs::path(lib.build_dir) / lib.name;
 
     std::string out = output.string();
     for (size_t pos = 0; (pos = out.find(' ', pos)) != std::string::npos;) {

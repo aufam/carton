@@ -7,6 +7,7 @@ module;
 #include "macro.h"
 
 export module carton:dependency;
+import :compile_command;
 import cpx;
 import cpx.toruniina_toml;
 import cpx.serde;
@@ -32,9 +33,17 @@ export struct Dependency {
     std::vector<std::string> link_flags;
     std::string              pre;
 
-    std::string              name;
-    int                      cpp_standard;
-    std::vector<std::string> mod_flags;
+    std::string                 name;
+    int                         cpp_standard;
+    std::vector<std::string>    public_flags;
+    std::vector<std::string>    mod_flags;
+    std::vector<std::string>    mod_names;
+    std::string                 working_dir;
+    std::string                 build_dir;
+    std::string                 feature_signature;
+    std::vector<CompileCommand> compile_commands;
+    std::vector<CompileCommand> precompile_commands;
+    CompileCommand              ar_command;
 
     Dependency &operator+=(const Dependency &other);
 

@@ -56,7 +56,7 @@ fmt-external-flag = { flags = ["public:-DSPDLOG_FMT_EXTERNAL"], optional = true 
 fmt = [] # already bundled in spdlog
 fmt-external = ["dep:fmt", "dep:fmt-external-flag"]
 default = ["fmt"]
-nodefault = ["fmt-external"] # fetch fmt but don't expose it to users, but users must explicitly define fmt with the same version to use it, otherwise they can define fmt with a different version to use it, and spdlog will not be recompiled
+nodefault = ["fmt-external"]
 
 
 #
@@ -372,118 +372,11 @@ edition = 17
 
 [ftxui.lib]
 git = "http://github.com/ArthurSonzogni/FTXUI"
-tag = "v{version}"
-inc = ["public:include", "src"]
-
-[ftxui.dependencies]
-screen = {
-    src = [
-        "src/ftxui/screen/box.cpp",
-        "src/ftxui/screen/color.cpp",
-        "src/ftxui/screen/color_info.cpp",
-        "src/ftxui/screen/image.cpp",
-        "src/ftxui/screen/screen.cpp",
-        "src/ftxui/screen/string.cpp",
-        "src/ftxui/screen/terminal.cpp",
-    ],
-    optional = true,
-}
-dom = {
-    src = [
-        "src/ftxui/dom/automerge.cpp",
-        "src/ftxui/dom/selection_style.cpp",
-        "src/ftxui/dom/blink.cpp",
-        "src/ftxui/dom/bold.cpp",
-        "src/ftxui/dom/border.cpp",
-        "src/ftxui/dom/box_helper.cpp",
-        "src/ftxui/dom/canvas.cpp",
-        "src/ftxui/dom/clear_under.cpp",
-        "src/ftxui/dom/color.cpp",
-        "src/ftxui/dom/composite_decorator.cpp",
-        "src/ftxui/dom/dbox.cpp",
-        "src/ftxui/dom/dim.cpp",
-        "src/ftxui/dom/flex.cpp",
-        "src/ftxui/dom/flexbox.cpp",
-        "src/ftxui/dom/flexbox_config.cpp",
-        "src/ftxui/dom/flexbox_helper.cpp",
-        "src/ftxui/dom/focus.cpp",
-        "src/ftxui/dom/frame.cpp",
-        "src/ftxui/dom/gauge.cpp",
-        "src/ftxui/dom/graph.cpp",
-        "src/ftxui/dom/gridbox.cpp",
-        "src/ftxui/dom/hbox.cpp",
-        "src/ftxui/dom/hyperlink.cpp",
-        "src/ftxui/dom/inverted.cpp",
-        "src/ftxui/dom/italic.cpp",
-        "src/ftxui/dom/linear_gradient.cpp",
-        "src/ftxui/dom/node.cpp",
-        "src/ftxui/dom/node_decorator.cpp",
-        "src/ftxui/dom/paragraph.cpp",
-        "src/ftxui/dom/reflect.cpp",
-        "src/ftxui/dom/scroll_indicator.cpp",
-        "src/ftxui/dom/selection.cpp",
-        "src/ftxui/dom/separator.cpp",
-        "src/ftxui/dom/size.cpp",
-        "src/ftxui/dom/spinner.cpp",
-        "src/ftxui/dom/strikethrough.cpp",
-        "src/ftxui/dom/table.cpp",
-        "src/ftxui/dom/text.cpp",
-        "src/ftxui/dom/underlined.cpp",
-        "src/ftxui/dom/underlined_double.cpp",
-        "src/ftxui/dom/util.cpp",
-        "src/ftxui/dom/vbox.cpp",
-    ],
-    optional = true,
-}
-component = {
-    src = [
-        "src/ftxui/component/animation.cpp",
-        "src/ftxui/component/button.cpp",
-        "src/ftxui/component/catch_event.cpp",
-        "src/ftxui/component/checkbox.cpp",
-        "src/ftxui/component/collapsible.cpp",
-        "src/ftxui/component/component.cpp",
-        "src/ftxui/component/component_options.cpp",
-        "src/ftxui/component/container.cpp",
-        "src/ftxui/component/dropdown.cpp",
-        "src/ftxui/component/event.cpp",
-        "src/ftxui/component/hoverable.cpp",
-        "src/ftxui/component/input.cpp",
-        "src/ftxui/component/loop.cpp",
-        "src/ftxui/component/maybe.cpp",
-        "src/ftxui/component/menu.cpp",
-        "src/ftxui/component/modal.cpp",
-        "src/ftxui/component/radiobox.cpp",
-        "src/ftxui/component/radiobox.cpp",
-        "src/ftxui/component/renderer.cpp",
-        "src/ftxui/component/resizable_split.cpp",
-        "src/ftxui/component/screen_interactive.cpp",
-        "src/ftxui/component/slider.cpp",
-        "src/ftxui/component/terminal_input_parser.cpp",
-        "src/ftxui/component/util.cpp",
-        "src/ftxui/component/window.cpp",
-    ],
-    optional = true,
-}
-
-[ftxui.features]
-default = ["screen", "dom", "component"]
-
-
-#
-# ftxui-mod
-#
-[ftxui-mod.package]
-name = "ftxui-mod"
-edition = 20
-
-[ftxui-mod.lib]
-git = "http://github.com/ArthurSonzogni/FTXUI"
 branch = "main"
 inc = ["public:include", "src"]
 mod = ["src/ftxui/ftxui.cppm"]
 
-[ftxui-mod.dependencies]
+[ftxui.dependencies]
 screen = {
     src = [
         "src/ftxui/screen/box.cpp",
@@ -581,8 +474,9 @@ util = {
     optional = true,
 }
 
-[ftxui-mod.features]
+[ftxui.features]
 default = ["screen", "dom", "component", "util"]
+
 
 #
 # async_simple
@@ -630,7 +524,7 @@ src = [
 #
 [redis.package]
 name = "redis"
-edition = 11
+edition = 17
 
 [redis.lib]
 git = "https://github.com/sewenew/redis-plus-plus"
@@ -745,6 +639,9 @@ flags = [
 ]
 
 
+#
+# msgpack
+#
 [msgpack.package]
 name = "msgpack"
 edition = 11
@@ -755,19 +652,9 @@ tag = "cpp-{version}"
 flags = ["public:-DMSGPACK_DEFAULT_API_VERSION=3", "public:-DMSGPACK_NO_BOOST"]
 
 
-[asio.package]
-name = "asio"
-edition = 20
-
-[asio.lib]
-git = "https://github.com/chriskohlhoff/asio"
-tag = "asio-{version}"
-flags = ["public:-DASIO_SEPARATE_COMPILATION"]
-link-flags = ["-lssl", "-lcrypto"]
-src = ["asio/src/*"]
-inc = ["public:asio/include"]
-
-
+#
+# reproc
+#
 [reproc.package]
 name = "reproc"
 edition = 11
@@ -795,6 +682,9 @@ src = [
 inc = ["public:reproc++/include", "reproc/include"]
 
 
+#
+# boost
+#
 [boost.package]
 name = "boost"
 edition = 11
@@ -804,6 +694,9 @@ url = "https://archives.boost.io/release/{version}/source/boost_{version:undersc
 inc = ["public:"]
 
 
+#
+# ggml
+#
 [ggml.package]
 name = "ggml"
 edition = 17
@@ -862,6 +755,9 @@ metal = {
 default = ["cpu"]
 
 
+#
+# miniaudio
+#
 [whisper.package]
 name = "whisper"
 edition = 17
@@ -887,6 +783,9 @@ flags = [
 ggml = "0.15.3"
 
 
+#
+# miniaudio
+#
 [miniaudio.package]
 name = "miniaudio"
 edition = 11
@@ -896,3 +795,15 @@ git = "https://github.com/mackron/miniaudio"
 tag = "{version}"
 src = ["miniaudio.c"]
 inc = ["public:"]
+
+
+#
+# semver
+#
+[semver.package]
+name = "semver"
+edition = 17
+
+[semver.lib]
+git = "https://github.com/Neargye/semver"
+tag = "v{version}"

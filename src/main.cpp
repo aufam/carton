@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     if (fs::exists(config_path))
         try {
             auto cfg     = cpx::toruniina_toml::parse_from_file<Config>(config_path.string(), toml_version);
-            ctx.profiles = cfg.profiles;
+            ctx.profiles = std::move(cfg.profiles);
         } catch (std::exception &e) {
             spdlog::error("Failed to parse carton config: {}", e.what());
             return 1;
@@ -100,9 +100,9 @@ int main(int argc, char **argv) {
     std::vector<CompileCommand> ccs;
     try {
         ctx.configure(profile, features);
-        auto [_, m] = ctx.build(profile, ccs, build || run);
+        ctx.build(profile, ccs, build || run);
         if (run)
-            return ctx.run(m);
+            return ctx.run();
     } catch (std::exception &e) {
         auto of = std::ofstream("./compile_commands.json");
         of << cpx::yy_json::dump(ccs, cpx::yy_json::write_flag::pretty_two_spaces);
@@ -113,8 +113,10 @@ int main(int argc, char **argv) {
     auto of = std::ofstream("./compile_commands.json");
     of << cpx::yy_json::dump(ccs, cpx::yy_json::write_flag::pretty_two_spaces);
 
-    if (manifest)
-        fmt::println("{}", cpx::yy_json::dump(ctx));
+    if (manifest) {
+        ctx.registry.clear(); // TODO
+        fmt::println("{}", cpx::yy_json::dump(ctx, cpx::yy_json::write_flag::pretty_two_spaces));
+    }
 
     return 0;
 }

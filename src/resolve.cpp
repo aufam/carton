@@ -31,65 +31,22 @@ collect_cppm_globs(const fs::path &working_dir, const fs::path &src_dir, std::ve
     return result;
 }
 
-void Carton::resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &d, bool from_registry) {
+void Carton::resolve_remote_dep(const Profile &profile, Dependency &d, bool from_registry) {
     if (d.empty())
         throw ferr("assertion failed: {:?} cannot be empty", d.name);
 
     if (!d.path.empty()) {
-        spdlog::info("resolving dep={:?} path={:?}", name, d.path);
+        spdlog::info("resolving dep={:?} path={:?}", d.name, d.path);
         d.path = resolve_path(cli->cache, d.path);
     } else if (!d.url.empty()) {
-        spdlog::info("resolving dep={:?} url={:?}", name, d.url);
+        spdlog::info("resolving dep={:?} url={:?}", d.name, d.url);
         d.path = resolve_path(cli->cache, d.url);
     } else if (!d.git.empty()) {
         auto &tag = d.tag.empty() ? d.branch : d.tag;
-        spdlog::info("resolving dep={:?} git={:?} tag={:?}", name, d.git, tag);
+        spdlog::info("resolving dep={:?} git={:?} tag={:?}", d.name, d.git, tag);
         d.path = git_clone(cli->cache, d.git, tag);
-    } else if (d.version.empty()) {
-        throw ferr("path|git|version is not defined");
     } else {
-        spdlog::info("resolving dep={:?} version={:?}", name, d.version);
-        auto &packages = pparent ? pparent->registry : this->registry;
-
-        auto &name_ = d.name.empty() ? name : d.name;
-        auto  it    = packages.find(name_);
-        while (it != packages.end()) {
-            auto i = packages.find(it->second.package.name);
-            if (i == it)
-                break;
-            it = i;
-        }
-        if (it == packages.end())
-            throw ferr("Cannot find `{}` in the package registry", name_);
-
-        auto p = it->second;
-        if (p.lib.empty())
-            throw ferr("The package `{}` does not have a library target", name_);
-
-        p.package.version = d.version;
-        if (p.package.edition > package.edition)
-            throw ferr(
-                "Error building dependency package={0:?}: {0:?} required std=c++{1} but {2:?} only supports std=c++{3}",
-                p.package.name,
-                p.package.edition,
-                package.name,
-                package.edition
-            );
-
-        p.pparent             = this;
-        p.cache               = this->cache;
-        p.cli                 = this->cli;
-        p.no_default_features = !d.default_features.value_or(true);
-        p.profiles            = profiles;
-        try {
-            p.configure(profile, d.features, true);
-        } catch (const std::exception &e) {
-            throw ferr("Error building dependency package={}: {}", p.package.name, e.what());
-        }
-
-        d      = std::move(p.lib);
-        d.name = name;
-        return;
+        throw ferr("path|git|url is not defined");
     }
 
     if (fs::path path = d.path; path.is_relative())
@@ -108,6 +65,7 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
             package      = std::move(p.package);
             dependencies = std::move(p.dependencies);
             features     = std::move(p.features);
+            p.lib.name   = d.name;
         } else {
             if (p.package.edition > package.edition)
                 throw ferr(
@@ -129,8 +87,8 @@ void Carton::resolve_remote_dep(const Profile &profile, const std::string &name,
                 throw ferr("Error building dependency package={}: {}", p.package.name, e.what());
             }
         }
-        d      = std::move(p.lib);
-        d.name = name;
+        d           = std::move(p.lib);
+        working_dir = fs::path(d.path) / d.subdir;
     }
 
     if (d.mod.empty() && fs::exists(working_dir / "src" / "lib.cppm"))

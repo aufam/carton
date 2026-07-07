@@ -101,18 +101,19 @@ struct Carton {
     Features     features;
     bool         no_default_features;
 
+    Dependency bin;
     Carton    *pparent = nullptr;
     Cache     *cache   = nullptr;
     const Cli *cli     = nullptr;
 
     void configure(const Profile &profile, const std::vector<std::string> &features = {}, bool from_registry = false);
-    auto build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build) -> std::pair<bool, Cache::Meta>;
-    int  run(const Cache::Meta &m);
+    void build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build);
+    int  run();
 
 private:
     void apply_package_placeholders();
-    void resolve_remote_dep(const Profile &profile, const std::string &name, Dependency &dep, bool from_registry = false);
-    auto collect_meta(const Profile &profile, Dependency &dep) -> Cache::Meta;
+    void resolve_remote_dep(const Profile &profile, Dependency &dep, bool from_registry = false);
+    void collect_meta(const Profile &profile, Dependency &dep, bool is_bin = false);
 };
 
 // clang-format off
