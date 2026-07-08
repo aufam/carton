@@ -11,6 +11,7 @@ export struct Profile {
     std::string              name;
     std::string              cxx       = "c++";
     std::string              c         = "cc";
+    std::string              ar        = "ar";
     std::string              modules   = "auto";
     bool                     debug     = false;
     bool                     asan      = false;
@@ -59,6 +60,7 @@ CPX_REFLECT(
     ((name       , "name      , skipmissing"))
     ((cxx        , "cxx       , skipmissing"))
     ((c          , "c         , skipmissing"))
+    ((ar         , "ar        , skipmissing"))
     ((modules    , "modules   , skipmissing"))
     ((debug      , "debug     , skipmissing"))
     ((asan       , "asan      , skipmissing"))

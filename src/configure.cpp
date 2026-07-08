@@ -92,6 +92,8 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
             continue;
         }
 
+        const bool d_is_public = d.visibility == "public";
+
         auto dp = &d;
         if (!d.version.empty()) {
             // configure from registry
@@ -117,6 +119,8 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
 
             if (p.package.version == d.version && feature_signature == p.lib.feature_signature) {
                 lib += p.lib;
+                if (d_is_public)
+                    push_unique(lib.public_flags, p.lib.public_flags);
                 continue;
             } else if (!p.package.version.empty() && p.package.version != d.version)
                 throw ferr("Found multiple version of `{}`: [{}, {}]", p.package.name, p.package.version, d.version);
@@ -157,6 +161,8 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
         }
 
         lib += *dp;
+        if (d_is_public)
+            push_unique(lib.public_flags, dp->public_flags);
         cache->dependencies.push_back(dp);
     }
 

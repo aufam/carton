@@ -17,12 +17,13 @@ export struct Dependency {
     std::string path;
     std::string url;
     std::string git;
-    std::string branch;
     std::string tag;
+    std::string branch;
+    std::string commit;
     std::string subdir;
 
     std::vector<std::string> features;
-    bool                     optional;
+    bool                     optional = false;
     std::optional<bool>      default_features;
 
     std::vector<std::string> src;
@@ -32,9 +33,10 @@ export struct Dependency {
     std::vector<std::string> flags;
     std::vector<std::string> link_flags;
     std::string              pre;
+    std::string              visibility;
 
     std::string                 name;
-    int                         cpp_standard;
+    int                         cpp_standard = 0;
     std::vector<std::string>    public_flags;
     std::vector<std::string>    mod_flags;
     std::vector<std::string>    mod_names;
@@ -59,8 +61,24 @@ export struct Dependency {
             name += " #" + tag;
         } else if (!branch.empty()) {
             name += " " + branch;
+        } else if (!commit.empty()) {
+            name += " " + commit;
         } else {
             name += " (" + path + ")";
+        }
+        return name;
+    }
+
+    std::string build_name() const {
+        std::string name = this->name;
+        if (!tag.empty()) {
+            name += "-" + tag;
+        } else if (!branch.empty()) {
+            name += "-" + branch;
+        } else if (!commit.empty()) {
+            name += "-" + commit;
+        } else if (!version.empty()) {
+            name += "-v" + version;
         }
         return name;
     }
@@ -74,8 +92,9 @@ CPX_REFLECT(
     ((path            , "path            , oneof=version|path|url|git"))
     ((url             , "url             , oneof=version|path|url|git"))
     ((git             , "git             , oneof=version|path|url|git"))
-    ((branch          , "branch          , oneof=branch|tag          "))
-    ((tag             , "tag             , oneof=branch|tag          "))
+    ((tag             , "tag             , oneof=tag|branch|commit   "))
+    ((branch          , "branch          , oneof=tag|branch|commit   "))
+    ((commit          , "commit          , oneof=tag|branch|commit   "))
 
     ((subdir          , "subdir          , skipmissing               "))
     ((features        , "features        , skipmissing               "))
@@ -89,6 +108,7 @@ CPX_REFLECT(
     ((flags           , "flags           , skipmissing               "))
     ((link_flags      , "link-flags      , skipmissing               "))
     ((pre             , "pre             , skipmissing               "))
+    ((visibility      , "visibility      , skipmissing               "))
 );
 // clang-format on
 

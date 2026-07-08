@@ -26,18 +26,6 @@ static void do_link(const Dependency &d) {
 
 void Carton::build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build) {
     collect_meta(profile, lib);
-    const auto working_dir = fs::path(lib.working_dir);
-    if (fs::path main_path = "src/main.cpp"; fs::exists(working_dir / main_path)) {
-        bin.name         = lib.name + "." + "main";
-        bin.src          = {main_path.string()};
-        bin.path         = lib.path;
-        bin.subdir       = lib.subdir;
-        bin.cpp_standard = lib.cpp_standard;
-        bin += lib;
-
-        collect_meta(profile, bin, true);
-        ccs.insert(ccs.end(), bin.compile_commands.begin(), bin.compile_commands.end());
-    }
 
     const auto start = std::chrono::system_clock::now();
 
@@ -54,6 +42,10 @@ void Carton::build(const Profile &profile, std::vector<CompileCommand> &ccs, boo
     ccs.insert(ccs.end(), lib.precompile_commands.begin(), lib.precompile_commands.end());
     ccs.insert(ccs.end(), lib.compile_commands.begin(), lib.compile_commands.end());
     relink |= CompileCommand::compile_multi(name, lib.precompile_commands, cache->mod_paths, hash, true);
+
+    if (!bin.name.empty()) {
+        ccs.insert(ccs.end(), bin.compile_commands.begin(), bin.compile_commands.end());
+    }
 
     if (!do_build)
         return;

@@ -109,17 +109,7 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
     const auto C   = f("{} {}", profile.c, flags_);
 
     const fs::path cache     = cli->cache;
-    const fs::path build_dir = //
-        cache / "build" / profile.name /
-        ( //
-            d.name + "-" +
-            ( //
-                d.branch.empty() && d.tag.empty() ? d.version
-                : d.branch.empty()                ? d.tag
-                                                  : d.branch
-            )
-        ) /
-        feature_name;
+    const fs::path build_dir = cache / "build" / profile.name / d.build_name() / feature_name;
 
     fs::create_directories(build_dir);
     d.build_dir = build_dir.string();
@@ -306,16 +296,32 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
             auto &cc     = d.ar_command;
             cc.directory = d.build_dir;
             if (modules.empty())
-                cc.output = "lib" + d.name + ".a";
+                cc.output = "lib" + d.name + (is_bin ? ".main" : "") + ".a";
             else
-                cc.output = "lib" + d.name + std::to_string(cppm_standard) + ".a";
+                cc.output = "lib" + d.name + std::to_string(cppm_standard) + (is_bin ? ".main" : "") + ".a";
 
             cc.file    = "__dummy__.c";
-            cc.command = f("ar rcs '{}' '{}'", cc.output, fmt::join(objs, "' '"));
+            cc.command = f("{} rcs '{}' '{}'", profile.ar, cc.output, fmt::join(objs, "' '"));
 
-            push_unique(d.link_flags, (build_dir / cc.output).string());
+            push_unique(d.link_flags, (build_dir / cc.output).string(), true);
         }
     } catch (std::exception &e) {
         throw ferr("Cannot resolve dep={:?}, src={}, mod={}: {}", d.name, d.src, d.mod, e.what());
+    }
+
+    if (fs::path main_path = "src/main.cpp"; &d == &lib && fs::exists(working_dir / main_path)) {
+        bin.name         = lib.name;
+        bin.version      = lib.version;
+        bin.tag          = lib.tag;
+        bin.branch       = lib.branch;
+        bin.commit       = lib.commit;
+        bin.features     = lib.features;
+        bin.src          = {main_path.string()};
+        bin.path         = lib.path;
+        bin.subdir       = lib.subdir;
+        bin.cpp_standard = lib.cpp_standard;
+        bin += lib;
+
+        collect_meta(profile, bin, true);
     }
 }

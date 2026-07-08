@@ -5,8 +5,20 @@
 #
 [cpx.package]
 name = "cpx"
+authors = ["aufam"]
 edition = 17
-description = "C++ extra"
+description = "Improve your C++ development experience"
+repository = "https://github.com/aufam/cpx"
+readme = "README.md"
+keywords = [
+    "cpp17",
+    "defer",
+    "glue-code",
+    "header-only",
+    "reflection",
+    "sql-builder",
+    "tag-based-reflection",
+]
 
 [cpx.lib]
 git = "https://github.com/aufam/cpx"
@@ -18,9 +30,28 @@ tag = "v{version}"
 #
 [fmt.package]
 name = "fmt"
+authors = ["fmtlib"]
 edition = 11
-description = "String formatter"
+description = "A modern formatting library"
 homepage = "https://fmt.dev"
+repository = "https://github.com/fmtlib/fmt"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c-plus-plus",
+    "chrono",
+    "cpp",
+    "cross-platform",
+    "floating-point",
+    "formatting",
+    "multiplatform",
+    "output",
+    "performance",
+    "printf",
+    "ranges",
+    "unicode",
+]
 
 [fmt.lib]
 pre = """
@@ -41,7 +72,19 @@ flags = ["-DFMT_ATTACH_TO_GLOBAL_MODULE"]
 #
 [spdlog.package]
 name = "spdlog"
+authors = ["spdlog"]
 edition = 11
+description = "Fast C++ logging library."
+repository = "https://github.com/gabime/spdlog"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "cpp",
+    "cpp11",
+    "header-only",
+    "logging",
+    "spdlog",
+]
 
 [spdlog.lib]
 git = "https://github.com/gabime/spdlog"
@@ -49,7 +92,7 @@ tag = "v{version}"
 flags = ["public:-DSPDLOG_COMPILED_LIB"]
 
 [spdlog.dependencies]
-fmt = { version = "12.1.0", optional = true }
+fmt = { version = "12.1.0", visibility = "public", optional = true }
 fmt-external-flag = { flags = ["public:-DSPDLOG_FMT_EXTERNAL"], optional = true }
 
 [spdlog.features]
@@ -64,22 +107,38 @@ nodefault = ["fmt-external"]
 #
 [nlohmann-json.package]
 name = "nlohmann-json"
+authors = ["nlohmann"]
 edition = 11
+description = "JSON for Modern C++"
+homepage = "https://json.nlohmann.me"
+repository = "https://github.com/nlohmann/json"
+license = "MIT"
+license-file = "LICENSE.MIT"
+readme = "README.md"
+keywords = [
+    "bson",
+    "cbor",
+    "header-only",
+    "json",
+    "json-diff",
+    "json-merge-patch",
+    "json-parser",
+    "json-patch",
+    "json-pointer",
+    "json-serialization",
+    "messagepack",
+    "msgpack",
+    "rfc-6901",
+    "rfc-6902",
+    "rfc-7049",
+    "rfc-7159",
+    "rfc-8259",
+    "stl-containers",
+    "ubjson",
+]
 
 [nlohmann-json.lib]
 url = "https://github.com/nlohmann/json/releases/download/v{version}/json.tar.xz"
-
-#
-# nlohmann.json
-#
-['nlohmann.json'.package]
-name = "nlohmann-json"
-edition = 11
-
-['nlohmann.json'.lib]
-git = "https://github.com/nlohmann/json"
-branch = "develop"
-mod = ["src/modules/json.cppm"]
 
 
 #
@@ -87,7 +146,25 @@ mod = ["src/modules/json.cppm"]
 #
 [yyjson.package]
 name = "yyjson"
+authors = ["ibireme"]
 edition = 11
+description = "The fastest JSON library in C"
+homepage = "https://ibireme.github.io/yyjson/doc/doxygen/html/"
+repository = "https://github.com/ibireme/yyjson"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "ansi-c",
+    "c",
+    "c89",
+    "cross-platform",
+    "deserialization",
+    "json",
+    "json5",
+    "portable",
+    "serialization",
+]
 
 [yyjson.lib]
 git = "https://github.com/ibireme/yyjson"
@@ -101,7 +178,13 @@ inc = ["public:src"]
 #
 [rapidjson.package]
 name = "rapidjson"
+authors = ["Tencent"]
 edition = 11
+description = "A fast JSON parser/generator for C++ with both SAX/DOM style API"
+homepage = "http://rapidjson.org/"
+repository = "https://github.com/Tencent/rapidjson"
+license-file = "license.txt"
+readme = "readme.md"
 
 [rapidjson.lib]
 git = "https://github.com/Tencent/rapidjson"
@@ -113,7 +196,36 @@ branch = "master"
 #
 ['toml++'.package]
 name = "toml++"
+authors = ["marzer"]
 edition = 17
+description = "Header-only TOML config file parser and serializer for C++17."
+homepage = "https://marzer.github.io/tomlplusplus/"
+repository = "https://github.com/marzer/tomlplusplus"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c-plus-plus-17",
+    "c-plus-plus-20",
+    "configuration-files",
+    "cplusplus-17",
+    "cplusplus-20",
+    "cpp",
+    "cpp17",
+    "cpp20",
+    "header-only",
+    "json",
+    "no-dependencies",
+    "parser",
+    "serializer",
+    "single-file",
+    "toml",
+    "toml-parser",
+    "toml-parsing",
+    "tomlplusplus",
+    "unicode",
+    "utf-8",
+]
 
 ['toml++'.lib]
 git = "https://github.com/marzer/tomlplusplus"
@@ -129,7 +241,26 @@ name = "toml11"
 
 [toml11.package]
 name = "toml11"
+authors = ["ToruNiina"]
 edition = 11
+description = "TOML for Modern C++"
+homepage = "https://toruniina.github.io/toml11/"
+repository = "https://github.com/ToruNiina/toml11"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c-plus-plus",
+    "c-plus-plus-11",
+    "c-plus-plus-14",
+    "c-plus-plus-17",
+    "c-plus-plus-20",
+    "header-only",
+    "parser",
+    "serializer",
+    "toml",
+    "toml-parser",
+]
 
 [toml11.lib]
 git = "https://github.com/ToruNiina/toml11"
@@ -145,7 +276,13 @@ name = "yaml-cpp"
 
 [yaml-cpp.package]
 name = "yaml-cpp"
+authors = ["jbeder"]
 edition = 11
+description = "A YAML parser and emitter in C++"
+repository = "https://github.com/jbeder/yaml-cpp"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
 
 [yaml-cpp.lib]
 git = "https://github.com/jbeder/yaml-cpp"
@@ -157,7 +294,32 @@ tag = "yaml-cpp-{version}"
 #
 [pfr.package]
 name = "pfr"
+authors = ["boostorg"]
 edition = 14
+description = "std::tuple like methods for user defined types without any macro or boilerplate code"
+homepage = "https://boost.org/libs/pfr"
+repository = "https://github.com/boostorg/pfr"
+license = "BSL-1.0"
+license-file = "LICENSE_1_0.txt"
+readme = "README.md"
+keywords = [
+    "boost",
+    "clang",
+    "cplusplus",
+    "cplusplus-14",
+    "cpp",
+    "cpp14",
+    "cpp17",
+    "gcc",
+    "magic",
+    "reflection",
+    "reflection-library",
+    "reflections",
+    "std",
+    "tuple",
+    "tuples",
+    "visual-studio",
+]
 
 [pfr.lib]
 git = "https://github.com/boostorg/pfr"
@@ -169,7 +331,11 @@ tag = "boost-{version}"
 #
 [preprocessor.package]
 name = "preprocessor"
+authors = ["boostorg"]
 edition = 11
+description = "Boost.org preprocessor module"
+homepage = "http://boost.org/libs/preprocessor"
+repository = "https://github.com/boostorg/preprocessor"
 
 [preprocessor.lib]
 git = "https://github.com/boostorg/preprocessor"
@@ -184,7 +350,30 @@ name = "magic_enum"
 
 [magic_enum.package]
 name = "magic_enum"
+authors = ["Neargye"]
 edition = 17
+description = "Static reflection for enums (to string, from string, iteration) for modern C++, work with any enum type without any macro or boilerplate code"
+repository = "https://github.com/Neargye/magic_enum"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c-plus-plus",
+    "c-plus-plus-17",
+    "cplusplus",
+    "cplusplus-17",
+    "cpp",
+    "cpp17",
+    "enum",
+    "enum-to-string",
+    "header-only",
+    "metaprogramming",
+    "no-dependencies",
+    "reflection",
+    "serialization",
+    "single-file",
+    "string-to-enum",
+]
 
 [magic_enum.lib]
 git = "https://github.com/Neargye/magic_enum"
@@ -202,7 +391,19 @@ name = "CLI11"
 
 [CLI11.package]
 name = "CLI11"
+authors = ["CLIUtils"]
 edition = 11
+description = "CLI11 is a command line parser for C++11 and beyond that provides a rich feature set with a simple and intuitive interface."
+homepage = "https://cliutils.github.io/CLI11/book/"
+repository = "https://github.com/CLIUtils/CLI11"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "cli",
+    "cli-parser",
+    "cpp11",
+    "no-dependencies",
+]
 
 [CLI11.lib]
 git = "https://github.com/CLIUtils/CLI11"
@@ -219,7 +420,21 @@ name = "httplib"
 
 [httplib.package]
 name = "httplib"
+authors = ["yhirose"]
 edition = 11
+description = "A C++ header-only HTTP/HTTPS server and client library"
+homepage = "https://yhirose.github.io/cpp-httplib/"
+repository = "https://github.com/yhirose/cpp-httplib"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "cpp",
+    "cpp11",
+    "header-only",
+    "http",
+    "https",
+]
 
 [httplib.lib]
 git = "https://github.com/yhirose/cpp-httplib"
@@ -242,7 +457,28 @@ full = ["ssl", "z"]
 #
 [sha256.package]
 name = "sha256"
+authors = ["LekKit"]
 edition = 11
+description = "SHA-256 algorithm implementation (С/С++)"
+repository = "https://github.com/LekKit/sha256"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c",
+    "cpp",
+    "cross-platform",
+    "hash",
+    "hash-functions",
+    "hashing",
+    "hashing-algorithm",
+    "hashing-algorithms",
+    "hashing-strings",
+    "sha2",
+    "sha256",
+    "sha256-hash",
+    "sha256sum",
+]
 
 [sha256.lib]
 git = "https://github.com/LekKit/sha256"
@@ -256,7 +492,14 @@ inc = ["public:"]
 #
 [gtest.package]
 name = "gtest"
+authors = ["google"]
 edition = 17
+description = "GoogleTest - Google Testing and Mocking Framework"
+homepage = "https://google.github.io/googletest/"
+repository = "https://github.com/google/googletest"
+license = "BSD-3-Clause"
+license-file = "LICENSE"
+readme = "README.md"
 
 [gtest.lib]
 url = "https://github.com/google/googletest/releases/download/v{version}/googletest-{version}.tar.gz"
@@ -269,12 +512,22 @@ gtest-main = { src = ["googletest/src/gtest_main.cc"] }
 [gtest.features]
 default = ["gtest-main"]
 
+
 #
 # google benchmark
 #
 [benchmark.package]
 name = "benchmark"
+authors = ["google"]
 edition = 17
+description = "A microbenchmark support library"
+repository = "https://github.com/google/benchmark"
+license = "Apache-2.0"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "benchmark",
+]
 
 [benchmark.lib]
 git = "https://github.com/google/benchmark"
@@ -311,7 +564,25 @@ flags = [
 #
 [onnx.package]
 name = "onnx"
+authors = ["microsoft"]
 edition = 17
+description = "ONNX Runtime: cross-platform, high performance ML inferencing and training accelerator"
+homepage = "https://onnxruntime.ai"
+repository = "https://github.com/microsoft/onnxruntime"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "ai-framework",
+    "deep-learning",
+    "hardware-acceleration",
+    "machine-learning",
+    "neural-networks",
+    "onnx",
+    "pytorch",
+    "scikit-learn",
+    "tensorflow",
+]
 
 [onnx.lib]
 url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os}-{arch}-{version}.tgz"
@@ -344,7 +615,24 @@ lib = [
 #
 [catch2.package]
 name = "catch2"
+authors = ["catchorg"]
 edition = 14
+description = "A modern, C++-native, test framework for unit-tests, TDD and BDD - using C++14, C++17 and later (C++11 support is in v2.x branch, and C++03 on the Catch1.x branch)"
+homepage = "https://discord.gg/4CWS9zD"
+repository = "https://github.com/catchorg/Catch2"
+license = "BSL-1.0"
+license-file = "LICENSE.txt"
+readme = "README.md"
+keywords = [
+    "bdd",
+    "cpp",
+    "cpp14",
+    "framework",
+    "no-dependencies",
+    "tdd",
+    "test-framework",
+    "testing",
+]
 
 [catch2.lib]
 git = "https://github.com/catchorg/Catch2"
@@ -368,7 +656,28 @@ inc = ["public:src"]
 #
 [ftxui.package]
 name = "ftxui"
+authors = ["ArthurSonzogni"]
 edition = 17
+description = ":computer: C++ Functional Terminal User Interface. :heart:"
+homepage = "https://arthursonzogni.github.io/FTXUI/"
+repository = "https://github.com/ArthurSonzogni/FTXUI"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "arthursonzogni",
+    "ascii",
+    "ascii-art",
+    "cpp",
+    "curse",
+    "simple",
+    "terminal",
+    "terminal-based",
+    "tui",
+    "ui",
+    "user-interface",
+    "xterm",
+]
 
 [ftxui.lib]
 git = "http://github.com/ArthurSonzogni/FTXUI"
@@ -486,7 +795,20 @@ name = "async_simple"
 
 [async_simple.package]
 name = "async_simple"
+authors = ["alibaba"]
 edition = 20
+description = "Simple, light-weight and easy-to-use asynchronous components "
+repository = "https://github.com/alibaba/async_simple"
+license = "Apache-2.0"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "asynchronous",
+    "coroutines",
+    "cpp20",
+    "cpp20-modules",
+    "modules",
+]
 
 [async_simple.lib]
 git = "https://github.com/alibaba/async_simple"
@@ -500,7 +822,19 @@ inc = ["public:"]
 #
 [trace.package]
 name = "trace"
+authors = ["jeremy-rifkin"]
 edition = 11
+description = "Simple, portable, and self-contained stacktrace library for C++11 and newer"
+repository = "https://github.com/jeremy-rifkin/cpptrace"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "backtrace",
+    "debugging",
+    "diagnostics",
+    "stacktrace",
+]
 
 [trace.lib]
 git = "https://github.com/jeremy-rifkin/cpptrace"
@@ -524,7 +858,26 @@ src = [
 #
 [redis.package]
 name = "redis"
+authors = ["sewenew"]
 edition = 17
+description = "Redis client written in C++"
+repository = "https://github.com/sewenew/redis-plus-plus"
+license = "Apache-2.0"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c-plus-plus",
+    "connection-pool",
+    "cpp",
+    "cpp11",
+    "hiredis",
+    "redis",
+    "redis-client",
+    "redis-cluster",
+    "redis-cluster-client",
+    "redis-sentinels",
+    "redlock",
+]
 
 [redis.lib]
 git = "https://github.com/sewenew/redis-plus-plus"
@@ -560,7 +913,22 @@ inc = [
 #
 [xxhash.package]
 name = "xxhash"
+authors = ["Cyan4973"]
 edition = 11
+description = "Extremely fast non-cryptographic hash algorithm"
+homepage = "http://www.xxhash.com/"
+repository = "https://github.com/Cyan4973/xxHash"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c",
+    "dispersion",
+    "hash",
+    "hash-checksum",
+    "hash-functions",
+    "smhasher",
+    "xxhash",
+]
 
 [xxhash.lib]
 git = "https://github.com/Cyan4973/xxhash"
@@ -574,7 +942,13 @@ inc = ["public:"]
 #
 [z.package]
 name = "z"
+authors = ["madler"]
 edition = 11
+description = "A massively spiffy yet delicately unobtrusive compression library."
+homepage = "http://zlib.net/"
+repository = "https://github.com/madler/zlib"
+license-file = "LICENSE"
+readme = "README"
 
 [z.lib]
 url = "https://zlib.net/fossils/zlib-{version}.tar.gz"
@@ -587,7 +961,23 @@ inc = ["public:"]
 #
 [protobuf.package]
 name = "protobuf"
+authors = ["protocolbuffers"]
 edition = 11
+description = "Protocol Buffers - Google's data interchange format"
+homepage = "http://protobuf.dev"
+repository = "https://github.com/protocolbuffers/protobuf"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "marshalling",
+    "protobuf",
+    "protobuf-runtime",
+    "protoc",
+    "protocol-buffers",
+    "protocol-compiler",
+    "rpc",
+    "serialization",
+]
 
 [protobuf.lib]
 git = "https://github.com/protocolbuffers/protobuf"
@@ -644,7 +1034,12 @@ flags = [
 #
 [msgpack.package]
 name = "msgpack"
+authors = ["msgpack"]
 edition = 11
+description = "MessagePack implementation for C and C++ / msgpack.org[C/C++]"
+repository = "https://github.com/msgpack/msgpack-c"
+license-file = "COPYING"
+readme = "README.md"
 
 [msgpack.lib]
 git = "https://github.com/msgpack/msgpack-c"
@@ -657,7 +1052,23 @@ flags = ["public:-DMSGPACK_DEFAULT_API_VERSION=3", "public:-DMSGPACK_NO_BOOST"]
 #
 [reproc.package]
 name = "reproc"
+authors = ["daandemeyer"]
 edition = 11
+description = "A cross-platform (C99/C++11) process library"
+repository = "https://github.com/daandemeyer/reproc"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c",
+    "cmake",
+    "cpp",
+    "cross-platform",
+    "library",
+    "posix",
+    "processes",
+    "windows",
+]
 
 [reproc.lib]
 git = "https://github.com/daandemeyer/reproc"
@@ -687,7 +1098,14 @@ inc = ["public:reproc++/include", "reproc/include"]
 #
 [boost.package]
 name = "boost"
+authors = ["boostorg"]
 edition = 11
+description = "Super-project for modularized Boost"
+homepage = "https://github.com/boostorg/wiki/wiki/Getting-Started%3A-Overview"
+repository = "https://github.com/boostorg/boost"
+license = "BSL-1.0"
+license-file = "LICENSE_1_0.txt"
+readme = "README.md"
 
 [boost.lib]
 url = "https://archives.boost.io/release/{version}/source/boost_{version:underscore}.tar.gz"
@@ -699,7 +1117,19 @@ inc = ["public:"]
 #
 [ggml.package]
 name = "ggml"
+authors = ["ggml-org"]
 edition = 17
+description = "Tensor library for machine learning"
+repository = "https://github.com/ggml-org/ggml"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "automatic-differentiation",
+    "large-language-models",
+    "machine-learning",
+    "tensor-algebra",
+]
 
 [ggml.lib]
 git = "https://github.com/ggml-org/ggml"
@@ -756,11 +1186,25 @@ default = ["cpu"]
 
 
 #
-# miniaudio
+# whisper
 #
 [whisper.package]
 name = "whisper"
+authors = ["ggml-org"]
 edition = 17
+description = "Port of OpenAI's Whisper model in C/C++"
+repository = "https://github.com/ggml-org/whisper.cpp"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "inference",
+    "openai",
+    "speech-recognition",
+    "speech-to-text",
+    "transformer",
+    "whisper",
+]
 
 [whisper.lib]
 git = "https://github.com/ggml-org/whisper.cpp"
@@ -780,7 +1224,7 @@ flags = [
 ]
 
 [whisper.dependencies]
-ggml = "0.15.3"
+ggml = { version = "0.15.3", visibility = "public" }
 
 
 #
@@ -788,7 +1232,35 @@ ggml = "0.15.3"
 #
 [miniaudio.package]
 name = "miniaudio"
+authors = ["mackron"]
 edition = 11
+description = "Audio playback and capture library written in C, in a single source file."
+homepage = "https://miniaud.io"
+repository = "https://github.com/mackron/miniaudio"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "android",
+    "audio",
+    "audio-library",
+    "bsd",
+    "capture",
+    "decoding",
+    "emscripten",
+    "flac",
+    "ios",
+    "linux",
+    "macos",
+    "mp3",
+    "osx",
+    "playback",
+    "public-domain",
+    "recording",
+    "vorbis",
+    "wasapi",
+    "wav",
+    "windows",
+]
 
 [miniaudio.lib]
 git = "https://github.com/mackron/miniaudio"
@@ -802,7 +1274,26 @@ inc = ["public:"]
 #
 [semver.package]
 name = "semver"
+authors = ["Neargye"]
 edition = 17
+description = "Semantic Versioning for modern C++"
+repository = "https://github.com/Neargye/semver"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c-plus-plus",
+    "c-plus-plus-17",
+    "cplusplus",
+    "cplusplus-17",
+    "cpp",
+    "cpp17",
+    "header-only",
+    "no-dependencies",
+    "semantic-versioning",
+    "semver",
+    "single-file",
+]
 
 [semver.lib]
 git = "https://github.com/Neargye/semver"

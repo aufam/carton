@@ -42,7 +42,7 @@ void Carton::resolve_remote_dep(const Profile &profile, Dependency &d, bool from
         spdlog::info("resolving dep={:?} url={:?}", d.name, d.url);
         d.path = resolve_path(cli->cache, d.url);
     } else if (!d.git.empty()) {
-        auto &tag = d.tag.empty() ? d.branch : d.tag;
+        auto &tag = !d.tag.empty() ? d.tag : !d.branch.empty() ? d.branch : d.tag;
         spdlog::info("resolving dep={:?} git={:?} tag={:?}", d.name, d.git, tag);
         d.path = git_clone(cli->cache, d.git, tag);
     } else {
@@ -56,17 +56,17 @@ void Carton::resolve_remote_dep(const Profile &profile, Dependency &d, bool from
     if (auto sub = working_dir / "carton.toml"; from_registry && fs::exists(sub)) {
         constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
 
-        auto p = cpx::toruniina_toml::parse_from_file<Carton>(sub.string(), toml_version);
+        Carton  _p;
+        Carton &p = &d == &lib ? *this : _p;
+
+        p.lib.path   = "";
+        p.lib.subdir = "";
+        cpx::toruniina_toml::parse_from_file(sub.string(), p, toml_version);
         if (fs::path(p.lib.path).is_absolute() || fs::path(p.lib.subdir).is_absolute())
             throw ferr("Path must be relative");
 
         p.lib.path = (working_dir / p.lib.path).string();
-        if (&d == &lib) {
-            package      = std::move(p.package);
-            dependencies = std::move(p.dependencies);
-            features     = std::move(p.features);
-            p.lib.name   = d.name;
-        } else {
+        if (&d != &lib) {
             if (p.package.edition > package.edition)
                 throw ferr(
                     "Error building dependency package={0:?}: {0:?} required std=c++{1} but {2:?} only supports std=c++{3}",
@@ -86,8 +86,8 @@ void Carton::resolve_remote_dep(const Profile &profile, Dependency &d, bool from
             } catch (const std::exception &e) {
                 throw ferr("Error building dependency package={}: {}", p.package.name, e.what());
             }
+            d = std::move(p.lib);
         }
-        d           = std::move(p.lib);
         working_dir = fs::path(d.path) / d.subdir;
     }
 
