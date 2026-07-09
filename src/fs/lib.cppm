@@ -2,7 +2,7 @@ module;
 
 #include <filesystem>
 
-export module std.fs;
+export module carton.fs;
 
 export namespace fs {
     using ::std::filesystem::path;
@@ -26,4 +26,6 @@ export namespace fs {
     using ::std::filesystem::space;
     using ::std::filesystem::status;
     using ::std::filesystem::weakly_canonical;
+    using ::std::filesystem::operator|;
+    using ::std::filesystem::operator&;
 } // namespace fs

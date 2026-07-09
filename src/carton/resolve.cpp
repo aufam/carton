@@ -7,8 +7,6 @@ module;
 #include <regex>
 
 module carton;
-import std.fs;
-import fmt;
 import cpx;
 import cpx.toruniina_toml;
 

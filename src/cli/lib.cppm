@@ -4,7 +4,7 @@ module;
 #include <string>
 #include <optional>
 #include <vector>
-#include "macro.h"
+#include "../macro.h"
 
 export module carton:cli;
 import cpx;

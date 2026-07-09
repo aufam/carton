@@ -4,8 +4,6 @@ module;
 #include <reproc++/run.hpp>
 
 module carton;
-import std.fs;
-import fmt;
 
 static void do_link(const Dependency &d) {
     reproc::options opt;

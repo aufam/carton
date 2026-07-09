@@ -3,19 +3,11 @@ module;
 #include <spdlog/spdlog.h>
 #include <reproc++/run.hpp>
 #include <algorithm>
-#include <filesystem>
 #include <string>
 #include <vector>
-
-#include <cstdlib>
 #include <filesystem>
-#include <stdexcept>
-#include <string>
-#include <system_error>
 
 module carton;
-import fmt;
-import std.fs;
 
 void push_unique(std::vector<std::string> &vec, const std::string &value, bool front) {
     if (value.empty())

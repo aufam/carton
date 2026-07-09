@@ -11,8 +11,6 @@ module;
 #include <algorithm>
 
 module carton;
-import :p1689;
-import std.fs;
 import cpx.yy_json;
 
 namespace {

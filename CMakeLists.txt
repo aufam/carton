@@ -44,6 +44,12 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+    NAME            semver
+    GIT_REPOSITORY  "https://github.com/Neargye/semver"
+    GIT_TAG         v0.3.1
+)
+
+CPMAddPackage(
     NAME            CLI11
     GIT_REPOSITORY  "https://github.com/CLIUtils/CLI11"
     GIT_TAG         v2.6.1
@@ -85,11 +91,11 @@ if (REQUIREMENTS)
 endif()
 
 
-file(GLOB MODULE_FILES CONFIGURE_DEPENDS
+file(GLOB_RECURSE MODULE_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cppm"
 )
 
-file(GLOB MODULE_IMPL_FILES CONFIGURE_DEPENDS
+file(GLOB_RECURSE MODULE_IMPL_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
@@ -113,6 +119,7 @@ target_link_libraries(carton PRIVATE
     xxhash
     reproc++
     Boost::preprocessor
+    semver
 )
 
 target_compile_options(carton PRIVATE

@@ -14,10 +14,8 @@ license = "MIT"
 
 [dependencies]
 cpx = { version = "0.1.0", features = ["fmt", "json", "toml", "magic_enum", "cli"] }
-fmt = "12.1.0"
 spdlog = { version = "1.17.0", default-features = false }
-yyjson = "0.12.0"
-toml = "4.4.0"
-magic_enum = "0.9.7"
-cli = "2.6.1"
 xxhash = "0.8.3"
+reproc = "14.2.7"
+preprocessor = "1.88.0"
+semver = "0.3.1"

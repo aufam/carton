@@ -4,7 +4,7 @@ module;
 #include <optional>
 #include <vector>
 #include <toml.hpp>
-#include "macro.h"
+#include "../macro.h"
 
 export module carton:dependency;
 import :compile_command;

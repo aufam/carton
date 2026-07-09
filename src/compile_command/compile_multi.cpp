@@ -6,48 +6,41 @@ module;
 #include <algorithm>
 #include <map>
 #include <unordered_map>
+#include "../macro.h"
 
 module carton;
-import std.fs;
 import cpx;
 import cpx.toruniina_toml;
 
-namespace {
-    struct Signature {
-        std::string cmd;
-        std::string file;
-        std::string deps;
-        std::string mods;
-    };
-
-    constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
-
-    std::unordered_map<std::string, Signature> toml_parse(const fs::path &signature_path) {
-        if (!fs::exists(signature_path))
-            return {};
-        return cpx::toruniina_toml::parse_from_file<std::unordered_map<std::string, Signature>>(
-            signature_path.string(), toml_version
-        );
-    }
-    void toml_dump(const std::unordered_map<std::string, Signature> &signature, const fs::path &signature_path) {
-        auto          tml = cpx::toruniina_toml::dump(signature, toml_version);
-        std::ofstream out(signature_path);
-        out << tml;
-    }
-} // namespace
-
-template <>
-struct cpx::Reflect<Signature>
-    : Fields<Reflect<Signature>, &Signature::cmd, &Signature::deps, &Signature::file, &Signature::mods> {
-    static constexpr TagInfo cmd  = "cmd  , skipmissing";
-    static constexpr TagInfo file = "file , skipmissing";
-    static constexpr TagInfo deps = "deps , skipmissing";
-    static constexpr TagInfo mods = "mods , skipmissing";
-
-    static constexpr tags_type tags() {
-        return std::tie(cmd, file, deps, mods);
-    }
+struct Signature {
+    std::string cmd;
+    std::string file;
+    std::string deps;
+    std::string mods;
 };
+
+// clang-format off
+CPX_REFLECT(
+    (Signature, ),
+
+    ((cmd  , "cmd  , skipmissing"))
+    ((file , "file , skipmissing"))
+    ((deps , "deps , skipmissing"))
+    ((mods , "mods , skipmissing"))
+);
+// clang-format on
+
+static std::unordered_map<std::string, Signature> toml_parse(const fs::path &signature_path) {
+    std::unordered_map<std::string, Signature> res;
+    if (fs::exists(signature_path))
+        cpx::toruniina_toml::parse_from_file(signature_path.string(), res);
+    return res;
+}
+
+static void toml_dump(const std::unordered_map<std::string, Signature> &signature, const fs::path &signature_path) {
+    std::ofstream os(signature_path);
+    os << cpx::toruniina_toml::io << signature;
+}
 
 static std::vector<std::string> parse_depfile(const std::string &path) {
     std::ifstream in(path);

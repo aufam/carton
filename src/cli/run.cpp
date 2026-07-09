@@ -4,8 +4,6 @@ module;
 #include <reproc++/run.hpp>
 
 module carton;
-import std.fs;
-import fmt;
 
 int Carton::run() {
     const auto output = fs::path(lib.build_dir) / lib.name;

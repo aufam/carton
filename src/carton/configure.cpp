@@ -5,7 +5,6 @@ module;
 
 module carton;
 
-
 static std::string
 find_extra_features(Carton &p, const std::string &feat, std::vector<std::string> &required_features, bool dep = false) {
     if (feat.starts_with("dep:"))

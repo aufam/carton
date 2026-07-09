@@ -2,7 +2,7 @@ module;
 
 #include <string>
 #include <vector>
-#include "macro.h"
+#include "../macro.h"
 
 export module carton:profile;
 import cpx;

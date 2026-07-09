@@ -4,7 +4,7 @@ module;
 #include <vector>
 #include <unordered_map>
 #include <map>
-#include "macro.h"
+#include "../macro.h"
 
 export module carton:compile_command;
 import cpx;

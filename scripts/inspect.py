@@ -94,6 +94,37 @@ def repo_metadata(owner, repo):
     return readme, license_file
 
 
+_VERSION_RE = re.compile(r"(\d+\.\d+(?:\.\d+)?)")
+
+
+def tags_metadata(owner, repo):
+    req = urllib.request.Request(
+        f"https://api.github.com/repos/{owner}/{repo}/tags",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "carton-inspect",
+        },
+    )
+
+    token = os.getenv("GITHUB_TOKEN")
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
+
+    with urllib.request.urlopen(req) as r:
+        tags = json.load(r)
+
+    versions = []
+    for tag in tags:
+        m = _VERSION_RE.search(tag["name"])
+        if m:
+            versions.append(m.group(1))
+
+    def version_key(v):
+        return tuple(map(int, v.split(".")))
+
+    return sorted(set(versions), key=version_key, reverse=True)
+
+
 def emit(package):
     print("[package]")
 
@@ -107,6 +138,7 @@ def emit(package):
         "license-file",
         "readme",
         "keywords",
+        "versions",
     ]
 
     for key in order:
@@ -167,6 +199,10 @@ def main():
         package["readme"] = readme
     if license_file:
         package["license-file"] = license_file
+
+    tags = tags_metadata(owner, repo)
+    if len(tags) > 0:
+        package["versions"] = tags
 
     emit(package)
 

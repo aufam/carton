@@ -7,19 +7,12 @@
       "required": ["name"],
       "properties": {
         "name": { "type": "string" },
-        "version": {
-          "type": "string",
-          "pattern": "^\\d+\\.\\d+\\.\\d+"
-        },
         "edition": {
           "type": "integer",
           "enum": [11, 14, 17, 20, 23, 26],
           "default": 17
         },
-        "authors": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
+        "authors": { "type": "array", "items": { "type": "string" } },
         "description": { "type": "string" },
         "license": { "type": "string" },
         "license-file": { "type": "string" },
@@ -27,20 +20,15 @@
         "repository": { "type": "string" },
         "homepage": { "type": "string" },
         "documentation": { "type": "string" },
-        "keywords": {
-          "type": "array",
-          "items": { "type": "string" }
-        }
+        "keywords": { "type": "array", "items": { "type": "string" } },
+        "versions": { "type": "array", "items": { "type": "string" } }
       }
     },
 
     "sourceSpec": {
       "type": "object",
       "properties": {
-        "version": {
-          "type": "string",
-          "pattern": "^\\d+\\.\\d+\\.\\d+"
-        },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$" },
         "path": { "type": "string" },
         "url": { "type": "string" },
         "git": { "type": "string" },
@@ -48,9 +36,97 @@
         "branch": { "type": "string" },
         "commit": { "type": "string" },
         "subdir": { "type": "string" },
-        "features": { "type": "array", "items": { "type": "string" } },
-        "optional": { "type": "boolean", "default": false },
-        "default-features": { "type": "boolean", "default": true },
+        "src": { "type": "array", "items": { "type": "string" } },
+        "inc": { "type": "array", "items": { "type": "string" } },
+        "lib": { "type": "array", "items": { "type": "string" } },
+        "mod": { "type": "array", "items": { "type": "string" } },
+        "flags": { "type": "array", "items": { "type": "string" } },
+        "link-flags": { "type": "array", "items": { "type": "string" } },
+        "pre": { "type": "string" }
+      },
+      "anyOf": [
+        { "oneOf": [
+        {
+          "required": ["version"],
+          "not": {
+            "anyOf": [
+              { "required": ["path"] },
+              { "required": ["url"] },
+              { "required": ["git"] },
+              { "required": ["tag"] },
+              { "required": ["branch"] },
+              { "required": ["src"] },
+              { "required": ["inc"] },
+              { "required": ["lib"] },
+              { "required": ["mod"]  },
+              { "required": ["flags"] },
+              { "required": ["link-flags"] },
+              { "required": ["pre"] }
+            ]
+          }
+        },
+        {
+          "required": ["path"],
+          "not": {
+            "anyOf": [
+              { "required": ["version"] },
+              { "required": ["url"] },
+              { "required": ["git"] },
+              { "required": ["tag"] },
+              { "required": ["branch"] },
+              { "required": ["commit"] }
+            ]
+          }
+        },
+        {
+          "required": ["url"],
+          "not": {
+            "anyOf": [
+              { "required": ["version"] },
+              { "required": ["path"] },
+              { "required": ["git"] },
+              { "required": ["tag"] },
+              { "required": ["branch"] },
+              { "required": ["commit"] }
+            ]
+          }
+        },
+        {
+          "required": ["git"],
+          "not": {
+            "anyOf": [
+              { "required": ["version"] },
+              { "required": ["path"] },
+              { "required": ["url"] }
+            ]
+          },
+          "oneOf": [
+            { "required": ["tag"], "not": { "required": ["branch", "commit"] } },
+            { "required": ["branch"], "not": { "required": ["tag", "commit"] } },
+            { "required": ["commit"], "not": { "required": ["tag", "branch"] } }
+          ]
+        }
+        ] },
+        { "required": ["src"] },
+        { "required": ["inc"] },
+        { "required": ["lib"] },
+        { "required": ["mod"]  },
+        { "required": ["flags"] },
+        { "required": ["link-flags"] }
+      ]
+    },
+
+    "sourceSpecWithExtra": {
+      "type": "object",
+      "properties": {
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$" },
+        "path": { "type": "string" },
+        "url": { "type": "string" },
+        "git": { "type": "string" },
+        "tag": { "type": "string" },
+        "branch": { "type": "string" },
+        "commit": { "type": "string" },
+        "subdir": { "type": "string" },
         "src": { "type": "array", "items": { "type": "string" } },
         "inc": { "type": "array", "items": { "type": "string" } },
         "lib": { "type": "array", "items": { "type": "string" } },
@@ -58,6 +134,9 @@
         "flags": { "type": "array", "items": { "type": "string" } },
         "link-flags": { "type": "array", "items": { "type": "string" } },
         "pre": { "type": "string" },
+        "features": { "type": "array", "items": { "type": "string" } },
+        "optional": { "type": "boolean", "default": false },
+        "default-features": { "type": "boolean", "default": true },
         "visibility": { "type": "string" }
       },
       "anyOf": [
@@ -70,7 +149,14 @@
               { "required": ["url"] },
               { "required": ["git"] },
               { "required": ["tag"] },
-              { "required": ["branch"] }
+              { "required": ["branch"] },
+              { "required": ["src"] },
+              { "required": ["inc"] },
+              { "required": ["lib"] },
+              { "required": ["mod"]  },
+              { "required": ["flags"] },
+              { "required": ["link-flags"] },
+              { "required": ["pre"] }
             ]
           }
         },
@@ -127,11 +213,8 @@
 
     "dependency": {
       "oneOf": [
-        {
-          "type": "string",
-          "pattern": "^\\d+\\.\\d+\\.\\d+"
-        },
-        { "$ref": "#/$defs/sourceSpec" }
+        { "type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$" },
+        { "$ref": "#/$defs/sourceSpecWithExtra" }
       ]
     }
   },
@@ -146,17 +229,12 @@
 
       "dependencies": {
         "type": "object",
-        "additionalProperties": {
-          "$ref": "#/$defs/dependency"
-        }
+        "additionalProperties": { "$ref": "#/$defs/dependency" }
       },
 
       "features": {
         "type": "object",
-        "additionalProperties": {
-          "type": "array",
-          "items": { "type": "string" }
-        }
+        "additionalProperties": { "type": "array", "items": { "type": "string" } }
       }
     }
   }

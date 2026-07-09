@@ -4,7 +4,6 @@ module;
 #include <regex>
 
 module carton;
-import std.fs;
 
 static std::string extract_host_and_path(const std::string &url) {
     std::string cleaned = url;

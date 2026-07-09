@@ -140,7 +140,7 @@
     <div class="container">
       <h1>📦 Carton Registry</h1>
       <div class="subtitle">
-        Registry is loaded dynamically from <code>carton-packages.toml</code>
+        Registry is loaded dynamically from <code>registry.toml</code>
       </div>
       <input id="search" placeholder="Search packages..." />
     </div>
@@ -309,7 +309,7 @@
 
     async function loadRegistry() {
       try {
-        const res = await fetch("./carton-packages.toml");
+        const res = await fetch("registry.toml");
 
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);

@@ -7,8 +7,6 @@ module;
 #include <unordered_set>
 
 module carton;
-import std.fs;
-import fmt;
 
 static void collect_modules(
     const std::string                                     &mod,
