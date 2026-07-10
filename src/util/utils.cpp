@@ -179,6 +179,72 @@ static void string_replace(std::string &str, std::string_view key, std::string_v
     }
 }
 
+struct SemVer {
+    int major = 0;
+    int minor = 0;
+    int patch = 0;
+
+    std::string numberize() const {
+        return std::to_string(
+            major * 1'000'000 +
+            minor *
+                ( //
+                    minor < 10    ? 100
+                    : minor < 100 ? 10
+                                  : 1
+                ) *
+                1000 +
+            patch * //
+                (   //
+                    patch < 10    ? 100
+                    : patch < 100 ? 10
+                                  : 1
+                )
+        );
+    }
+};
+
+std::optional<SemVer> parse_semver(std::string_view s) {
+    size_t pos = 0;
+
+    auto parse_number = [&](int &out) -> bool {
+        if (pos >= s.size() || !std::isdigit(static_cast<unsigned char>(s[pos])))
+            return false;
+
+        out = 0;
+        while (pos < s.size() && std::isdigit(static_cast<unsigned char>(s[pos]))) {
+            out = out * 10 + (s[pos] - '0');
+            ++pos;
+        }
+        return true;
+    };
+
+    // Find first digit.
+    while (pos < s.size() && !std::isdigit(static_cast<unsigned char>(s[pos]))) {
+        ++pos;
+    }
+
+    if (pos == s.size())
+        return std::nullopt;
+
+    SemVer ver;
+
+    if (!parse_number(ver.major))
+        return std::nullopt;
+
+    if (pos < s.size() && s[pos] == '.') {
+        ++pos;
+        parse_number(ver.minor);
+
+        if (pos < s.size() && s[pos] == '.') {
+            ++pos;
+            parse_number(ver.patch);
+        }
+    }
+
+    return ver;
+}
+
 static constexpr std::string_view os =
 #if defined(_WIN32)
     "win";
@@ -239,181 +305,57 @@ static constexpr std::string_view arch_amd =
 #endif
 
 void Carton::apply_package_placeholders() {
-    auto &name    = package.name;
-    auto &version = package.version;
-    auto  edition = std::to_string(package.edition);
+    const auto &name    = package.name;
+    const auto &version = package.version;
+    const auto  edition = std::to_string(package.edition);
+
+    auto v = parse_semver(version)
+                 .or_else([&]() -> std::optional<SemVer> {
+                     throw ferr("cannot parse version: ", version);
+                     return SemVer{};
+                 })
+                 .value();
+
+    const auto version_major  = std::to_string(v.major);
+    const auto version_minor  = std::to_string(v.minor);
+    const auto version_patch  = std::to_string(v.patch);
+    const auto version_number = v.numberize();
+
+    auto apply_params = [&](Dependency &d, std::string_view key, std::string_view value) {
+        string_replace(d.version, key, value);
+        string_replace(d.path, key, value);
+        string_replace(d.url, key, value);
+        string_replace(d.git, key, value);
+        string_replace(d.branch, key, value);
+        string_replace(d.tag, key, value);
+        string_replace(d.subdir, key, value);
+        for (auto &str : d.features)
+            string_replace(str, key, value);
+        for (auto &str : d.src)
+            string_replace(str, key, value);
+        for (auto &str : d.inc)
+            string_replace(str, key, value);
+        for (auto &str : d.flags)
+            string_replace(str, key, value);
+        for (auto &str : d.link_flags)
+            string_replace(str, key, value);
+        string_replace(d.pre, key, value);
+    };
 
     auto apply_dep = [&](Dependency &d) {
-        string_replace(d.version, "version", version);
-        string_replace(d.path, "version", version);
-        string_replace(d.url, "version", version);
-        string_replace(d.git, "version", version);
-        string_replace(d.branch, "version", version);
-        string_replace(d.tag, "version", version);
-        string_replace(d.subdir, "version", version);
-        for (auto &str : d.features)
-            string_replace(str, "version", version);
-        for (auto &str : d.src)
-            string_replace(str, "version", version);
-        for (auto &str : d.inc)
-            string_replace(str, "version", version);
-        for (auto &str : d.flags)
-            string_replace(str, "version", version);
-        for (auto &str : d.link_flags)
-            string_replace(str, "version", version);
-        string_replace(d.pre, "version", version);
-
-        string_replace(d.version, "name", name);
-        string_replace(d.path, "name", name);
-        string_replace(d.url, "name", name);
-        string_replace(d.git, "name", name);
-        string_replace(d.branch, "name", name);
-        string_replace(d.tag, "name", name);
-        string_replace(d.subdir, "name", name);
-        for (auto &str : d.features)
-            string_replace(str, "name", name);
-        for (auto &str : d.src)
-            string_replace(str, "name", name);
-        for (auto &str : d.inc)
-            string_replace(str, "name", name);
-        for (auto &str : d.flags)
-            string_replace(str, "name", name);
-        for (auto &str : d.link_flags)
-            string_replace(str, "name", name);
-        string_replace(d.pre, "name", name);
-
-        string_replace(d.version, "edition", edition);
-        string_replace(d.path, "edition", edition);
-        string_replace(d.url, "edition", edition);
-        string_replace(d.git, "edition", edition);
-        string_replace(d.branch, "edition", edition);
-        string_replace(d.tag, "edition", edition);
-        string_replace(d.subdir, "edition", edition);
-        for (auto &str : d.features)
-            string_replace(str, "edition", edition);
-        for (auto &str : d.src)
-            string_replace(str, "edition", edition);
-        for (auto &str : d.inc)
-            string_replace(str, "edition", edition);
-        for (auto &str : d.flags)
-            string_replace(str, "edition", edition);
-        for (auto &str : d.link_flags)
-            string_replace(str, "edition", edition);
-        string_replace(d.pre, "edition", edition);
-
-        string_replace(d.version, "os", os);
-        string_replace(d.path, "os", os);
-        string_replace(d.url, "os", os);
-        string_replace(d.git, "os", os);
-        string_replace(d.branch, "os", os);
-        string_replace(d.tag, "os", os);
-        string_replace(d.subdir, "os", os);
-        for (auto &str : d.features)
-            string_replace(str, "os", os);
-        for (auto &str : d.src)
-            string_replace(str, "os", os);
-        for (auto &str : d.inc)
-            string_replace(str, "os", os);
-        for (auto &str : d.flags)
-            string_replace(str, "os", os);
-        for (auto &str : d.link_flags)
-            string_replace(str, "os", os);
-        string_replace(d.pre, "os", os);
-
-        string_replace(d.version, "os.name", os_name);
-        string_replace(d.path, "os.name", os_name);
-        string_replace(d.url, "os.name", os_name);
-        string_replace(d.git, "os.name", os_name);
-        string_replace(d.branch, "os.name", os_name);
-        string_replace(d.tag, "os.name", os_name);
-        string_replace(d.subdir, "os.name", os_name);
-        for (auto &str : d.features)
-            string_replace(str, "os.name", os_name);
-        for (auto &str : d.src)
-            string_replace(str, "os.name", os_name);
-        for (auto &str : d.inc)
-            string_replace(str, "os.name", os_name);
-        for (auto &str : d.flags)
-            string_replace(str, "os.name", os_name);
-        for (auto &str : d.link_flags)
-            string_replace(str, "os.name", os_name);
-        string_replace(d.pre, "os.name", os_name);
-
-        string_replace(d.version, "arch", arch);
-        string_replace(d.path, "arch", arch);
-        string_replace(d.url, "arch", arch);
-        string_replace(d.git, "arch", arch);
-        string_replace(d.branch, "arch", arch);
-        string_replace(d.tag, "arch", arch);
-        string_replace(d.subdir, "arch", arch);
-        for (auto &str : d.features)
-            string_replace(str, "arch", arch);
-        for (auto &str : d.src)
-            string_replace(str, "arch", arch);
-        for (auto &str : d.inc)
-            string_replace(str, "arch", arch);
-        for (auto &str : d.flags)
-            string_replace(str, "arch", arch);
-        for (auto &str : d.link_flags)
-            string_replace(str, "arch", arch);
-        string_replace(d.pre, "arch", arch);
-
-        string_replace(d.version, "arch.family", arch_family);
-        string_replace(d.path, "arch.family", arch_family);
-        string_replace(d.url, "arch.family", arch_family);
-        string_replace(d.git, "arch.family", arch_family);
-        string_replace(d.branch, "arch.family", arch_family);
-        string_replace(d.tag, "arch.family", arch_family);
-        string_replace(d.subdir, "arch.family", arch_family);
-        for (auto &str : d.features)
-            string_replace(str, "arch.family", arch_family);
-        for (auto &str : d.src)
-            string_replace(str, "arch.family", arch_family);
-        for (auto &str : d.inc)
-            string_replace(str, "arch.family", arch_family);
-        for (auto &str : d.flags)
-            string_replace(str, "arch.family", arch_family);
-        for (auto &str : d.link_flags)
-            string_replace(str, "arch.family", arch_family);
-        string_replace(d.pre, "arch.family", arch_family);
-
-        string_replace(d.version, "arch.gnu", arch_gnu);
-        string_replace(d.path, "arch.gnu", arch_gnu);
-        string_replace(d.url, "arch.gnu", arch_gnu);
-        string_replace(d.git, "arch.gnu", arch_gnu);
-        string_replace(d.branch, "arch.gnu", arch_gnu);
-        string_replace(d.tag, "arch.gnu", arch_gnu);
-        string_replace(d.subdir, "arch.gnu", arch_gnu);
-        for (auto &str : d.features)
-            string_replace(str, "arch.gnu", arch_gnu);
-        for (auto &str : d.src)
-            string_replace(str, "arch.gnu", arch_gnu);
-        for (auto &str : d.inc)
-            string_replace(str, "arch.gnu", arch_gnu);
-        for (auto &str : d.flags)
-            string_replace(str, "arch.gnu", arch_gnu);
-        for (auto &str : d.link_flags)
-            string_replace(str, "arch.gnu", arch_gnu);
-        string_replace(d.pre, "arch.gnu", arch_gnu);
-
-        string_replace(d.version, "arch.amd", arch_amd);
-        string_replace(d.path, "arch.amd", arch_amd);
-        string_replace(d.url, "arch.amd", arch_amd);
-        string_replace(d.git, "arch.amd", arch_amd);
-        string_replace(d.branch, "arch.amd", arch_amd);
-        string_replace(d.tag, "arch.amd", arch_amd);
-        string_replace(d.subdir, "arch.amd", arch_amd);
-        for (auto &str : d.features)
-            string_replace(str, "arch.amd", arch_amd);
-        for (auto &str : d.src)
-            string_replace(str, "arch.amd", arch_amd);
-        for (auto &str : d.inc)
-            string_replace(str, "arch.amd", arch_amd);
-        for (auto &str : d.flags)
-            string_replace(str, "arch.amd", arch_amd);
-        for (auto &str : d.link_flags)
-            string_replace(str, "arch.amd", arch_amd);
-        string_replace(d.pre, "arch.amd", arch_amd);
+        apply_params(d, "name", name);
+        apply_params(d, "version", version);
+        apply_params(d, "version.major", version_major);
+        apply_params(d, "version.minor", version_minor);
+        apply_params(d, "version.patch", version_patch);
+        apply_params(d, "version.number", version_number);
+        apply_params(d, "edition", edition);
+        apply_params(d, "os", os);
+        apply_params(d, "os.name", os_name);
+        apply_params(d, "arch", arch);
+        apply_params(d, "arch.family", arch_family);
+        apply_params(d, "arch.gnu", arch_gnu);
+        apply_params(d, "arch.amd", arch_amd);
     };
     apply_dep(lib);
 
@@ -425,7 +367,17 @@ void Carton::apply_package_placeholders() {
         for (auto &feat : feats) {
             string_replace(feat, "name", name);
             string_replace(feat, "version", version);
+            string_replace(feat, "version.major", version_major);
+            string_replace(feat, "version.minor", version_minor);
+            string_replace(feat, "version.patch", version_patch);
+            string_replace(feat, "version.number", version_number);
             string_replace(feat, "edition", edition);
+            string_replace(feat, "os", os);
+            string_replace(feat, "os.name", os_name);
+            string_replace(feat, "arch", arch);
+            string_replace(feat, "arch.family", arch_family);
+            string_replace(feat, "arch.gnu", arch_gnu);
+            string_replace(feat, "arch.amd", arch_amd);
         }
     }
 }
