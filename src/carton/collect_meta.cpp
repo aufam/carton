@@ -133,7 +133,7 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
     }
 
     const auto check_os_continue = [](std::string &str) {
-        if (str.find(':') != std::string::npos) {
+        if (auto pos = str.find(':'); pos != std::string::npos) {
             std::string_view os =
 #if defined(_WIN32)
                 "win:";
@@ -144,14 +144,22 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
 #else
 #    error "unknown OS"
 #endif
-            if (str.starts_with(os)) {
-                str = str.substr(os.size());
+
+            auto key   = str.subview(0, pos);
+            auto value = str.subview(pos + 1);
+            if (key == os) {
+                str = std::string(value);
             } else {
+                str = "";
                 return true;
             }
         }
         return false;
     };
+
+    for (auto &str : d.link_flags) {
+        check_os_continue(str);
+    }
 
     for (auto &str : d.lib) {
         if (check_os_continue(str))
@@ -164,11 +172,6 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
             auto lib = (working_dir / path).string();
             push_unique(d.link_flags, lib);
         }
-    }
-    for (auto &str : d.link_flags) {
-        if (check_os_continue(str))
-            continue;
-        push_unique(d.link_flags, str);
     }
 
     if (!profile._module_support)
