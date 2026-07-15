@@ -6,7 +6,6 @@ module;
 #include <algorithm>
 #include <map>
 #include <unordered_map>
-#include "../macro.h"
 
 module carton;
 import cpx;
@@ -17,18 +16,14 @@ struct Signature {
     std::string file;
     std::string deps;
     std::string mods;
+
+    static constexpr std::tuple __field_tags__{
+        cpx::field<&Signature::cmd>  = "cmd  , skipmissing",
+        cpx::field<&Signature::file> = "file , skipmissing",
+        cpx::field<&Signature::deps> = "deps , skipmissing",
+        cpx::field<&Signature::mods> = "mods , skipmissing",
+    };
 };
-
-// clang-format off
-CPX_REFLECT(
-    (Signature, ),
-
-    ((cmd  , "cmd  , skipmissing"))
-    ((file , "file , skipmissing"))
-    ((deps , "deps , skipmissing"))
-    ((mods , "mods , skipmissing"))
-);
-// clang-format on
 
 static std::unordered_map<std::string, Signature> toml_parse(const fs::path &signature_path) {
     std::unordered_map<std::string, Signature> res;

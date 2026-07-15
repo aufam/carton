@@ -4,7 +4,6 @@ module;
 #include <vector>
 #include <unordered_map>
 #include <map>
-#include "../macro.h"
 
 export module carton:compile_command;
 import cpx;
@@ -14,6 +13,13 @@ export struct CompileCommand {
     std::string directory;
     std::string command;
     std::string output;
+
+    static constexpr std::tuple __field_tags__{
+        cpx::field<&CompileCommand::file>      = "file      , omitempty",
+        cpx::field<&CompileCommand::directory> = "directory , omitempty",
+        cpx::field<&CompileCommand::command>   = "command   , omitempty",
+        cpx::field<&CompileCommand::output>    = "output    , omitempty",
+    };
 
     std::string              depfile;
     std::vector<std::string> modnames;
@@ -26,14 +32,3 @@ export struct CompileCommand {
         bool                                          precompile = false
     );
 };
-
-// clang-format off
-CPX_REFLECT(
-    (CompileCommand , ),
-
-    ((file      , "file      , omitempty"))
-    ((directory , "directory , omitempty"))
-    ((command   , "command   , omitempty"))
-    ((output    , "output    , omitempty"))
-);
-// clang-format on

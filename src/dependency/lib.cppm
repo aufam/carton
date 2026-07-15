@@ -3,14 +3,10 @@ module;
 #include <string>
 #include <optional>
 #include <vector>
-#include <toml.hpp>
-#include "../macro.h"
 
 export module carton:dependency;
 import :compile_command;
 import cpx;
-import cpx.toruniina_toml;
-import cpx.serde;
 
 export struct Dependency {
     std::string version;
@@ -34,6 +30,33 @@ export struct Dependency {
     std::vector<std::string> link_flags;
     std::string              pre;
     std::string              visibility;
+
+
+    static constexpr std::tuple __field_tags__{
+        cpx::field<&Dependency::version>          = "version         , oneof=version|path|url|git",
+        cpx::field<&Dependency::path>             = "path            , oneof=version|path|url|git",
+        cpx::field<&Dependency::url>              = "url             , oneof=version|path|url|git",
+        cpx::field<&Dependency::git>              = "git             , oneof=version|path|url|git",
+        cpx::field<&Dependency::tag>              = "tag             , oneof=tag|branch|commit   ",
+        cpx::field<&Dependency::branch>           = "branch          , oneof=tag|branch|commit   ",
+        cpx::field<&Dependency::commit>           = "commit          , oneof=tag|branch|commit   ",
+        cpx::field<&Dependency::subdir>           = "subdir          , skipmissing               ",
+        cpx::field<&Dependency::features>         = "features        , skipmissing               ",
+        cpx::field<&Dependency::optional>         = "optional        , skipmissing               ",
+        cpx::field<&Dependency::default_features> = "default-features, skipmissing               ",
+        cpx::field<&Dependency::src>              = "src             , skipmissing               ",
+        cpx::field<&Dependency::inc>              = "inc             , skipmissing               ",
+        cpx::field<&Dependency::lib>              = "lib             , skipmissing               ",
+        cpx::field<&Dependency::mod>              = "mod             , skipmissing               ",
+        cpx::field<&Dependency::flags>            = "flags           , skipmissing               ",
+        cpx::field<&Dependency::link_flags>       = "link-flags      , skipmissing               ",
+        cpx::field<&Dependency::pre>              = "pre             , skipmissing               ",
+        cpx::field<&Dependency::visibility>       = "visibility      , skipmissing               ",
+    };
+
+    static void __from_str__(Dependency &self, std::string_view str) {
+        self.version = std::string(str);
+    }
 
     std::string                 name;
     int                         cpp_standard = 0;
@@ -81,72 +104,5 @@ export struct Dependency {
             name += "-v" + version;
         }
         return name;
-    }
-};
-
-// clang-format off
-CPX_REFLECT(
-    (Dependency, ),
-
-    ((version         , "version         , oneof=version|path|url|git"))
-    ((path            , "path            , oneof=version|path|url|git"))
-    ((url             , "url             , oneof=version|path|url|git"))
-    ((git             , "git             , oneof=version|path|url|git"))
-    ((tag             , "tag             , oneof=tag|branch|commit   "))
-    ((branch          , "branch          , oneof=tag|branch|commit   "))
-    ((commit          , "commit          , oneof=tag|branch|commit   "))
-
-    ((subdir          , "subdir          , skipmissing               "))
-    ((features        , "features        , skipmissing               "))
-    ((optional        , "optional        , skipmissing               "))
-    ((default_features, "default-features, skipmissing               "))
-
-    ((src             , "src             , skipmissing               "))
-    ((inc             , "inc             , skipmissing               "))
-    ((lib             , "lib             , skipmissing               "))
-    ((mod             , "mod             , skipmissing               "))
-    ((flags           , "flags           , skipmissing               "))
-    ((link_flags      , "link-flags      , skipmissing               "))
-    ((pre             , "pre             , skipmissing               "))
-    ((visibility      , "visibility      , skipmissing               "))
-);
-// clang-format on
-
-template <>
-struct cpx::toml::Reflect<Dependency> : cpx::Reflect<Dependency> {
-    /* serialize */
-    using const_type = Fields::const_type;
-
-    static constexpr const_type of(const Dependency &d) {
-        return Fields::of(d);
-    }
-
-    /* deserialize */
-    using fields_type = Fields::type;
-
-    class type {
-    public:
-        explicit constexpr type(Dependency &d)
-            : version(d.version)
-            , fields(Fields::of(d)) {}
-
-        std::string &version;
-        fields_type  fields;
-    };
-
-    static constexpr type of(Dependency &d) {
-        return type(d);
-    }
-};
-
-template <>
-struct cpx::serde::Deserialize<::toml::value, cpx::toml::Reflect<Dependency>::type> {
-    const ::toml::value &node;
-
-    void into(cpx::toml::Reflect<Dependency>::type &v) {
-        if (node.is_string())
-            v.version = node.as_string(std::nothrow);
-        else
-            Deserialize<::toml::value, cpx::toml::Reflect<Dependency>::fields_type>{node}.into(v.fields);
     }
 };

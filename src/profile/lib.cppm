@@ -2,7 +2,6 @@ module;
 
 #include <string>
 #include <vector>
-#include "../macro.h"
 
 export module carton:profile;
 import cpx;
@@ -19,6 +18,20 @@ export struct Profile {
     int                      opt_level = 0;
     std::vector<std::string> flags;
     std::vector<std::string> link_flags;
+
+    static constexpr std::tuple __field_tags__{
+        cpx::field<&Profile::name>       = "name      , skipmissing",
+        cpx::field<&Profile::cxx>        = "cxx       , skipmissing",
+        cpx::field<&Profile::c>          = "c         , skipmissing",
+        cpx::field<&Profile::ar>         = "ar        , skipmissing",
+        cpx::field<&Profile::modules>    = "modules   , skipmissing",
+        cpx::field<&Profile::debug>      = "debug     , skipmissing",
+        cpx::field<&Profile::asan>       = "asan      , skipmissing",
+        cpx::field<&Profile::lto>        = "lto       , skipmissing",
+        cpx::field<&Profile::opt_level>  = "opt-level , skipmissing",
+        cpx::field<&Profile::flags>      = "flags     , skipmissing",
+        cpx::field<&Profile::link_flags> = "link-flags, skipmissing",
+    };
 
     bool        _module_support = false;
     std::string _module_compiler;
@@ -50,30 +63,10 @@ export struct Profiles {
     Profile release = Profile::Release();
     Profile dev     = Profile::Dev();
 
+    static constexpr std::tuple __field_tags__{
+        cpx::field<&Profiles::release> = "release, skipmissing",
+        cpx::field<&Profiles::dev>     = "dev    , skipmissing",
+    };
+
     void check_module_support();
 };
-
-// clang-format off
-CPX_REFLECT(
-    (Profile, ),
-
-    ((name       , "name      , skipmissing"))
-    ((cxx        , "cxx       , skipmissing"))
-    ((c          , "c         , skipmissing"))
-    ((ar         , "ar        , skipmissing"))
-    ((modules    , "modules   , skipmissing"))
-    ((debug      , "debug     , skipmissing"))
-    ((asan       , "asan      , skipmissing"))
-    ((lto        , "lto       , skipmissing"))
-    ((opt_level  , "opt-level , skipmissing"))
-    ((flags      , "flags     , skipmissing"))
-    ((link_flags , "link-flags, skipmissing"))
-);
-
-CPX_REFLECT(
-    (Profiles, ),
-
-    ((release , "release, skipmissing"))
-    ((dev     , "dev    , skipmissing"))
-);
-// clang-format on

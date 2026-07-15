@@ -44,12 +44,6 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
-    NAME            semver
-    GIT_REPOSITORY  "https://github.com/Neargye/semver"
-    GIT_TAG         v0.3.1
-)
-
-CPMAddPackage(
     NAME            CLI11
     GIT_REPOSITORY  "https://github.com/CLIUtils/CLI11"
     GIT_TAG         v2.6.1
@@ -70,12 +64,6 @@ CPMAddPackage(
     GIT_REPOSITORY  "https://github.com/daandemeyer/reproc"
     GIT_TAG         v14.2.7
     OPTIONS         "REPROC++ ON" "REPROC_INSTALL OFF" "REPROC_INSTALL_PKGCONFIG OFF"
-)
-
-CPMAddPackage(
-    NAME            preprocessor
-    GIT_REPOSITORY  "https://github.com/boostorg/preprocessor"
-    GIT_TAG         boost-1.88.0
 )
 
 CPMAddPackage(
@@ -118,8 +106,6 @@ target_link_libraries(carton PRIVATE
     CLI11
     xxhash
     reproc++
-    Boost::preprocessor
-    semver
 )
 
 target_compile_options(carton PRIVATE

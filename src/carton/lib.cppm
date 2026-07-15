@@ -3,7 +3,6 @@ module;
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "../macro.h"
 
 export module carton:carton;
 import :profile;
@@ -28,6 +27,15 @@ export struct Carton {
     Features     features;
     bool         no_default_features = false;
 
+    static constexpr std::tuple __field_tags__{
+        cpx::field<&Carton::package>      = "package",
+        cpx::field<&Carton::registry>     = "registry     , skipmissing",
+        cpx::field<&Carton::profiles>     = "profile      , skipmissing",
+        cpx::field<&Carton::dependencies> = "dependencies , skipmissing",
+        cpx::field<&Carton::lib>          = "lib          , skipmissing",
+        cpx::field<&Carton::features>     = "features     , skipmissing",
+    };
+
     Dependency bin;
     Carton    *pparent = nullptr;
     Cache     *cache   = nullptr;
@@ -42,16 +50,3 @@ private:
     void resolve_remote_dep(const Profile &profile, Dependency &dep, bool from_registry = false);
     void collect_meta(const Profile &profile, Dependency &dep, bool is_bin = false);
 };
-
-// clang-format off
-CPX_REFLECT(
-    (Carton, ),
-
-    ((package            , "package"                         ))
-    ((registry           , "registry           , skipmissing"))
-    ((profiles           , "profile            , skipmissing"))
-    ((dependencies       , "dependencies       , skipmissing"))
-    ((lib                , "lib                , skipmissing"))
-    ((features           , "features           , skipmissing"))
-);
-// clang-format on
