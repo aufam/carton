@@ -2,6 +2,8 @@
 /*[Dd]ebug*
 /*[Rr]elease*
 
+__pycache__
+
 .*
 !.gitignore
 !.gitmodules
