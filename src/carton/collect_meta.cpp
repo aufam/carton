@@ -311,17 +311,8 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
     }
 
     if (fs::path main_path = "src/main.cpp"; &d == &lib && fs::exists(working_dir / main_path)) {
-        bin.name         = lib.name;
-        bin.version      = lib.version;
-        bin.tag          = lib.tag;
-        bin.branch       = lib.branch;
-        bin.commit       = lib.commit;
-        bin.features     = lib.features;
-        bin.src          = {main_path.string()};
-        bin.path         = lib.path;
-        bin.subdir       = lib.subdir;
-        bin.cpp_standard = lib.cpp_standard;
-        bin += lib;
+        bin     = lib;
+        bin.src = {main_path.string()};
 
         collect_meta(profile, bin, true);
     }
