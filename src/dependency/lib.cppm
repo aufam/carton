@@ -7,6 +7,7 @@ module;
 export module carton:dependency;
 import :compile_command;
 import cpx;
+import cpx.cli;
 
 export struct Dependency {
     std::string version;
@@ -40,18 +41,18 @@ export struct Dependency {
         cpx::field<&Dependency::tag>              = "tag             , oneof=tag|branch|commit   ",
         cpx::field<&Dependency::branch>           = "branch          , oneof=tag|branch|commit   ",
         cpx::field<&Dependency::commit>           = "commit          , oneof=tag|branch|commit   ",
-        cpx::field<&Dependency::subdir>           = "subdir          , skipmissing               ",
-        cpx::field<&Dependency::features>         = "features        , skipmissing               ",
-        cpx::field<&Dependency::optional>         = "optional        , skipmissing               ",
-        cpx::field<&Dependency::default_features> = "default-features, skipmissing               ",
-        cpx::field<&Dependency::src>              = "src             , skipmissing               ",
-        cpx::field<&Dependency::inc>              = "inc             , skipmissing               ",
-        cpx::field<&Dependency::lib>              = "lib             , skipmissing               ",
-        cpx::field<&Dependency::mod>              = "mod             , skipmissing               ",
-        cpx::field<&Dependency::flags>            = "flags           , skipmissing               ",
-        cpx::field<&Dependency::link_flags>       = "link-flags      , skipmissing               ",
-        cpx::field<&Dependency::pre>              = "pre             , skipmissing               ",
-        cpx::field<&Dependency::visibility>       = "visibility      , skipmissing               ",
+        cpx::field<&Dependency::subdir>           = "subdir          , skipmissing , omitempty   ",
+        cpx::field<&Dependency::features>         = "features        , skipmissing , omitempty   ",
+        cpx::field<&Dependency::optional>         = "optional        , skipmissing , omitempty   ",
+        cpx::field<&Dependency::default_features> = "default-features, skipmissing , omitempty   ",
+        cpx::field<&Dependency::src>              = "src             , skipmissing , omitempty   ",
+        cpx::field<&Dependency::inc>              = "inc             , skipmissing , omitempty   ",
+        cpx::field<&Dependency::lib>              = "lib             , skipmissing , omitempty   ",
+        cpx::field<&Dependency::mod>              = "mod             , skipmissing , omitempty   ",
+        cpx::field<&Dependency::flags>            = "flags           , skipmissing , omitempty   ",
+        cpx::field<&Dependency::link_flags>       = "link-flags      , skipmissing , omitempty   ",
+        cpx::field<&Dependency::pre>              = "pre             , skipmissing , omitempty   ",
+        cpx::field<&Dependency::visibility>       = "visibility      , skipmissing , omitempty   ",
     };
 
     static void __from_str__(Dependency &self, std::string_view str) {
@@ -105,4 +106,22 @@ export struct Dependency {
         }
         return name;
     }
+};
+
+template <>
+struct cpx::cli::Reflect<Dependency> {
+    static constexpr std::tuple field_tags = {
+        cpx::field<&Dependency::name>             = "name            , positional                ",
+        cpx::field<&Dependency::version>          = "version,short=v , oneof=version|path|url|git",
+        cpx::field<&Dependency::path>             = "path            , oneof=version|path|url|git",
+        cpx::field<&Dependency::url>              = "url             , oneof=version|path|url|git",
+        cpx::field<&Dependency::git>              = "git             , oneof=version|path|url|git",
+        cpx::field<&Dependency::tag>              = "tag             , oneof=tag|branch|commit   ",
+        cpx::field<&Dependency::branch>           = "branch          , oneof=tag|branch|commit   ",
+        cpx::field<&Dependency::commit>           = "commit          , oneof=tag|branch|commit   ",
+        cpx::field<&Dependency::subdir>           = "subdir          , skipmissing , omitempty   ",
+        cpx::field<&Dependency::features>         = "features        , skipmissing , omitempty   ",
+        cpx::field<&Dependency::optional>         = "optional        , skipmissing , omitempty   ",
+        cpx::field<&Dependency::default_features> = "default-features, skipmissing , omitempty   ",
+    };
 };

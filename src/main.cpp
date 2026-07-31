@@ -26,6 +26,12 @@ int main(int argc, char **argv) {
     cpx::cli11::parse("C++ package manager and build system", argc, argv, cli);
     spdlog::set_level(cli.log_level);
 
+    if (auto &args = cli.update; args.has_value())
+        return Carton::Update();
+
+    if (auto &args = cli.init; args.has_value())
+        return Carton::Init(*args);
+
     // context
     Cache  cache = {};
     Carton ctx   = {};
@@ -80,6 +86,10 @@ int main(int argc, char **argv) {
     }
     ctx.lib.path = (fs::current_path() / ctx.lib.path).string();
     ctx.profiles.check_module_support();
+
+    // add dependency
+    if (auto &args = cli.add; args.has_value())
+        return ctx.add(*args);
 
     // execute
     const bool  manifest = cli.manifest.has_value();

@@ -3,6 +3,7 @@ Standard: c++20
 ColumnLimit: 130
 SortIncludes: Never
 IncludeBlocks: Regroup
+# SeparateDefinitionBlocks: Always
 
 # indentation
 MaxEmptyLinesToKeep: 2
@@ -15,7 +16,7 @@ NamespaceIndentation: All
 IndentPPDirectives: AfterHash
 IndentWrappedFunctionNames: false
 
-# Functions, constructors, template parrameters
+# Functions, constructors, template parameters
 PackConstructorInitializers: Never
 BinPackParameters: false
 BinPackArguments: false
@@ -26,6 +27,14 @@ PenaltyBreakBeforeFirstCallParameter: 0
 AlwaysBreakAfterReturnType: None
 PenaltyReturnTypeOnItsOwnLine: 0
 AlwaysBreakTemplateDeclarations: Yes
+QualifierAlignment: Custom
+QualifierOrder: [inline, static, constexpr, friend, type]
+RequiresClausePosition: OwnLine
+
+# single line
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortCompoundRequirementOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: Empty
 
 # Classes, enums
@@ -43,9 +52,16 @@ AlignTrailingComments: Always
 AlignOperands: true
 
 # Breaks
-BreakBeforeBraces: Attach
 BreakAfterAttributes: Always
+BreakBeforeBraces: Attach
 BreakBeforeBinaryOperators: None
+BreakBeforeCloseBracketBracedList: true # v22
+BreakBeforeCloseBracketFunction: true # v22
+BreakBeforeCloseBracketIf: true # v22
+BreakBeforeCloseBracketSwitch: true # v22
+BreakBeforeConceptDeclarations: true
+BreakBeforeTemplateCloser: true # v21
+BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
 BreakStringLiterals: true
-

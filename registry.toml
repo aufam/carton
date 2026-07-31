@@ -1,4 +1,4 @@
-#:schema ./registry-schema.json
+#:schema https://raw.githubusercontent.com/aufam/carton/main/registry-schema.json
 
 #
 # cpx
@@ -19,6 +19,7 @@ keywords = [
     "sql-builder",
     "tag-based-reflection",
 ]
+versions = ["0.1.0"]
 
 [cpx.lib]
 git = "https://github.com/aufam/cpx"
@@ -52,6 +53,38 @@ keywords = [
     "ranges",
     "unicode",
 ]
+versions = [
+    "12.2.0",
+    "12.1.0",
+    "12.0.0",
+    "11.2.0",
+    "11.1.4",
+    "11.1.3",
+    "11.1.2",
+    "11.1.1",
+    "11.1.0",
+    "11.0.2",
+    "11.0.1",
+    "11.0.0",
+    "10.2.1",
+    "10.2.0",
+    "10.1.1",
+    "10.1.0",
+    "10.0.0",
+    "9.1.0",
+    "9.0.0",
+    "8.1.1",
+    "8.1.0",
+    "8.0.1",
+    "8.0.0",
+    "7.1.3",
+    "7.1.2",
+    "7.1.1",
+    "7.1.0",
+    "7.0.3",
+    "7.0.2",
+    "0.11.0",
+]
 
 [fmt.lib]
 pre = """
@@ -72,7 +105,7 @@ flags = ["-DFMT_ATTACH_TO_GLOBAL_MODULE"]
 #
 [spdlog.package]
 name = "spdlog"
-authors = ["spdlog"]
+authors = ["gabime"]
 edition = 11
 description = "Fast C++ logging library."
 repository = "https://github.com/gabime/spdlog"
@@ -84,6 +117,38 @@ keywords = [
     "header-only",
     "logging",
     "spdlog",
+]
+versions = [
+    "1.17.0",
+    "1.16.0",
+    "1.15.3",
+    "1.15.2",
+    "1.15.1",
+    "1.15.0",
+    "1.14.1",
+    "1.14.0",
+    "1.13.0",
+    "1.12.0",
+    "1.11.0",
+    "1.10.0",
+    "1.9.2",
+    "1.9.1",
+    "1.9.0",
+    "1.8.5",
+    "1.8.4",
+    "1.8.3",
+    "1.8.2",
+    "1.8.1",
+    "1.8.0",
+    "1.7.0",
+    "1.6.1",
+    "1.6.0",
+    "1.5.0",
+    "1.4.2",
+    "1.4.1",
+    "1.4.0",
+    "1.3.1",
+    "1.3.0",
 ]
 
 [spdlog.lib]
@@ -136,6 +201,38 @@ keywords = [
     "stl-containers",
     "ubjson",
 ]
+versions = [
+    "3.12.0",
+    "3.11.3",
+    "3.11.2",
+    "3.11.1",
+    "3.11.0",
+    "3.10.5",
+    "3.10.4",
+    "3.10.3",
+    "3.10.2",
+    "3.10.1",
+    "3.10.0",
+    "3.9.1",
+    "3.9.0",
+    "3.8.0",
+    "3.7.3",
+    "3.7.2",
+    "3.7.1",
+    "3.7.0",
+    "3.6.1",
+    "3.6.0",
+    "3.5.0",
+    "3.4.0",
+    "3.3.0",
+    "3.2.0",
+    "3.1.2",
+    "3.1.1",
+    "3.1.0",
+    "3.0.1",
+    "3.0.0",
+    "2.1.1",
+]
 
 [nlohmann-json.lib]
 url = "https://github.com/nlohmann/json/releases/download/v{version}/json.tar.xz"
@@ -165,6 +262,22 @@ keywords = [
     "portable",
     "serialization",
 ]
+versions = [
+    "0.12.0",
+    "0.11.1",
+    "0.11.0",
+    "0.10.0",
+    "0.9.0",
+    "0.8.0",
+    "0.7.0",
+    "0.6.0",
+    "0.5.1",
+    "0.5.0",
+    "0.4.0",
+    "0.3.0",
+    "0.2.0",
+    "0.1.0",
+]
 
 [yyjson.lib]
 git = "https://github.com/ibireme/yyjson"
@@ -185,6 +298,7 @@ homepage = "http://rapidjson.org/"
 repository = "https://github.com/Tencent/rapidjson"
 license-file = "license.txt"
 readme = "readme.md"
+versions = ["1.0"] # master
 
 [rapidjson.lib]
 git = "https://github.com/Tencent/rapidjson"
@@ -226,6 +340,37 @@ keywords = [
     "unicode",
     "utf-8",
 ]
+versions = [
+    "3.4.0",
+    "3.3.0",
+    "3.2.0",
+    "3.1.0",
+    "3.0.1",
+    "3.0.0",
+    "2.5.0",
+    "2.4.0",
+    "2.3.0",
+    "2.2.0",
+    "2.1.0",
+    "2.0.0",
+    "1.3.3",
+    "1.3.2",
+    "1.3.0",
+    "1.2.5",
+    "1.2.4",
+    "1.2.3",
+    "1.2.0",
+    "1.1.0",
+    "1.0.0",
+    "0.6.0",
+    "0.5.0",
+    "0.4.3",
+    "0.4.0",
+    "0.3.0",
+    "0.2.1",
+    "0.2.0",
+    "0.1.0",
+]
 
 ['toml++'.lib]
 git = "https://github.com/marzer/tomlplusplus"
@@ -261,6 +406,37 @@ keywords = [
     "toml",
     "toml-parser",
 ]
+versions = [
+    "4.4.0",
+    "4.3.0",
+    "4.2.0",
+    "4.1.0",
+    "4.0.3",
+    "4.0.2",
+    "4.0.1",
+    "4.0.0",
+    "3.8.1",
+    "3.8.0",
+    "3.7.1",
+    "3.7.0",
+    "3.6.1",
+    "3.6.0",
+    "3.5.0",
+    "3.4.0",
+    "3.3.1",
+    "3.3.0",
+    "3.2.1",
+    "3.2.0",
+    "3.1.0",
+    "3.0.1",
+    "3.0.0",
+    "2.4.0",
+    "2.3.1",
+    "2.3.0",
+    "2.2.3",
+    "2.2.2",
+    "2.2.1",
+]
 
 [toml11.lib]
 git = "https://github.com/ToruNiina/toml11"
@@ -283,6 +459,28 @@ repository = "https://github.com/jbeder/yaml-cpp"
 license = "MIT"
 license-file = "LICENSE"
 readme = "README.md"
+versions = [
+    "0.9.0",
+    "0.8.0",
+    "0.7.0",
+    "0.6.3",
+    "0.6.2",
+    "0.6.1",
+    "0.6.0",
+    "0.5.3",
+    "0.5.2",
+    "0.5.1",
+    "0.5.0",
+    "0.3.0",
+    "0.2.7",
+    "0.2.6",
+    "0.2.5",
+    "0.2.4",
+    "0.2.3",
+    "0.2.2",
+    "0.2.1",
+    "0.2.0",
+]
 
 [yaml-cpp.lib]
 git = "https://github.com/jbeder/yaml-cpp"
@@ -320,6 +518,23 @@ keywords = [
     "tuples",
     "visual-studio",
 ]
+versions = [
+    "1.92.0",
+    "1.91.0",
+    "1.90.0",
+    "1.89.0",
+    "1.88.0",
+    "1.87.0",
+    "1.86.0",
+    "1.85.0",
+    "1.84.0",
+    "1.83.0",
+    "1.82.0",
+    "1.81.0",
+    "1.80.0",
+    "1.79.0",
+    "1.0.4",
+]
 
 [pfr.lib]
 git = "https://github.com/boostorg/pfr"
@@ -336,6 +551,24 @@ edition = 11
 description = "Boost.org preprocessor module"
 homepage = "http://boost.org/libs/preprocessor"
 repository = "https://github.com/boostorg/preprocessor"
+versions = [
+    "1.92.0",
+    "1.91.0",
+    "1.90.0",
+    "1.89.0",
+    "1.88.0",
+    "1.87.0",
+    "1.86.0",
+    "1.85.0",
+    "1.84.0",
+    "1.83.0",
+    "1.82.0",
+    "1.81.0",
+    "1.80.0",
+    "1.79.0",
+    "1.78.0",
+    "1.77.0",
+]
 
 [preprocessor.lib]
 git = "https://github.com/boostorg/preprocessor"
@@ -374,6 +607,32 @@ keywords = [
     "single-file",
     "string-to-enum",
 ]
+versions = [
+    "0.9.8",
+    "0.9.7",
+    "0.9.6",
+    "0.9.5",
+    "0.9.4",
+    "0.9.3",
+    "0.9.2",
+    "0.9.1",
+    "0.9.0",
+    "0.8.2",
+    "0.8.1",
+    "0.8.0",
+    "0.7.3",
+    "0.7.2",
+    "0.7.1",
+    "0.7.0",
+    "0.6.6",
+    "0.6.5",
+    "0.6.4",
+    "0.6.3",
+    "0.6.2",
+    "0.6.1",
+    "0.6.0",
+    "0.5.0",
+]
 
 [magic_enum.lib]
 git = "https://github.com/Neargye/magic_enum"
@@ -394,7 +653,7 @@ name = "CLI11"
 authors = ["CLIUtils"]
 edition = 11
 description = "CLI11 is a command line parser for C++11 and beyond that provides a rich feature set with a simple and intuitive interface."
-homepage = "https://cliutils.github.io/CLI11/book/"
+homepage = "https://cliutils.github.io/CLI11/"
 repository = "https://github.com/CLIUtils/CLI11"
 license-file = "LICENSE"
 readme = "README.md"
@@ -403,6 +662,38 @@ keywords = [
     "cli-parser",
     "cpp11",
     "no-dependencies",
+]
+versions = [
+    "2.7.0",
+    "2.6.2",
+    "2.6.1",
+    "2.6.0",
+    "2.5.0",
+    "2.4.2",
+    "2.4.1",
+    "2.4.0",
+    "2.3.2",
+    "2.3.1",
+    "2.3.0",
+    "2.2.0",
+    "2.1.2",
+    "2.1.1",
+    "2.1.0",
+    "2.0.0",
+    "1.9.1",
+    "1.9.0",
+    "1.8.0",
+    "1.7.1",
+    "1.7.0",
+    "1.6.2",
+    "1.6.1",
+    "1.6.0",
+    "1.5.4",
+    "1.5.3",
+    "1.5.2",
+    "1.5.1",
+    "1.5.0",
+    "1.4.0",
 ]
 
 [CLI11.lib]
@@ -418,6 +709,9 @@ mod = ["src/modules/CLI11.cppm"]
 [http.package]
 name = "httplib"
 
+[cpp-http.package]
+name = "httplib"
+
 [httplib.package]
 name = "httplib"
 authors = ["yhirose"]
@@ -427,13 +721,45 @@ homepage = "https://yhirose.github.io/cpp-httplib/"
 repository = "https://github.com/yhirose/cpp-httplib"
 license = "MIT"
 license-file = "LICENSE"
-readme = "README.md"
+readme = "README-sse.md"
 keywords = [
     "cpp",
     "cpp11",
     "header-only",
     "http",
     "https",
+]
+versions = [
+    "0.51.0",
+    "0.50.1",
+    "0.50.0",
+    "0.49.0",
+    "0.48.0",
+    "0.47.0",
+    "0.46.1",
+    "0.46.0",
+    "0.45.1",
+    "0.45.0",
+    "0.44.0",
+    "0.43.4",
+    "0.43.3",
+    "0.43.2",
+    "0.43.1",
+    "0.43.0",
+    "0.42.0",
+    "0.41.0",
+    "0.40.0",
+    "0.39.0",
+    "0.38.0",
+    "0.37.2",
+    "0.37.1",
+    "0.37.0",
+    "0.36.0",
+    "0.35.0",
+    "0.34.0",
+    "0.33.1",
+    "0.33.0",
+    "0.32.0",
 ]
 
 [httplib.lib]
@@ -479,10 +805,11 @@ keywords = [
     "sha256-hash",
     "sha256sum",
 ]
+versions = ["1.0"]
 
 [sha256.lib]
 git = "https://github.com/LekKit/sha256"
-branch = "{version}"
+branch = "master"
 src = ["sha256.c"]
 inc = ["public:"]
 
@@ -490,6 +817,9 @@ inc = ["public:"]
 #
 # gtest
 #
+[googletest.package]
+name = "gtest"
+
 [gtest.package]
 name = "gtest"
 authors = ["google"]
@@ -500,6 +830,32 @@ repository = "https://github.com/google/googletest"
 license = "BSD-3-Clause"
 license-file = "LICENSE"
 readme = "README.md"
+versions = [
+    "1.17.0",
+    "1.16.0",
+    "1.15.2",
+    "1.15.1",
+    "1.15.0",
+    "1.14.0",
+    "1.13.0",
+    "1.12.1",
+    "1.12.0",
+    "1.11.0",
+    "1.10.0",
+    "1.10",
+    "1.8.1",
+    "1.8.0",
+    "1.7.0",
+    "1.6.0",
+    "1.5.0",
+    "1.4.0",
+    "1.3.0",
+    "1.2.1",
+    "1.2.0",
+    "1.1.0",
+    "1.0.1",
+    "1.0.0",
+]
 
 [gtest.lib]
 url = "https://github.com/google/googletest/releases/download/v{version}/googletest-{version}.tar.gz"
@@ -525,8 +881,38 @@ repository = "https://github.com/google/benchmark"
 license = "Apache-2.0"
 license-file = "LICENSE"
 readme = "README.md"
-keywords = [
-    "benchmark",
+keywords = ["benchmark"]
+versions = [
+    "1.9.5",
+    "1.9.4",
+    "1.9.3",
+    "1.9.2",
+    "1.9.1",
+    "1.9.0",
+    "1.8.5",
+    "1.8.4",
+    "1.8.3",
+    "1.8.2",
+    "1.8.1",
+    "1.8.0",
+    "1.7.1",
+    "1.7.0",
+    "1.6.2",
+    "1.6.1",
+    "1.6.0",
+    "1.5.6",
+    "1.5.5",
+    "1.5.4",
+    "1.5.3",
+    "1.5.2",
+    "1.5.1",
+    "1.5.0",
+    "1.4.1",
+    "1.4.0",
+    "1.3.0",
+    "1.2.0",
+    "1.1.0",
+    "1.0.0",
 ]
 
 [benchmark.lib]
@@ -562,6 +948,9 @@ flags = [
 #
 # onnxruntime
 #
+[onnxruntime.package]
+name = "onnx"
+
 [onnx.package]
 name = "onnx"
 authors = ["microsoft"]
@@ -583,6 +972,38 @@ keywords = [
     "scikit-learn",
     "tensorflow",
 ]
+versions = [
+    "1.28.0",
+    "1.27.1",
+    "1.27.0",
+    "1.26.0",
+    "1.25.1",
+    "1.25.0",
+    "1.24.4",
+    "1.24.3",
+    "1.24.2",
+    "1.24.1",
+    "1.23.2",
+    "1.23.1",
+    "1.23.0",
+    "1.22.2",
+    "1.22.1",
+    "1.22.0",
+    "1.21.1",
+    "1.21.0",
+    "1.20.2",
+    "1.20.1",
+    "1.20.0",
+    "1.19.2",
+    "1.19.0",
+    "1.18.2",
+    "1.18.1",
+    "1.18.0",
+    "1.17.3",
+    "1.17.1",
+    "1.17.0",
+    "1.16.3",
+]
 
 [onnx.lib]
 url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os}-{arch}-{version}.tgz"
@@ -596,18 +1017,6 @@ cuda = {
         "osx:lib/libonnxruntime.{version}.dylib",
     ]
 }
-
-
-['onnx-cuda'.package]
-name = "onnx-cuda"
-edition = 17
-
-['onnx-cuda'.lib]
-url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os}-{arch}-gpu-{version}.tgz"
-lib = [
-    "linux:lib/libonnxruntime.so.{version}",
-    "osx:lib/libonnxruntime.{version}.dylib",
-]
 
 
 #
@@ -632,6 +1041,38 @@ keywords = [
     "tdd",
     "test-framework",
     "testing",
+]
+versions = [
+    "3.15.3",
+    "3.15.2",
+    "3.15.1",
+    "3.15.0",
+    "3.14.0",
+    "3.13.0",
+    "3.12.0",
+    "3.11.0",
+    "3.10.0",
+    "3.9.1",
+    "3.9.0",
+    "3.8.1",
+    "3.8.0",
+    "3.7.1",
+    "3.7.0",
+    "3.6.0",
+    "3.5.4",
+    "3.5.3",
+    "3.5.2",
+    "3.5.1",
+    "3.5.0",
+    "3.4.0",
+    "3.3.2",
+    "3.3.1",
+    "3.3.0",
+    "3.2.1",
+    "3.2.0",
+    "3.1.1",
+    "3.1.0",
+    "3.0.1",
 ]
 
 [catch2.lib]
@@ -677,6 +1118,32 @@ keywords = [
     "ui",
     "user-interface",
     "xterm",
+]
+versions = [
+    "7.0.1",
+    "7.0.0",
+    "6.1.9",
+    "6.1.8",
+    "6.1.7",
+    "6.1.6",
+    "6.1.5",
+    "6.1.4",
+    "6.1.3",
+    "6.1.2",
+    "6.1.1",
+    "6.1.0",
+    "6.0.2",
+    "6.0.1",
+    "6.0.0",
+    "5.0.0",
+    "4.1.1",
+    "4.1.0",
+    "4.0.0",
+    "3.0.0",
+    "2.0.0",
+    "0.11",
+    "0.10",
+    "0.9",
 ]
 
 [ftxui.lib]
@@ -809,6 +1276,13 @@ keywords = [
     "cpp20-modules",
     "modules",
 ]
+versions = [
+    "1.4",
+    "1.3",
+    "1.2",
+    "1.1",
+    "1.0",
+]
 
 [async_simple.lib]
 git = "https://github.com/alibaba/async_simple"
@@ -834,6 +1308,36 @@ keywords = [
     "debugging",
     "diagnostics",
     "stacktrace",
+]
+versions = [
+    "1.0.4",
+    "1.0.3",
+    "1.0.2",
+    "1.0.1",
+    "1.0.0",
+    "0.8.3",
+    "0.8.2",
+    "0.8.1",
+    "0.8.0",
+    "0.7.5",
+    "0.7.4",
+    "0.7.3",
+    "0.7.2",
+    "0.7.1",
+    "0.7.0",
+    "0.6.3",
+    "0.6.2",
+    "0.6.1",
+    "0.6.0",
+    "0.5.4",
+    "0.5.3",
+    "0.5.2",
+    "0.5.1",
+    "0.5.0",
+    "0.4.1",
+    "0.4.0",
+    "0.3.1",
+    "0.3.0",
 ]
 
 [trace.lib]
@@ -877,6 +1381,38 @@ keywords = [
     "redis-cluster-client",
     "redis-sentinels",
     "redlock",
+]
+versions = [
+    "1.3.15",
+    "1.3.14",
+    "1.3.13",
+    "1.3.12",
+    "1.3.11",
+    "1.3.10",
+    "1.3.9",
+    "1.3.8",
+    "1.3.7",
+    "1.3.6",
+    "1.3.5",
+    "1.3.4",
+    "1.3.3",
+    "1.3.2",
+    "1.3.1",
+    "1.3.0",
+    "1.2.3",
+    "1.2.2",
+    "1.2.1",
+    "1.2.0",
+    "1.1.2",
+    "1.1.1",
+    "1.1.0",
+    "1.0.4",
+    "1.0.3",
+    "1.0.2",
+    "1.0.1",
+    "1.0.0",
+    "0.2.1",
+    "0.1.2",
 ]
 
 [redis.lib]
@@ -929,6 +1465,25 @@ keywords = [
     "smhasher",
     "xxhash",
 ]
+versions = [
+    "0.8.3",
+    "0.8.2",
+    "0.8.1",
+    "0.8.0",
+    "0.7.4",
+    "0.7.3",
+    "0.7.2",
+    "0.7.1",
+    "0.7.0",
+    "0.6.5",
+    "0.6.4",
+    "0.6.3",
+    "0.6.2",
+    "0.6.1",
+    "0.6.0",
+    "0.5.1",
+    "0.5.0",
+]
 
 [xxhash.lib]
 git = "https://github.com/Cyan4973/xxhash"
@@ -958,6 +1513,21 @@ keywords = [
     "protocol-compiler",
     "rpc",
     "serialization",
+]
+versions = [
+    "3.21.12",
+    "3.21.11",
+    "3.21.10",
+    "3.21.9",
+    "3.21.8",
+    "3.21.7",
+    "3.21.6",
+    "3.21.5",
+    "3.21.4",
+    "3.21.3",
+    "3.21.2",
+    "3.21.1",
+    "3.21.0",
 ]
 
 [protobuf.lib]
@@ -1021,6 +1591,37 @@ description = "MessagePack implementation for C and C++ / msgpack.org[C/C++]"
 repository = "https://github.com/msgpack/msgpack-c"
 license-file = "COPYING"
 readme = "README.md"
+versions = [
+    "8.0.0",
+    "7.0.0",
+    "6.1.1",
+    "6.1.0",
+    "6.0.0",
+    "5.0.0",
+    "4.1.3",
+    "4.1.2",
+    "4.1.1",
+    "4.1.0",
+    "4.0.3",
+    "4.0.2",
+    "4.0.1",
+    "4.0.0",
+    "3.3.0",
+    "3.2.1",
+    "3.2.0",
+    "3.1.1",
+    "3.1.0",
+    "3.0.1",
+    "3.0.0",
+    "2.1.5",
+    "2.1.4",
+    "2.1.3",
+    "2.1.2",
+    "2.1.1",
+    "2.1.0",
+    "2.0.0",
+    "1.4.2",
+]
 
 [msgpack.lib]
 git = "https://github.com/msgpack/msgpack-c"
@@ -1049,6 +1650,38 @@ keywords = [
     "posix",
     "processes",
     "windows",
+]
+versions = [
+    "14.2.7",
+    "14.2.6",
+    "14.2.5",
+    "14.2.4",
+    "14.2.3",
+    "14.2.2",
+    "14.2.1",
+    "14.2.0",
+    "14.1.0",
+    "14.0.0",
+    "13.0.1",
+    "13.0.0",
+    "12.0.0",
+    "11.0.2",
+    "11.0.1",
+    "11.0.0",
+    "10.0.3",
+    "10.0.2",
+    "10.0.1",
+    "10.0.0",
+    "9.0.0",
+    "8.0.1",
+    "8.0.0",
+    "7.0.0",
+    "6.0.0",
+    "5.0.1",
+    "5.0.0",
+    "4.0.0",
+    "3.1.3",
+    "3.1.2",
 ]
 
 [reproc.lib]
@@ -1087,10 +1720,28 @@ repository = "https://github.com/boostorg/boost"
 license = "BSL-1.0"
 license-file = "LICENSE_1_0.txt"
 readme = "README.md"
+versions = [
+    "1.92.0",
+    "1.91.0",
+    "1.90.0",
+    "1.89.0",
+    "1.88.0",
+    "1.87.0",
+    "1.86.0",
+    "1.85.0",
+    "1.84.0",
+    "1.83.0",
+    "1.82.0",
+    "1.81.0",
+    "1.80.0",
+    "1.79.0",
+    "1.78.0",
+]
 
 [boost.lib]
 url = "https://archives.boost.io/release/{version}/source/boost_{version:underscore}.tar.gz"
 inc = ["public:"]
+flags = ["public:-Wno-unused-private-field"]
 
 
 #
@@ -1110,6 +1761,35 @@ keywords = [
     "large-language-models",
     "machine-learning",
     "tensor-algebra",
+]
+versions = [
+    "0.18.0",
+    "0.17.0",
+    "0.16.0",
+    "0.15.3",
+    "0.15.2",
+    "0.15.1",
+    "0.15.0",
+    "0.14.0",
+    "0.13.1",
+    "0.13.0",
+    "0.12.1",
+    "0.12.0",
+    "0.11.1",
+    "0.11.0",
+    "0.10.2",
+    "0.10.1",
+    "0.10.0",
+    "0.9.11",
+    "0.9.10",
+    "0.9.9",
+    "0.9.8",
+    "0.9.7",
+    "0.9.6",
+    "0.9.5",
+    "0.9.4",
+    "0.9.3",
+    "0.9.1",
 ]
 
 [ggml.lib]
@@ -1186,6 +1866,34 @@ keywords = [
     "transformer",
     "whisper",
 ]
+versions = [
+    "1.9.1",
+    "1.9.0",
+    "1.8.7",
+    "1.8.6",
+    "1.8.5",
+    "1.8.4",
+    "1.8.3",
+    "1.8.2",
+    "1.8.1",
+    "1.8.0",
+    "1.7.6",
+    "1.7.5",
+    "1.7.4",
+    "1.7.3",
+    "1.7.2",
+    "1.7.1",
+    "1.7.0",
+    "1.6.2",
+    "1.6.1",
+    "1.6.0",
+    "1.5.5",
+    "1.5.4",
+    "1.5.3",
+    "1.5.2",
+    "1.5.1",
+    "1.5.0",
+]
 
 [whisper.lib]
 git = "https://github.com/ggml-org/whisper.cpp"
@@ -1242,6 +1950,19 @@ keywords = [
     "wav",
     "windows",
 ]
+versions = [
+    "0.11.25",
+    "0.11.24",
+    "0.11.23",
+    "0.11.22",
+    "0.11.21",
+    "0.11.20",
+    "0.11.19",
+    "0.11.18",
+    "0.11.17",
+    "0.11.16",
+    "0.11.15",
+]
 
 [miniaudio.lib]
 git = "https://github.com/mackron/miniaudio"
@@ -1274,6 +1995,15 @@ keywords = [
     "semantic-versioning",
     "semver",
     "single-file",
+]
+versions = [
+    "1.0.0",
+    "0.3.1",
+    "0.3.0",
+    "0.2.2",
+    "0.2.1",
+    "0.2.0",
+    "0.1.8",
 ]
 
 [semver.lib]
@@ -1364,3 +2094,28 @@ versions = [
 url = "https://sqlite.org/2026/sqlite-autoconf-{version.number}.tar.gz"
 src = ["sqlite3.c"]
 inc = ["public:"]
+
+
+#
+# dotenv
+#
+[dotenv.package]
+name = "dotenv"
+edition = 11
+authors = ["laserpants"]
+description = ":cow: A utility to load environment variables from a .env file"
+repository = "https://github.com/laserpants/dotenv-cpp"
+license = "BSD-3-Clause"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "cpp",
+    "dotenv",
+    "dotenv-cpp",
+    "header-only",
+]
+versions = ["1.0"]
+
+[dotenv.lib]
+git = "https://github.com/laserpants/dotenv-cpp"
+branch = "master"

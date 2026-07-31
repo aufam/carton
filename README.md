@@ -1,0 +1,128 @@
+# :carton: Carton
+C/C++ package manager and build system
+
+## Installation
+
+```bash
+# linux
+curl -L \
+  https://github.com/aufam/carton/releases/latest/download/carton-linux-amd64 \
+  -o carton
+
+# macOS
+curl -L \
+  https://github.com/aufam/carton/releases/latest/download/carton-macos-arm64 \
+  -o carton
+
+chmod +x carton
+sudo mv carton /usr/local/bin/
+
+# download the latest registry.toml
+carton update
+```
+
+
+## Getting Started
+Create a new empty project:
+```bash
+mkdir my-project
+cd my-project
+carton init my-project
+```
+
+The project tree will be:
+```
+.
+├── src
+│  └── main.cpp
+├── .clang-format
+├── .gitignore
+└── carton.toml
+```
+
+Add a dependency (see [carton.io](https://aufam.github.io/carton) for all available packages):
+```bash
+carton add dotenv
+carton add fmt
+```
+
+Configure, build and run:
+```
+carton
+carton build
+carton run
+```
+
+All artifacts will be stored in:
+- Build artifacts: `~/.carton/build/{dev,release}`
+- Downloaded sources: `~/.carton/src`
+- Registry: `~/.carton/registry.toml`
+
+The only generated artifacts in root project directory is `./compile_commands.json` by running `carton` or its transitive (`carton build` and `carton run`)
+
+You can define global configuration file in `~/.carton/config.toml`:
+```toml
+#:schema https://raw.githubusercontent.com/aufam/carton/main/config-schema.json
+
+[profile.dev]
+cxx = "c++"
+c = "cc"
+debug = true
+asan = true
+opt-level = 0
+flags = ["-fPIC", "-Wall", "-Wextra"]
+
+[profile.release]
+cxx = "c++"
+c = "cc"
+debug = false
+asan = false
+opt-level = 3
+flags = ["-fPIC", "-Wall", "-Wextra"]
+```
+
+## Dependencies
+Supported compilers:
+- Clang
+- GCC
+
+Installed system wide:
+- git
+- wget
+- tar
+
+## C++ Module
+C++ module is only supported if the compiler is clang. 
+
+`~/.carton/config.toml`:
+```toml
+#:schema https://raw.githubusercontent.com/aufam/carton/main/config-schema.json
+
+[profile.dev]
+cxx = "clang++"
+c = "clang"
+flags = ["-isystem /path/to/SDK"] # you may need this in macOS
+
+[profile.release]
+cxx = "clang++"
+c = "clang"
+flags = ["-isystem /path/to/SDK"] # you may need this in macOS
+```
+
+
+Project structure could be:
+```
+.
+├── src
+│  ├── bar
+│  │  ├── bar_impl.cpp
+│  │  └── lib.cppm
+│  ├── foo
+│  │  ├── foo_impl.cpp
+│  │  ├── foo_other_impl.cpp
+│  │  └── lib.cppm
+│  ├── lib.cppm
+│  └── main.cpp
+└── carton.toml
+```
+

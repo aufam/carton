@@ -41,9 +41,13 @@ export struct Carton {
     Cache     *cache   = nullptr;
     const Cli *cli     = nullptr;
 
+    static int Update();
+    static int Init(Package &args);
+
     void configure(const Profile &profile, const std::vector<std::string> &features = {}, bool from_registry = false);
     void build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build);
     int  run();
+    int  add(Dependency &dep) const;
 
 private:
     void apply_package_placeholders();

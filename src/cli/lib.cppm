@@ -6,9 +6,15 @@ module;
 #include <vector>
 
 export module carton:cli;
+import :package;
+import :dependency;
 import cpx;
 
 export struct Cli {
+    struct Update {
+        static constexpr std::tuple __field_tags__ = {};
+    };
+
     struct Manifest {
         bool                     release;
         bool                     no_default_features;
@@ -56,7 +62,11 @@ export struct Cli {
     bool                      no_default_features;
     std::vector<std::string>  features;
 
-    static constexpr std::tuple __field_tags__{
+    std::optional<Update>     update;
+    std::optional<Package>    init;
+    std::optional<Dependency> add;
+
+    static constexpr std::tuple __field_tags__ = {
         cpx::field<&Cli::cache>               = "cache              , skipmissing , env=CARTON_CACHE",
         cpx::field<&Cli::log_level>           = "log-level          , skipmissing                   ",
         cpx::field<&Cli::manifest>            = "manifest                                           ",
@@ -65,5 +75,8 @@ export struct Cli {
         cpx::field<&Cli::release>             = "release                                            ",
         cpx::field<&Cli::no_default_features> = "no-default-features                                ",
         cpx::field<&Cli::features>            = "features                                           ",
+        cpx::field<&Cli::init>                = "init                                               ",
+        cpx::field<&Cli::add>                 = "add                                                ",
+        cpx::field<&Cli::update>              = "update                                             ",
     };
 };

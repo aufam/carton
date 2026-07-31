@@ -145,10 +145,10 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
 #    error "unknown OS"
 #endif
 
-            auto key   = str.subview(0, pos);
-            auto value = str.subview(pos + 1);
+            auto key   = str.substr(0, pos);
+            auto value = str.substr(pos + 1);
             if (key == os) {
-                str = std::string(value);
+                str = value;
             } else {
                 str = "";
                 return true;

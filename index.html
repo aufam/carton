@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Carton Registry</title>
+  <title>Carton</title>
 
   <style>
     :root {
@@ -154,21 +154,64 @@
     a:active {
       color: var(--link-active);
     }
+
+    .tagline {
+      margin: 10px 0 20px;
+      color: var(--muted);
+      font-size: 1.1rem;
+      max-width: 650px;
+    }
+
+    .header-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .button:hover {
+      border-color: var(--accent);
+      background: var(--card);
+      text-decoration: none;
+    }
   </style>
 </head>
 
 <body>
-
   <header>
     <div class="container">
-      <h1>📦 Carton Registry</h1>
-      <div class="subtitle">
-        Registry is loaded dynamically from
-        <a href="https://github.com/aufam/carton/blob/main/registry.toml" target="_blank" rel="noopener noreferrer">
-          registry.toml
+      <h1>📦 Carton</h1>
+
+      <p class="tagline">
+        A modern C++ package manager and build system.
+      </p>
+
+      <div class="header-links">
+        <a class="button" href="https://github.com/aufam/carton" target="_blank">
+          GitHub
+        </a>
+
+        <a class="button" href="https://github.com/aufam/carton/releases" target="_blank">
+          Download
+        </a>
+
+        <a class="button" href="https://github.com/aufam/carton/blob/main/registry.toml" target="_blank">
+          Registry
         </a>
       </div>
-      <input id="search" placeholder="Search packages..." />
+
+      <input id="search" placeholder="Search packages..." autocomplete="off">
     </div>
   </header>
 
@@ -181,7 +224,14 @@
 
   <footer>
     <div class="container">
-      Carton Registry • GitHub Pages Ready
+      Carton Registry •
+      <a href="https://github.com/aufam/carton" target="_blank" rel="noopener noreferrer">
+        GitHub
+      </a>
+      •
+      <a href="https://github.com/aufam/carton/releases" target="_blank" rel="noopener noreferrer">
+        Releases
+      </a>
     </div>
   </footer>
 
