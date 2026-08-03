@@ -5,7 +5,7 @@ module;
 
 module carton;
 
-int Carton::run() {
+int Carton::run(const std::vector<std::string> &args) {
     const auto output = fs::path(lib.build_dir) / lib.name;
 
     std::string out = output.string();
@@ -14,8 +14,8 @@ int Carton::run() {
         pos += 2;
     }
 
-    std::string exe = f("{} {}", out, fmt::join(cli->run->args, " "));
-    if (cli->run->args.empty())
+    std::string exe = f("{} {}", out, fmt::join(args, " "));
+    if (args.empty())
         exe.pop_back();
 
     print_status("Running", exe);

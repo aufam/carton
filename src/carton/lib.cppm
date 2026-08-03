@@ -3,6 +3,7 @@ module;
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 export module carton:carton;
 import :profile;
@@ -37,19 +38,22 @@ export struct Carton {
     };
 
     Dependency bin;
-    Carton    *pparent = nullptr;
-    Cache     *cache   = nullptr;
-    const Cli *cli     = nullptr;
 
-    static int Update();
-    static int Init(Package &args);
+    Carton                *root = nullptr;
+    std::shared_ptr<Cache> cache;
+    std::string            cache_dir;
 
-    void configure(const Profile &profile, const std::vector<std::string> &features = {}, bool from_registry = false);
-    void build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build);
-    int  run();
-    int  add(Dependency &dep) const;
+    static int    Update();
+    static int    Init(Package &args);
+    static Carton New(const std::string &cache_dir);
+    int           add(Dependency &dep) const;
+    int           execute(Cli &cli);
 
 private:
+    void configure(const Profile &profile, const std::vector<std::string> &features = {}, bool from_registry = false);
+    void build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build);
+    int  run(const std::vector<std::string> &args);
+
     void apply_package_placeholders();
     void resolve_remote_dep(const Profile &profile, Dependency &dep, bool from_registry = false);
     void collect_meta(const Profile &profile, Dependency &dep, bool is_bin = false);

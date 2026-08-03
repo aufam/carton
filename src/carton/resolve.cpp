@@ -35,14 +35,14 @@ void Carton::resolve_remote_dep(const Profile &profile, Dependency &d, bool from
 
     if (!d.path.empty()) {
         spdlog::info("resolving dep={:?} path={:?}", d.name, d.path);
-        d.path = resolve_path(cli->cache, d.path);
+        d.path = resolve_path(cache_dir, d.path);
     } else if (!d.url.empty()) {
         spdlog::info("resolving dep={:?} url={:?}", d.name, d.url);
-        d.path = resolve_path(cli->cache, d.url);
+        d.path = resolve_path(cache_dir, d.url);
     } else if (!d.git.empty()) {
         auto &tag = !d.tag.empty() ? d.tag : !d.branch.empty() ? d.branch : d.tag;
         spdlog::info("resolving dep={:?} git={:?} tag={:?}", d.name, d.git, tag);
-        d.path = git_clone(cli->cache, d.git, tag);
+        d.path = git_clone(cache_dir, d.git, tag);
     } else {
         throw ferr("path|git|url is not defined");
     }
@@ -74,9 +74,9 @@ void Carton::resolve_remote_dep(const Profile &profile, Dependency &d, bool from
                     package.edition
                 );
 
-            p.pparent             = this;
+            p.root                = this;
+            p.cache_dir           = this->cache_dir;
             p.cache               = this->cache;
-            p.cli                 = this->cli;
             p.no_default_features = !d.default_features.value_or(true);
             p.profiles            = profiles;
             try {

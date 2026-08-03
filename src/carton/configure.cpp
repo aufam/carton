@@ -32,7 +32,7 @@ static std::string make_feature_signature(std::vector<std::string> &feats) {
 
 void Carton::configure(const Profile &profile, const std::vector<std::string> &features, bool from_registry) {
     if (package.name.empty())
-        throw ferr("Error building {:?}: name is required", package.name);
+        throw ferr("{:?}: name is required", package.name);
 
     switch (package.edition) {
     case 11:
@@ -40,16 +40,14 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
     case 17:
     case 20:
     case 23:
-    case 26:
-        break;
-    default:
-        throw ferr("Error building {:?}: unsupported edition: {}", package.name, package.edition);
+    case 26: break;
+    default: throw ferr("{:?}: unsupported edition: {}", package.name, package.edition);
     }
 
     apply_package_placeholders();
 
     if (!lib.version.empty())
-        throw ferr("Error building {:?}: lib version is already set to {}", package.name, lib.version);
+        throw ferr("{:?}: lib version is already set to {}", package.name, lib.version);
 
     lib.name = package.name;
     resolve_remote_dep(profile, lib, from_registry);
@@ -96,7 +94,7 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
         auto dp = &d;
         if (!d.version.empty()) {
             // configure from registry
-            auto &r = pparent ? pparent->registry : this->registry;
+            auto &r = root ? root->registry : this->registry;
 
             // follow alias
             auto it = r.find(name);
@@ -135,9 +133,9 @@ void Carton::configure(const Profile &profile, const std::vector<std::string> &f
                     package.edition
                 );
 
-            p.pparent             = this;
+            p.root                = this;
+            p.cache_dir           = this->cache_dir;
             p.cache               = this->cache;
-            p.cli                 = this->cli;
             p.no_default_features = !d.default_features.value_or(true);
             p.profiles            = profiles;
             p.package.version     = d.version;

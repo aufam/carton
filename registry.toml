@@ -1743,6 +1743,22 @@ url = "https://archives.boost.io/release/{version}/source/boost_{version:undersc
 inc = ["public:"]
 flags = ["public:-Wno-unused-private-field"]
 
+[boost.dependencies]
+url = {
+    src = [
+        "libs/url/src/*",
+        "libs/url/src/detail/*",
+        "libs/url/src/rfc/*",
+        "libs/url/src/rfc/detail/*",
+        "libs/url/src/grammar/*",
+        "libs/url/src/grammar/detail/*"
+    ],
+    optional = true,
+}
+
+[boost.features]
+url = ["dep:url"]
+
 
 #
 # ggml

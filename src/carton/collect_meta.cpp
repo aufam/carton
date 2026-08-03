@@ -59,7 +59,7 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
     if (feature_name.empty())
         feature_name = "-";
 
-    const int cppm_standard = std::max(20, pparent ? pparent->package.edition : package.edition);
+    const int cppm_standard = std::max(20, root ? root->package.edition : package.edition);
 
     fs::path working_dir = fs::path(d.path) / d.subdir;
     if (working_dir.empty())
@@ -106,7 +106,7 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
     const auto CXX = f("{} {}", profile.cxx, flags_);
     const auto C   = f("{} {}", profile.c, flags_);
 
-    const fs::path cache     = cli->cache;
+    const fs::path cache     = cache_dir;
     const fs::path build_dir = cache / "build" / profile.name / d.build_name() / feature_name;
 
     fs::create_directories(build_dir);
