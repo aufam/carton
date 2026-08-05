@@ -155,15 +155,17 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
                                extension == ".bz2" or extension == ".xz"; // TODO: zip?
 
     if (is_remote) {
-        const std::string &url = path_str;
-        const fs::path     out = fs::path(cache) / "src" / path;
-        const fs::path     dir = out.parent_path();
+        const fs::path out = fs::path(cache) / "src" / path;
+        const fs::path dir = out.parent_path();
+
+        const auto &url_str = path_str;
+        const auto  out_str = out.string();
 
         if (!fs::exists(out)) {
             fs::create_directories(dir);
 
-            spdlog::debug("downloading: url={} out={}", url, out.string());
-            print_status("Downloading", url);
+            spdlog::debug("downloading: url={} out={}", url_str, out_str);
+            print_status("Downloading", url_str);
 
             reproc::options options;
             options.redirect.out.type = reproc::redirect::discard;
@@ -172,20 +174,30 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
             reproc::process process;
 
             std::error_code ec = process.start(
-                std::vector<std::string>{
-                    "wget", "--quiet", "--show-progress", "--https-only", "--timeout=10", "--tries=3", "-O", out.string(), url
+                std::vector<std::string_view>{
+                    "curl",
+                    "--fail",
+                    "--location",
+                    "--show-error",
+                    "--progress-bar",
+                    "--connect-timeout",
+                    "10",
+                    "--retry",
+                    "3",
+                    "--output",
+                    out_str,
+                    url_str,
                 },
                 options
             );
 
-            if (ec) {
-                throw ferr("Failed to start wget: {}", ec.message());
-            }
+            if (ec)
+                throw ferr("Failed to start curl: {}", ec.message());
 
             std::array<char, 4096> buffer;
             std::string            line;
 
-            // wget progress goes to stderr
+            // curl progress goes to stderr
             while (true) {
                 auto [bytes_read, read_ec] =
                     process.read(reproc::stream::err, reinterpret_cast<uint8_t *>(buffer.data()), buffer.size());
@@ -194,18 +206,18 @@ std::string resolve_path(const std::string &cache, const std::string &path_str) 
                     break;
 
                 if (read_ec)
-                    throw ferr("Failed to read wget output: {}", read_ec.message());
+                    throw ferr("Failed to read curl output: {}", read_ec.message());
 
                 line.append(buffer.data(), bytes_read);
 
-                size_t pos = 0;
-                while ((pos = line.find('\n')) != std::string::npos) {
+                print_progress("Downloading", 0, 100);
+                for (size_t pos = 0; (pos = line.find('\n')) != std::string::npos;) {
                     std::string current = line.substr(0, pos);
                     line.erase(0, pos + 1);
 
                     // Example:
-                    // " 45% [=========>      ] 1.23M ..."
-                    static const std::regex percent_re(R"((\d+)%)");
+                    // ##############################################                          65.2%
+                    static const std::regex percent_re(R"((\d+(?:\.\d+)?)%)");
 
                     std::smatch match;
                     if (std::regex_search(current, match, percent_re)) {

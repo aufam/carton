@@ -39,10 +39,10 @@ int Carton::Init(Package &args) {
             echo '}' >> src/main.cpp
         fi
         if [ ! -f .gitignore ]; then
-            wget -q https://raw.githubusercontent.com/aufam/carton/main/.gitignore
+            curl -fsSLo .gitignore https://raw.githubusercontent.com/aufam/carton/main/.gitignore
         fi
         if [ ! -f .clang-format ]; then
-            wget -q https://raw.githubusercontent.com/aufam/carton/main/.clang-format
+            curl -fsSLo .clang-format https://raw.githubusercontent.com/aufam/carton/main/.clang-format
         fi
     )sh"});
 

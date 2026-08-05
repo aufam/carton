@@ -302,7 +302,7 @@ versions = ["1.0"] # master
 
 [rapidjson.lib]
 git = "https://github.com/Tencent/rapidjson"
-branch = "master"
+commit = "24b5e7a"
 
 
 #
@@ -1570,6 +1570,7 @@ src = [
 inc = ["public:src"]
 flags = [
     "-Wno-unused-parameter",
+    "-Wno-unused-function",
     "-Wno-sign-compare",
     "-Wno-return-local-addr",
     "-Wno-invalid-noreturn",
@@ -1845,6 +1846,12 @@ cpu = {
     flags = ["-DGGML_USE_CPU"],
     optional = true,
 }
+wasm = {
+    src = ["src/ggml-cpu/*", "src/ggml-cpu/arch/wasm/*"],
+    inc = ["src/ggml-cpu"],
+    flags = ["-DGGML_USE_CPU"],
+    optional = true,
+}
 blas = {
     src = ["src/ggml-blas/*"],
     flags = ["-DGGML_BLAS_USE_ACCELERATE"],
@@ -1857,9 +1864,15 @@ metal = {
     link-flags = ["-DGGML_METAL_EMBED_LIBRARY", "-framework Foundation", "-framework Metal"],
     optional = true,
 }
-
-[ggml.features]
-default = ["cpu"]
+webgpu = {
+    src = ["src/ggml-webgpu/*"],
+    inc = ["tmp/ggml-webgpu/generated"],
+    pre = """
+    mkdir -p tmp/ggml-webgpu/generated
+    python3 src/ggml-webgpu/wgsl-shaders/embed_wgsl.py --input_dir src/ggml-webgpu/wgsl-shaders --output_file tmp/ggml-webgpu/generated/ggml-wgsl-shaders.hpp
+    """,
+    optional = true,
+}
 
 
 #
@@ -2134,4 +2147,4 @@ versions = ["1.0"]
 
 [dotenv.lib]
 git = "https://github.com/laserpants/dotenv-cpp"
-branch = "master"
+commit = "9275210"

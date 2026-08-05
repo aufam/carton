@@ -35,6 +35,10 @@ Dependency &Dependency::operator+=(const Dependency &other) {
         push_unique(inc, other.inc);
         push_unique(flags, other.flags);
         push_unique(link_flags, other.link_flags);
+        if (!other.pre.empty()) {
+            pre += pre.empty() ? "" : "\n";
+            pre += other.pre;
+        }
     } else {
         push_unique(flags, other.public_flags);
         push_unique(link_flags, other.link_flags);
@@ -50,7 +54,13 @@ constexpr char PATH_SEPARATOR = ';';
 constexpr char PATH_SEPARATOR = ':';
 #endif
 
-static fs::path resolve_compiler(std::string_view compiler) {
+static std::string resolve_compiler(std::string &compiler) {
+    {
+        auto paths = std::vector<std::string>{compiler};
+        expand_path(".", paths, false);
+        compiler = paths.front();
+    }
+
     fs::path p{compiler};
 
     auto is_executable = [](const fs::path &path) {
@@ -73,7 +83,8 @@ static fs::path resolve_compiler(std::string_view compiler) {
         auto            canonical = fs::weakly_canonical(p, ec);
         if (ec || !is_executable(canonical))
             throw std::runtime_error("Compiler not found or not executable: " + p.string());
-        return canonical;
+
+        return canonical.string();
     }
 
     // Search PATH.
@@ -95,7 +106,7 @@ static fs::path resolve_compiler(std::string_view compiler) {
             std::error_code ec;
             auto            canonical = fs::weakly_canonical(candidate, ec);
             if (!ec)
-                return canonical;
+                return canonical.string();
         }
 
         begin = end + 1;
@@ -382,9 +393,9 @@ void Carton::apply_package_placeholders() {
     }
 }
 
-std::vector<std::string> expand_path(const std::string &working_dir, std::vector<std::string> &sources) {
+void expand_path(const std::string &working_dir, std::vector<std::string> &sources, bool check_exist) {
     if (sources.empty())
-        return {};
+        return;
 
     for (auto &src : sources) {
         size_t pos = 0;
@@ -394,14 +405,10 @@ std::vector<std::string> expand_path(const std::string &working_dir, std::vector
         }
     }
 
-    std::string cmd = fmt::format(
-        "cd \"{}\" "
-        "&& printf '%s\\n' {}",
-        working_dir,
-        fmt::join(sources, " ")
-    );
+    std::string cmd = fmt::format("printf '%s\\n' {}", fmt::join(sources, " "));
 
     reproc::options options;
+    options.working_directory = working_dir.c_str();
     options.redirect.out.type = reproc::redirect::pipe;
     options.redirect.err.type = reproc::redirect::discard;
 
@@ -432,12 +439,12 @@ std::vector<std::string> expand_path(const std::string &working_dir, std::vector
 
         std::filesystem::path entry = line;
 
-        if (!std::filesystem::exists(std::filesystem::path(working_dir) / entry)) {
+        if (check_exist && !std::filesystem::exists(std::filesystem::path(working_dir) / entry)) {
             throw ferr("Expand failed: {:?} does not exist in {:?}", entry.string(), working_dir);
         }
 
         res.push_back(entry.string());
     }
 
-    return res;
+    sources = res;
 }

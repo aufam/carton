@@ -67,6 +67,15 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+    NAME            dotenv
+    GIT_REPOSITORY  "https://github.com/laserpants/dotenv-cpp"
+    GIT_TAG         9275210
+    DOWNLOAD_ONLY   YES
+)
+add_library(dotenv INTERFACE)
+target_include_directories(dotenv INTERFACE ${dotenv_SOURCE_DIR}/include)
+
+CPMAddPackage(
     NAME            cpx
     GIT_REPOSITORY  "https://github.com/aufam/cpx"
     GIT_TAG         v0.1.0
@@ -106,6 +115,7 @@ target_link_libraries(carton PRIVATE
     CLI11
     xxhash
     reproc++
+    dotenv
 )
 
 target_compile_options(carton PRIVATE

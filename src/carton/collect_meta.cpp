@@ -92,12 +92,13 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
 
     const auto flags_ =
         f( //
-            "{} -O{} {} {} "
-            "-fmacro-prefix-map=\"{}\"=\"{}\" -march=native {}",
+            "{} -O{} {} {} {} "
+            "-fmacro-prefix-map=\"{}\"=\"{}\" {}",
             profile.debug ? "-g" : "-DNDEBUG",
             profile.opt_level,
             profile.lto ? "-flto" : "",
             profile.asan ? "-fsanitize=address,undefined" : "",
+            profile.arch.empty() ? "" : "-march=" + profile.arch,
             working_dir.string(),
             d.name,
             fmt::join(profile.flags, " ")
@@ -186,12 +187,12 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
     auto &mod_paths = this->cache->mod_paths;
     auto &mod_objs  = this->cache->mod_objs;
     try {
-        auto modules = expand_path(d.working_dir, d.mod);
+        expand_path(d.working_dir, d.mod);
 
         std::vector<std::string> module_ccs;
-        module_ccs.reserve(modules.size());
+        module_ccs.reserve(d.mod.size());
 
-        for (const auto &mod : modules) {
+        for (const auto &mod : d.mod) {
             auto cc =
                 f( //
                     "{} {} -std=c++{} -x c++-module {} -c '{}'",
@@ -204,14 +205,11 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
             module_ccs.emplace_back(std::move(cc));
         }
 
-        auto mod_names = sort_modules_p1689(working_dir, modules, module_ccs, mods);
+        auto mod_names = sort_modules_p1689(working_dir, d.mod, module_ccs, mods);
 
-        // auto modules   = expand_path(working_dir.string(), d.mod);
-        // auto mod_names = sort_modules(working_dir, modules, mods);
-
-        for (size_t i = 0; i < modules.size(); ++i) {
+        for (size_t i = 0; i < d.mod.size(); ++i) {
             const std::string &mod_name = mod_names[i];
-            const fs::path     mod_path = modules[i];
+            const fs::path     mod_path = d.mod[i];
 
             CompileCommand ccm;
             ccm.directory = d.build_dir;
@@ -248,7 +246,8 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
             push_unique(d.mod_flags, f("-fmodule-file={}='{}'", mod_name, mod_paths.at(mod_name)));
         }
 
-        for (const fs::path entry : expand_path(working_dir.string(), d.src)) {
+        expand_path(working_dir.string(), d.src);
+        for (const fs::path entry : d.src) {
             CompileCommand cc;
             cc.directory = d.build_dir;
             cc.output    = entry.string() + ".o";
@@ -296,7 +295,7 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
         if (!objs.empty()) {
             auto &cc     = d.ar_command;
             cc.directory = d.build_dir;
-            if (modules.empty())
+            if (d.mod.empty())
                 cc.output = "lib" + d.name + (is_bin ? ".main" : "") + ".a";
             else
                 cc.output = "lib" + d.name + std::to_string(cppm_standard) + (is_bin ? ".main" : "") + ".a";

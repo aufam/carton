@@ -12,8 +12,8 @@ export {
     void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front = false);
 
     auto git_clone(const std::string &cache, const std::string &git, const std::string &tag) -> std::string;
-    auto expand_path(const std::string &working_dir, std::vector<std::string> &sources) -> std::vector<std::string>;
     auto resolve_path(const std::string &cache, const std::string &path) -> std::string;
+    void expand_path(const std::string &working_dir, std::vector<std::string> &sources, bool check_exist = true);
 
     template <typename... Args>
     auto f(fmt::format_string<Args...> fmt, Args &&...args) {

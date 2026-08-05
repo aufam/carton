@@ -1,10 +1,13 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <laserpants/dotenv/dotenv.h>
 
 import carton;
 import cpx.cli11;
 
 int main(int argc, char **argv) {
+    dotenv::init();
+
     // spdlog
     auto sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("carton", std::move(sink)));

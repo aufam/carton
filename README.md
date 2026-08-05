@@ -88,7 +88,7 @@ Supported compilers:
 
 Installed system wide:
 - git
-- wget
+- curl
 - tar
 
 ## C++ Module

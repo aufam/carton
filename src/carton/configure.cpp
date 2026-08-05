@@ -2,6 +2,7 @@ module;
 
 #include <algorithm>
 #include <spdlog/spdlog.h>
+#include <reproc++/run.hpp>
 
 module carton;
 

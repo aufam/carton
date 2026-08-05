@@ -6,7 +6,7 @@
       "type": "object",
       "properties": {
         "name": { "type": "string" },
-        "cpp": { "type": "string" },
+        "cxx": { "type": "string" },
         "c": { "type": "string" },
         "ar": { "type": "string" },
         "modules": { "type": "string" },

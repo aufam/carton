@@ -11,6 +11,7 @@ export struct Profile {
     std::string              cxx       = "c++";
     std::string              c         = "cc";
     std::string              ar        = "ar";
+    std::string              arch      = "native";
     std::string              modules   = "auto";
     bool                     debug     = false;
     bool                     asan      = false;
@@ -24,6 +25,7 @@ export struct Profile {
         cpx::field<&Profile::cxx>        = "cxx       , skipmissing",
         cpx::field<&Profile::c>          = "c         , skipmissing",
         cpx::field<&Profile::ar>         = "ar        , skipmissing",
+        cpx::field<&Profile::arch>       = "arch      , skipmissing",
         cpx::field<&Profile::modules>    = "modules   , skipmissing",
         cpx::field<&Profile::debug>      = "debug     , skipmissing",
         cpx::field<&Profile::asan>       = "asan      , skipmissing",

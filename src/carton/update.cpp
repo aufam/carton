@@ -9,7 +9,7 @@ int Carton::Update() {
     auto [ret, ec] = reproc::run(std::vector<std::string_view>{"sh", "-c", R"sh(
         set -e
         mkdir -p ~/.carton
-        wget -q https://raw.githubusercontent.com/aufam/carton/main/registry.toml -O ~/.carton/registry.toml
+        curl -fsLo ~/.carton/registry.toml https://raw.githubusercontent.com/aufam/carton/main/registry.toml
     )sh"});
 
     return ret;
