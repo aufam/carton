@@ -125,9 +125,9 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
     }
     for (auto &str : d.inc) {
         if (str.starts_with("public:")) {
-            auto inc = "-I" + (working_dir / str.substr(std::string("public:").size())).string();
-            push_unique(flags, inc);
-            push_unique(d.public_flags, inc);
+            const auto abs_dir = (working_dir / str.substr(std::string("public:").size())).string();
+            push_unique(flags, "-I" + abs_dir);
+            push_unique(d.public_flags, "-isystem " + abs_dir);
         } else {
             push_unique(flags, "-I" + (working_dir / str).string());
         }
@@ -218,7 +218,7 @@ void Carton::collect_meta(const Profile &profile, Dependency &d, bool is_bin) {
             ccm.depfile   = mod_path.string() + ".d";
             ccm.modnames  = d.mod_names;
 
-            auto pcm = f("{}-{}.pcm", cppm_standard, mod_name);
+            auto pcm = f("{}-{}.bmi", cppm_standard, mod_name);
             std::replace(pcm.begin(), pcm.end(), ':', '-');
 
             std::vector<std::string>        pcm_flags;
