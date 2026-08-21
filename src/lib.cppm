@@ -2,6 +2,7 @@ export module carton;
 export import :carton;
 export import :profile;
 export import :dependency;
+export import :binary;
 export import :package;
 export import :compile_command;
 export import :cache;

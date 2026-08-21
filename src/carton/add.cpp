@@ -5,7 +5,7 @@ module;
 
 module carton;
 
-int Carton::add(Dependency &dep) const {
+int Carton::add(Dependency &dep) {
     const std::string filename = "carton.toml";
 
     if (dependencies.contains(dep.name)) {

@@ -387,7 +387,7 @@ name = "toml11"
 [toml11.package]
 name = "toml11"
 authors = ["ToruNiina"]
-edition = 11
+edition = 17
 description = "TOML for Modern C++"
 homepage = "https://toruniina.github.io/toml11/"
 repository = "https://github.com/ToruNiina/toml11"
@@ -1749,8 +1749,6 @@ url = {
     src = [
         "libs/url/src/*",
         "libs/url/src/detail/*",
-        "libs/url/src/rfc/*",
-        "libs/url/src/rfc/detail/*",
         "libs/url/src/grammar/*",
         "libs/url/src/grammar/detail/*"
     ],
