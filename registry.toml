@@ -2146,3 +2146,19 @@ versions = ["1.0"]
 [dotenv.lib]
 git = "https://github.com/laserpants/dotenv-cpp"
 commit = "9275210"
+
+
+#
+# brb
+#
+[brb.package]
+name = "brb"
+edition = 20
+authors = ["aufam"]
+repository = "https://github.com/aufam/brb"
+readme = "README.md"
+versions = ["0.1.0"]
+
+[brb.lib]
+git = "https://github.com/aufam/brb"
+tag = "v{version}"
