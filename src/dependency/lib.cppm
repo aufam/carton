@@ -95,14 +95,14 @@ export struct Dependency {
 
     std::string build_name() const {
         std::string name = this->name;
-        if (!tag.empty()) {
+        if (!version.empty()) {
+            name += "-v" + version;
+        } else if (!tag.empty()) {
             name += "-" + tag;
         } else if (!branch.empty()) {
             name += "-" + branch;
         } else if (!commit.empty()) {
             name += "-" + commit;
-        } else if (!version.empty()) {
-            name += "-v" + version;
         }
         return name;
     }

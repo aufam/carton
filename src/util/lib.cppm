@@ -3,6 +3,7 @@ module;
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <algorithm>
 
 export module carton:util;
 import fmt;
@@ -10,6 +11,24 @@ import fmt;
 export {
     void push_unique(std::vector<std::string> &vec, const std::string &value, bool front = false);
     void push_unique(std::vector<std::string> &vec, const std::vector<std::string> &values, bool front = false);
+
+    template <typename T>
+    void push_unique(std::vector<T *> &vec, T *value, bool front = false) {
+        if (value == nullptr)
+            return;
+        if (std::find(vec.begin(), vec.end(), value) == vec.end()) {
+            if (front)
+                vec.insert(vec.begin(), value);
+            else
+                vec.push_back(value);
+        }
+    }
+
+    template <typename T>
+    void push_unique(std::vector<T *> &vec, const std::vector<T *> &values, bool front = false) {
+        for (const auto &value : values)
+            push_unique(vec, value, front);
+    }
 
     auto git_clone(const std::string &cache, const std::string &git, const std::string &tag) -> std::string;
     auto resolve_path(const std::string &cache, const std::string &path) -> std::string;

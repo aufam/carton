@@ -3,6 +3,7 @@ module;
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <map>
 #include <memory>
 
 export module carton:carton;
@@ -37,6 +38,13 @@ export struct Carton {
         cpx::field<&Carton::features>     = "features     , skipmissing",
     };
 
+    Registry   *pregistry = nullptr;
+    std::string working_dir;
+    std::string build_dir;
+    bool        resolved = false;
+
+    std::map<std::string, std::unique_ptr<Library>> libraries;
+
     Dependency bin;
 
     Carton                *root = nullptr;
@@ -57,4 +65,14 @@ private:
     void apply_package_placeholders();
     void resolve_remote_dep(const Profile &profile, Dependency &dep, bool from_registry = false);
     void collect_meta(const Profile &profile, Dependency &dep, bool is_bin = false);
+
+    // v2
+    auto configure_v2(const Profile &profile, const std::vector<std::string> &features = {}, bool default_features = true)
+        -> std::vector<Library *>;
+
+    auto
+    get_requested_features(const std::vector<std::string> &features, bool default_features = true) -> std::vector<std::string>;
+
+    void resolve_package();
+    void resolve_dep(const std::string &name, Dependency &dep);
 };

@@ -32,6 +32,10 @@ static std::string make_feature_signature(std::vector<std::string> &feats) {
 }
 
 void Carton::configure(const Profile &profile, const std::vector<std::string> &features, bool from_registry) {
+    if (package.name == "ile") {
+        fmt::println("configure ile.path={:?}", lib.path);
+    }
+
     if (package.name.empty())
         throw ferr("{:?}: name is required", package.name);
 

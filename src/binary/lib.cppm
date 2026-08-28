@@ -10,15 +10,11 @@ import cpx;
 export struct Binary {
     std::string              name;
     std::string              path;
-    bool                     test  = false;
-    bool                     bench = false;
     std::vector<std::string> required_features;
 
     static constexpr std::tuple __field_tags__ = {
         cpx::field<&Binary::name>              = "name",
         cpx::field<&Binary::path>              = "path",
-        cpx::field<&Binary::test>              = "test,skipmissing",
-        cpx::field<&Binary::bench>             = "bench,skipmissing",
         cpx::field<&Binary::required_features> = "required-features,skipmissing",
     };
 

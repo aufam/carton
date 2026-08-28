@@ -22,6 +22,8 @@ int Carton::execute(Cli &cli) {
                                 : manifest ? cli.manifest->no_default_features
                                            : cli.no_default_features;
 
+    const auto pretty_two_spaces = cpx::yy_json::write_flag::pretty_two_spaces;
+
     try {
         this->configure(profile, features);
     } catch (std::exception &e) {
@@ -32,7 +34,7 @@ int Carton::execute(Cli &cli) {
     auto ccs = std::vector<CompileCommand>();
     auto _   = cpx::defer([&ccs]() {
         auto of = std::ofstream("./compile_commands.json");
-        of << cpx::yy_json::dump(ccs, cpx::yy_json::write_flag::pretty_two_spaces);
+        of << cpx::yy_json::dump(ccs, pretty_two_spaces);
     });
 
     try {
@@ -46,7 +48,7 @@ int Carton::execute(Cli &cli) {
 
     if (manifest) {
         this->registry.clear(); // TODO
-        fmt::println("{}", cpx::yy_json::dump(*this, cpx::yy_json::write_flag::pretty_two_spaces));
+        fmt::println("{}", cpx::yy_json::dump(*this, pretty_two_spaces));
     }
 
     return 0;
