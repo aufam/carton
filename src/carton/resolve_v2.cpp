@@ -45,7 +45,7 @@ void Carton::resolve_package() {
 
     apply_package_placeholders();
 
-    const bool is_root = fs::path(lib.path).is_absolute();
+    const bool is_registry = this->root != nullptr;
 
     if (lib.empty())
         throw ferr("assertion failed: {:?} cannot be empty", package.name);
@@ -67,7 +67,7 @@ void Carton::resolve_package() {
     fs::path working_dir = fs::path(lib.path) / lib.subdir;
     lib.working_dir      = working_dir.string();
 
-    if (auto sub = working_dir / "carton.toml"; !is_root && fs::exists(sub)) {
+    if (auto sub = working_dir / "carton.toml"; is_registry && fs::exists(sub)) {
         lib.path   = "";
         lib.subdir = "";
 

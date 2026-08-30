@@ -45,6 +45,7 @@ struct Cache {
     std::map<std::string, std::string>              mod_paths;
     std::map<std::string, std::string>              mod_objs;
     std::unordered_map<std::string, std::string>    resolved_versions;
+    std::string                                     directory;
 
     ResolvedPackage                                  root;
     std::vector<std::unique_ptr<ResolvedPackage>>    resolved_packages;

@@ -67,8 +67,7 @@ private:
     void collect_meta(const Profile &profile, Dependency &dep, bool is_bin = false);
 
     // v2
-    auto configure_v2(const Profile &profile, const std::vector<std::string> &features = {}, bool default_features = true)
-        -> std::vector<Library *>;
+    auto configure_v2(const std::vector<std::string> &features = {}, bool default_features = true) -> std::vector<Library *>;
 
     auto
     get_requested_features(const std::vector<std::string> &features, bool default_features = true) -> std::vector<std::string>;
