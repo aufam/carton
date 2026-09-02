@@ -21,8 +21,11 @@ export struct CompileCommand {
         cpx::field<&CompileCommand::output>    = "output    , omitempty",
     };
 
+    void compile() const;
+
     std::string              depfile;
     std::vector<std::string> modnames;
+    bool                     done = false;
 
     static bool compile_multi(
         const std::string                            &name,

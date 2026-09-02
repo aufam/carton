@@ -11,6 +11,7 @@ export struct Binary {
     std::string              name;
     std::string              path;
     std::vector<std::string> required_features;
+    std::vector<std::string> src;
 
     static constexpr std::tuple __field_tags__ = {
         cpx::field<&Binary::name>              = "name",

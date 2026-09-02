@@ -9,7 +9,7 @@ module;
 export module carton:cache;
 import :dependency;
 import :compile_command;
-import :library;
+import :fingerprint;
 
 export struct Cache;
 export struct ResolvedPackage;
@@ -45,9 +45,15 @@ struct Cache {
     std::map<std::string, std::string>              mod_paths;
     std::map<std::string, std::string>              mod_objs;
     std::unordered_map<std::string, std::string>    resolved_versions;
+    std::unordered_map<std::string, std::string>    bmi_paths;
     std::string                                     directory;
 
-    ResolvedPackage                                  root;
-    std::vector<std::unique_ptr<ResolvedPackage>>    resolved_packages;
-    std::vector<std::unique_ptr<ResolvedDependency>> resolved_dependencies;
+    std::string common_flags;
+    std::string module_compiler;
+    bool        module_support = false;
+    int         cppm_standard  = 0;
+
+    std::unordered_map<std::string, std::unordered_map<std::string, Fingerprint>> fingerprint_map;
+
+    std::unordered_map<std::string, uint64_t> hash_history;
 };

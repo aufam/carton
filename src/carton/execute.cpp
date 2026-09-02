@@ -17,17 +17,44 @@ int Carton::execute(Cli &cli) {
                            : manifest ? cli.manifest->features
                                       : cli.features;
 
-    this->no_default_features = run        ? cli.run->no_default_features
-                                : build    ? cli.build->no_default_features
-                                : manifest ? cli.manifest->no_default_features
-                                           : cli.no_default_features;
+    const bool no_default_features = run        ? cli.run->no_default_features
+                                     : build    ? cli.build->no_default_features
+                                     : manifest ? cli.manifest->no_default_features
+                                                : cli.no_default_features;
 
     const auto pretty_two_spaces = cpx::yy_json::write_flag::pretty_two_spaces;
 
+    cache->common_flags =
+        f( //
+            "{} -O{} {} {} {} {}",
+            profile.debug ? "-g" : "-DNDEBUG",
+            profile.opt_level,
+            profile.lto ? "-flto" : "",
+            profile.asan ? "-fsanitize=address,undefined" : "",
+            profile.arch.empty() ? "" : "-march=" + profile.arch,
+            fmt::join(profile.flags, " ")
+        );
+    cache->module_compiler = profile._module_compiler;
+    cache->module_support  = profile._module_support;
+    cache->cppm_standard   = std::max(20, package.edition);
+
+    std::vector<Library *> libs;
     try {
-        this->configure(profile, features);
+        Dependency d;
+        d.working_dir      = fs::current_path().string();
+        d.features         = features;
+        d.default_features = !no_default_features;
+
+        libs = this->configure_v2(d);
     } catch (std::exception &e) {
         spdlog::error("Failed to configure: {}", e.what());
+        return 1;
+    }
+
+    try {
+        auto bins = this->configure_bins();
+    } catch (std::exception &e) {
+        spdlog::error("Failed to configure binaries: {}", e.what());
         return 1;
     }
 

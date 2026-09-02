@@ -9,8 +9,10 @@ constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
 
 Carton Carton::New(const std::string &cache_dir) {
     Carton ctx;
-    ctx.cache_dir = cache_dir;
-    ctx.cache     = std::make_shared<Cache>();
+    ctx.root  = &ctx;
+    ctx.cache = std::make_shared<Cache>();
+
+    ctx.cache->directory = cache_dir;
 
     // parse registry
     const auto registry_path = [&]() {
@@ -53,11 +55,6 @@ Carton Carton::New(const std::string &cache_dir) {
     }
 
     // validate
-    if (fs::path(ctx.lib.path).is_absolute() || fs::path(ctx.lib.subdir).is_absolute()) {
-        spdlog::error("<carton>.lib.path must be relative");
-        exit(1);
-    }
-    ctx.lib.path = (fs::current_path() / ctx.lib.path).string();
     ctx.profiles.check_module_support();
 
     return ctx;

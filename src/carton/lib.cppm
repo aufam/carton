@@ -14,12 +14,15 @@ import :compile_command;
 import :cache;
 import :cli;
 import :config;
+import :target;
+import :binary;
 import cpx;
 
 export struct Carton {
     using Registry     = std::unordered_map<std::string, Carton>;
     using Dependencies = std::unordered_map<std::string, Dependency>;
     using Features     = std::unordered_map<std::string, std::vector<std::string>>;
+    using Binaries     = std::vector<Binary>;
 
     Package      package;
     Registry     registry;
@@ -27,6 +30,7 @@ export struct Carton {
     Dependencies dependencies;
     Dependency   lib;
     Features     features;
+    Binaries     bins;
     bool         no_default_features = false;
 
     static constexpr std::tuple __field_tags__{
@@ -35,6 +39,7 @@ export struct Carton {
         cpx::field<&Carton::profiles>     = "profile      , skipmissing",
         cpx::field<&Carton::dependencies> = "dependencies , skipmissing",
         cpx::field<&Carton::lib>          = "lib          , skipmissing",
+        cpx::field<&Carton::bins>         = "bin          , skipmissing",
         cpx::field<&Carton::features>     = "features     , skipmissing",
     };
 
@@ -43,13 +48,14 @@ export struct Carton {
     std::string build_dir;
     bool        resolved = false;
 
-    std::map<std::string, std::unique_ptr<Library>> libraries;
+    std::map<std::string, std::unique_ptr<Target>> targets;
 
     Dependency bin;
 
-    Carton                *root = nullptr;
-    std::shared_ptr<Cache> cache;
-    std::string            cache_dir;
+    Carton                              *root = nullptr;
+    std::shared_ptr<Cache>               cache;
+    std::string                          cache_dir;
+    std::vector<std::shared_ptr<Carton>> locals;
 
     static int    Update();
     static int    Init(Package &args);
@@ -67,11 +73,19 @@ private:
     void collect_meta(const Profile &profile, Dependency &dep, bool is_bin = false);
 
     // v2
-    auto configure_v2(const std::vector<std::string> &features = {}, bool default_features = true) -> std::vector<Library *>;
+    [[nodiscard]]
+    auto configure_package(const Profile &, const Dependency &) -> std::vector<Target *>;
+
+    [[nodiscard]]
+    auto configure_bins() -> std::vector<Target *>;
 
     auto
     get_requested_features(const std::vector<std::string> &features, bool default_features = true) -> std::vector<std::string>;
 
-    void resolve_package();
-    void resolve_dep(const std::string &name, Dependency &dep);
+    void resolve_package(const std::string &working_dir);
+
+    [[nodiscard]]
+    auto resolve_dep(const std::string &name, Dependency &dep) -> Carton *;
+
+    void resolve_bin();
 };

@@ -22,6 +22,122 @@ static void do_link(const Dependency &d) {
         throw ferr("Failed to link: name={} command=`{}`", d.name, d.ar_command.command);
 }
 
+void Carton::prebuild(Library &target, const Profile &profile, std::vector<CompileCommand> &ccs) {
+    if (target.prebuilt)
+        return;
+
+    const int cppm_standard = std::max(20, package.edition);
+
+    if (!target.pre.empty()) {
+        spdlog::info("running pre command for package={:?} dep={:?} pre={:?}", package.name, target.name, target.pre);
+
+        reproc::options opt;
+        opt.redirect.out.type = reproc::redirect::pipe;
+        opt.redirect.err.type = reproc::redirect::pipe;
+        opt.working_directory = target.working_dir.c_str();
+
+        std::string errmsg;
+        auto [status, ec] = reproc::
+            run( //
+                std::vector<std::string_view>{"sh", "-c", target.pre},
+                opt,
+                reproc::sink::null,
+                reproc::sink::string(errmsg)
+            );
+
+        if (status != 0 || ec) {
+            fmt::println(stderr, "{}", errmsg);
+            throw ferr("pre command failed for {:?}: {}", target.title, target.pre);
+        }
+    }
+
+    const auto flags_ =
+        f( //
+            "{} -O{} {} {} {} "
+            "-fmacro-prefix-map=\"{}\"=\"{}\" {}",
+            profile.debug ? "-g" : "-DNDEBUG",
+            profile.opt_level,
+            profile.lto ? "-flto" : "",
+            profile.asan ? "-fsanitize=address,undefined" : "",
+            profile.arch.empty() ? "" : "-march=" + profile.arch,
+            target.working_dir,
+            target.name,
+            fmt::join(profile.flags, " ")
+        );
+
+    const auto CXX = f("{} {}", profile.cxx, flags_);
+    const auto C   = f("{} {}", profile.c, flags_);
+
+    const fs::path cache_dir = cache->directory;
+    const fs::path build_dir = cache_dir / "build" / profile.name / target.build_name;
+
+    fs::create_directories(build_dir);
+
+    std::vector<std::string> module_ccs;
+    module_ccs.reserve(target.mod.size());
+
+    for (const auto &mod : target.mod) {
+        auto cc =
+            f( //
+                "{} {} -std=c++{} -x c++-module {} -c '{}'",
+                profile._module_compiler,
+                fmt::join(profile.flags, " "),
+                cppm_standard,
+                fmt::join(target.flags, " "),
+                mod
+            );
+        module_ccs.emplace_back(std::move(cc));
+    }
+
+    auto mod_names = sort_modules_p1689(working_dir, target.mod, module_ccs, cache->mods);
+
+    for (size_t i = 0; i < target.mod.size(); ++i) {
+        const std::string &mod_name = mod_names[i];
+        const fs::path     mod_path = target.mod[i];
+
+        CompileCommand ccm;
+        ccm.directory = build_dir.string();
+        ccm.file      = (working_dir / mod_path).string();
+        ccm.output    = mod_path.string() + ".o";
+        ccm.depfile   = mod_path.string() + ".d";
+        ccm.modnames  = target.mod_names;
+
+        auto pcm = f("{}-{}.bmi", cppm_standard, mod_name);
+        std::replace(pcm.begin(), pcm.end(), ':', '-');
+
+        std::vector<std::string>        pcm_flags;
+        std::unordered_set<std::string> visited;
+        collect_modules(mod_name, mods, mod_paths, mod_objs, visited, pcm_flags, ccm.modnames, nullptr);
+        push_unique(d.mod_flags, pcm_flags);
+
+        ccm.command =
+            f( //
+                "{} -std=c++{} -x c++-module {} {} -fmodule-output='{}' -o '{}' -c '{}' -MMD -MP -MF '{}'",
+                CXX,
+                cppm_standard,
+                fmt::join(flags, " "),
+                fmt::join(d.mod_flags, " "),
+                pcm,
+                ccm.output,
+                ccm.file,
+                ccm.depfile
+            );
+
+        mod_paths[mod_name] = (build_dir / pcm).string();
+        mod_objs[mod_name]  = (build_dir / ccm.output).string();
+        ccms.push_back(ccm);
+        objs.push_back(mod_objs.at(mod_name));
+        push_unique(d.mod_flags, f("-fmodule-file={}='{}'", mod_name, mod_paths.at(mod_name)));
+    }
+}
+
+void Carton::prebuild(const Profile &profile, const std::vector<Library *> &libs, std::vector<CompileCommand> &ccs) {
+    for (auto *lib : libs) {
+        prebuild(profile, lib->dependencies, ccs);
+        prebuild(*lib, profile, ccs);
+    }
+}
+
 void Carton::build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build) {
     collect_meta(profile, lib);
 
