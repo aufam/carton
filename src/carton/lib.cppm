@@ -31,7 +31,6 @@ export struct Carton {
     Dependency   lib;
     Features     features;
     Binaries     bins;
-    bool         no_default_features = false;
 
     static constexpr std::tuple __field_tags__{
         cpx::field<&Carton::package>      = "package",
@@ -43,19 +42,11 @@ export struct Carton {
         cpx::field<&Carton::features>     = "features     , skipmissing",
     };
 
-    Registry   *pregistry = nullptr;
-    std::string working_dir;
-    std::string build_dir;
-    bool        resolved = false;
-
+    Carton                                        *root = nullptr;
+    std::shared_ptr<Cache>                         cache;
+    std::vector<std::shared_ptr<Carton>>           locals;
     std::map<std::string, std::unique_ptr<Target>> targets;
-
-    Dependency bin;
-
-    Carton                              *root = nullptr;
-    std::shared_ptr<Cache>               cache;
-    std::string                          cache_dir;
-    std::vector<std::shared_ptr<Carton>> locals;
+    bool                                           resolved = false;
 
     static int    Update();
     static int    Init(Package &args);
@@ -64,23 +55,19 @@ export struct Carton {
     int           execute(Cli &cli);
 
 private:
-    void configure(const Profile &profile, const std::vector<std::string> &features = {}, bool from_registry = false);
-    void build(const Profile &profile, std::vector<CompileCommand> &ccs, bool do_build);
-    int  run(const std::vector<std::string> &args);
+    int run(const Target &target, const std::vector<std::string> &args);
 
-    void apply_package_placeholders();
-    void resolve_remote_dep(const Profile &profile, Dependency &dep, bool from_registry = false);
-    void collect_meta(const Profile &profile, Dependency &dep, bool is_bin = false);
-
-    // v2
-    [[nodiscard]]
-    auto configure_package(const Profile &, const Dependency &) -> std::vector<Target *>;
+    void apply_placeholders();
 
     [[nodiscard]]
-    auto configure_bins() -> std::vector<Target *>;
-
     auto
     get_requested_features(const std::vector<std::string> &features, bool default_features = true) -> std::vector<std::string>;
+
+    [[nodiscard]]
+    auto configure_package(const Profile &, const std::string &working_dir, const Dependency &) -> std::vector<Target *>;
+
+    [[nodiscard]]
+    auto configure_bins(const Profile &) -> std::vector<Target *>;
 
     void resolve_package(const std::string &working_dir);
 

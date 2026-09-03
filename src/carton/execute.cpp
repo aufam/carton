@@ -1,6 +1,7 @@
 module;
 
 #include <spdlog/spdlog.h>
+#include <chrono>
 
 module carton;
 import cpx;
@@ -34,44 +35,58 @@ int Carton::execute(Cli &cli) {
             profile.arch.empty() ? "" : "-march=" + profile.arch,
             fmt::join(profile.flags, " ")
         );
-    cache->module_compiler = profile._module_compiler;
-    cache->module_support  = profile._module_support;
-    cache->cppm_standard   = std::max(20, package.edition);
+    cache->cppm_standard = std::max(20, package.edition);
 
-    std::vector<Library *> libs;
     try {
         Dependency d;
-        d.working_dir      = fs::current_path().string();
         d.features         = features;
         d.default_features = !no_default_features;
 
-        libs = this->configure_v2(d);
+        std::ignore = this->configure_package(profile, fs::current_path().string(), d);
     } catch (std::exception &e) {
         spdlog::error("Failed to configure: {}", e.what());
         return 1;
     }
 
+    const auto start = std::chrono::steady_clock::now();
+
     try {
-        auto bins = this->configure_bins();
+        std::ignore = this->configure_bins(profile);
     } catch (std::exception &e) {
         spdlog::error("Failed to configure binaries: {}", e.what());
         return 1;
     }
 
-    auto ccs = std::vector<CompileCommand>();
-    auto _   = cpx::defer([&ccs]() {
+    auto &ccs = cache->compile_commands;
+
+    auto _ = cpx::defer([&ccs]() {
         auto of = std::ofstream("./compile_commands.json");
         of << cpx::yy_json::dump(ccs, pretty_two_spaces);
     });
 
     try {
-        this->build(profile, ccs, build || run);
-        if (run)
-            return this->run(cli.run->args);
+        CompileCommand::compile_multi(ccs, true);
     } catch (std::exception &e) {
-        spdlog::error("Failed to build: {}", e.what());
+        spdlog::error("Failed to compile modules: {}", e.what());
         return 1;
     }
+
+    if (build)
+        try {
+            CompileCommand::compile_multi(ccs, false);
+        } catch (std::exception &e) {
+            spdlog::error("Failed to compile: {}", e.what());
+            return 1;
+        }
+
+    std::string profile_info = profile.opt_level == 0 ? "unoptimized" : "optimized";
+    if (profile.debug)
+        profile_info += " + debuginfo";
+    if (profile.asan)
+        profile_info += " + asan";
+
+    std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
+    print_status("Finished", f("`{}` profile [{}] target(s) in {:.2f}", profile.name, profile_info, elapsed.count()));
 
     if (manifest) {
         this->registry.clear(); // TODO

@@ -98,7 +98,7 @@ static uint64_t hash_modules(Cache &cache, const std::vector<std::string> &modul
     return h;
 }
 
-static uint64_t hash_dependencies(Cache &cache, const fs::path &depfile) {
+static uint64_t hash_depfiles(Cache &cache, const fs::path &depfile) {
     uint64_t h = fingerprint_seed;
 
     for (const auto &file : parse_depfile(depfile))
@@ -113,7 +113,7 @@ static Fingerprint make_fingerprint(Cache &cache, const CompileCommand &cc) {
     fp.cmd  = f("{:016x}", hash64(cc.command));
     fp.file = f("{:016x}", hash_file(cache, cc.file));
     fp.mods = f("{:016x}", hash_modules(cache, cc.modnames));
-    fp.deps = f("{:016x}", hash_dependencies(cache, cc.depfile));
+    fp.deps = f("{:016x}", hash_depfiles(cache, cc.depfile));
 
     return fp;
 }
@@ -125,11 +125,15 @@ static std::unordered_map<std::string, Fingerprint> &fingerprint_of(Cache &self,
     return self.fingerprint_map[build_dir] = Fingerprint::parse(build_dir);
 }
 
-static void
+static bool
 update_fingerprint(std::unordered_map<std::string, Fingerprint> &fingerprints, CompileCommand &cc, const Fingerprint &fp) {
     auto &cached = fingerprints[cc.file];
-    if ((cc.done = fp.compare(cached)))
+    bool  done   = fp.compare(cached);
+
+    if (!done)
         cached = fp;
+
+    return done;
 }
 
 static void add_bmi_flags(const Cache &cache, const std::vector<std::string> &modules, std::vector<std::string> &bmi_flags) {
@@ -169,10 +173,12 @@ static CompileCommand make_module_command(
 ) {
     CompileCommand cc;
 
-    cc.directory = build_dir.string();
-    cc.file      = (self.working_dir / mod_path).string();
-    cc.output    = mod_path.string() + ".o";
-    cc.depfile   = mod_path.string() + ".d";
+    cc.title         = self.title;
+    cc.is_precompile = true;
+    cc.directory     = build_dir.string();
+    cc.file          = (self.working_dir / mod_path).string();
+    cc.output        = mod_path.string() + ".o";
+    cc.depfile       = mod_path.string() + ".d";
     push_unique(cc.modnames, {mod_name});
 
     auto pcm = f("{}-{}.bmi", cache.cppm_standard, mod_name);
@@ -198,7 +204,7 @@ static CompileCommand make_module_command(
     return cc;
 }
 
-static void configure_modules(
+static bool configure_modules(
     Target                                       &self,
     const Profile                                &profile,
     Cache                                        &cache,
@@ -211,6 +217,7 @@ static void configure_modules(
 
     const auto mod_names = collect_module_names(self, profile, cache);
 
+    bool recompile = false;
     for (size_t i = 0; i < self.mod.size(); ++i) {
         const auto &mod_path = self.mod[i];
         const auto &mod_name = mod_names[i];
@@ -224,15 +231,19 @@ static void configure_modules(
         cache.mod_objs[mod_name]  = (build_dir / cc.output).string();
 
         const auto fp = make_fingerprint(cache, cc);
-        update_fingerprint(fingerprints, cc, fp);
 
-        self.precompile_commands.push_back(cc);
+        cc.is_done = update_fingerprint(fingerprints, cc, fp) && fs::exists(build_dir / cc.output);
+        recompile  = recompile || !cc.is_done;
+
+        cache.compile_commands.push_back(std::move(cc));
+
         objs.push_back(cache.mod_objs.at(mod_name));
 
         push_unique(bmi_flags, f("-fmodule-file={}='{}'", mod_name, cache.mod_paths.at(mod_name)));
     }
 
     push_unique(self.modules, mod_names);
+    return recompile;
 }
 
 static CompileCommand make_source_command(
@@ -245,6 +256,7 @@ static CompileCommand make_source_command(
 ) {
     CompileCommand cc;
 
+    cc.title     = self.title;
     cc.directory = build_dir.string();
     cc.output    = entry.string() + ".o";
     cc.depfile   = entry.string() + ".d";
@@ -291,7 +303,7 @@ static CompileCommand make_source_command(
     return cc;
 }
 
-static void configure_sources(
+static bool configure_sources(
     Target                                       &self,
     const Profile                                &profile,
     Cache                                        &cache,
@@ -300,6 +312,7 @@ static void configure_sources(
     std::vector<std::string>                     &objs,
     std::unordered_map<std::string, Fingerprint> &fingerprints
 ) {
+    bool recompile = false;
 
     for (const auto &entry : self.src) {
         auto cc = make_source_command(self, profile, cache, build_dir, entry, bmi_flags);
@@ -308,25 +321,38 @@ static void configure_sources(
             continue;
 
         const auto fp = make_fingerprint(cache, cc);
-        update_fingerprint(fingerprints, cc, fp);
+
+        cc.is_done = update_fingerprint(fingerprints, cc, fp) && fs::exists(build_dir / cc.output);
+        recompile  = recompile || !cc.is_done;
 
         objs.push_back((build_dir / cc.output).string());
-        self.compile_commands.push_back(std::move(cc));
+        cache.compile_commands.push_back(std::move(cc));
     }
+
+    return recompile;
 }
 
-static void
-configure_archive(Target &self, const Profile &profile, const fs::path &build_dir, const std::vector<std::string> &objs) {
+static void configure_archive(
+    Target                         &self,
+    const Profile                  &profile,
+    Cache                          &cache,
+    const fs::path                 &build_dir,
+    const std::vector<std::string> &objs,
+    bool                            recompile
+) {
     if (objs.empty())
         return;
 
-    auto &cc = self.archive_command;
+    CompileCommand cc;
 
     cc.directory = build_dir.string();
     cc.output    = "lib" + self.name + ".a";
     cc.file      = "__dummy__.c";
     cc.command   = f("{} rcs '{}' '{}'", profile.ar, cc.output, fmt::join(objs, "' '"));
+    cc.is_done   = !recompile && fs::exists(build_dir / cc.output);
+    cc.title     = self.title;
 
+    cache.compile_commands.push_back(std::move(cc));
     push_unique(self.link_flags, (build_dir / cc.output).string(), true);
 }
 
@@ -339,11 +365,14 @@ void Target::configure(const Profile &profile, Cache &cache) {
     std::vector<std::string> objs;
     std::vector<std::string> bmi_flags;
 
+    bool recompile = false;
     if (profile._module_support && !mod.empty()) {
-        configure_modules(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
+        recompile |= configure_modules(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
     }
 
-    configure_sources(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
+    recompile |= configure_sources(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
 
-    configure_archive(*this, profile, build_dir, objs);
+    configure_archive(*this, profile, cache, build_dir, objs, recompile);
+
+    Fingerprint::dump(fingerprints, build_dir);
 }

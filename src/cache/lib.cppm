@@ -4,56 +4,38 @@ module;
 #include <vector>
 #include <map>
 #include <unordered_map>
-#include <memory>
+#include <cstdint>
 
 export module carton:cache;
 import :dependency;
 import :compile_command;
 import :fingerprint;
 
-export struct Cache;
-export struct ResolvedPackage;
-export struct ResolvedDependency;
-
-struct ResolvedPackage {
-    std::string name;
-    std::string version;
-
-    // The manifest that produced this node.
-    const void *carton = nullptr;
-
-    // Direct dependencies of this package.
-    std::vector<ResolvedDependency *> dependencies;
-};
-
-struct ResolvedDependency {
-    std::string name;
-
-    // Requested version from the parent manifest.
-    std::string requested_version;
-
-    // Actual package selected by the resolver.
-    ResolvedPackage *package = nullptr;
-
-    // Parent in the dependency tree.
-    ResolvedPackage *parent = nullptr;
-};
-
-struct Cache {
-    std::vector<Dependency *>                       dependencies;
+export struct Cache {
+    /* modules related */
     std::map<std::string, std::vector<std::string>> mods;
     std::map<std::string, std::string>              mod_paths;
     std::map<std::string, std::string>              mod_objs;
-    std::unordered_map<std::string, std::string>    resolved_versions;
     std::unordered_map<std::string, std::string>    bmi_paths;
-    std::string                                     directory;
 
+    /// single version definition
+    std::unordered_map<std::string, std::string> resolved_versions;
+
+    /// cache directory
+    std::string directory;
+
+    /// common build flags
     std::string common_flags;
-    std::string module_compiler;
-    bool        module_support = false;
-    int         cppm_standard  = 0;
 
+    /// c++ standard for all c++ modules
+    int cppm_standard = 0;
+
+    /// fingerprint maps with key is build directory
     std::unordered_map<std::string, std::unordered_map<std::string, Fingerprint>> fingerprint_map;
 
+    /// hash map for given build
     std::unordered_map<std::string, uint64_t> hash_history;
+
+    /// clangd compile commands to be collected
+    std::vector<CompileCommand> compile_commands;
 };

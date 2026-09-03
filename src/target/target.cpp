@@ -44,8 +44,6 @@ static void apply(Target &self, const Dependency &dep) {
 
     const auto working_dir = fs::path(self.working_dir);
 
-    self.pre = dep.pre;
-
     for (auto &flag : dep.flags) {
         if (flag.starts_with("public:")) {
             auto fl = flag.substr(7);
@@ -85,11 +83,36 @@ static void apply(Target &self, const Dependency &dep) {
             push_unique(self.link_flags, p);
         }
     }
+
+    if (!dep.pre.empty()) {
+        spdlog::info("running pre command for dep={:?} pre={:?}", dep.name, dep.pre);
+
+        reproc::options opt;
+        opt.redirect.out.type = reproc::redirect::pipe;
+        opt.redirect.err.type = reproc::redirect::pipe;
+        opt.working_directory = dep.path.c_str();
+
+        const auto cmd = "set -e\n" + dep.pre;
+
+        std::string errmsg;
+        auto [status, ec] = reproc::
+            run( //
+                std::vector<std::string_view>{"sh", "-c", cmd},
+                opt,
+                reproc::sink::null,
+                reproc::sink::string(errmsg)
+            );
+
+        if (status != 0 || ec) {
+            fmt::println(stderr, "{}", errmsg);
+            throw ferr("pre command failed for dep={}: {}", dep.name, dep.pre);
+        }
+    }
 }
 
 std::unique_ptr<Target> Target::New(const Dependency &dep) {
     auto target         = std::make_unique<Target>();
-    target->working_dir = dep.working_dir;
+    target->working_dir = dep.path;
     apply(*target, dep);
     return target;
 }

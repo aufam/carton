@@ -21,7 +21,7 @@ int Carton::add(Dependency &dep) {
 
     auto &versions = reg->second.package.versions;
 
-    if (dep.empty()) {
+    if (dep.version.empty() || dep.git.empty() || dep.url.empty() || dep.path.empty()) {
         if (versions.empty()) {
             spdlog::error("version not specified");
             return 1;

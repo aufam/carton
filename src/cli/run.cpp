@@ -5,18 +5,21 @@ module;
 
 module carton;
 
-int Carton::run(const std::vector<std::string> &args) {
-    const auto output = fs::path(lib.build_dir) / lib.name;
+int Carton::run(const Target &, const std::vector<std::string> &) {
+    // TODO
+    // const auto output = fs::path(target.build_dir) / lib.name;
+    //
+    // std::string out = output.string();
+    // for (size_t pos = 0; (pos = out.find(' ', pos)) != std::string::npos;) {
+    //     out.replace(pos, 1, "\\ ");
+    //     pos += 2;
+    // }
+    //
+    // std::string exe = f("{} {}", out, fmt::join(args, " "));
+    // if (args.empty())
+    //     exe.pop_back();
 
-    std::string out = output.string();
-    for (size_t pos = 0; (pos = out.find(' ', pos)) != std::string::npos;) {
-        out.replace(pos, 1, "\\ ");
-        pos += 2;
-    }
-
-    std::string exe = f("{} {}", out, fmt::join(args, " "));
-    if (args.empty())
-        exe.pop_back();
+    std::string exe;
 
     print_status("Running", exe);
     auto [status, ec] = reproc::run(std::vector<std::string>{"sh", "-c", exe});

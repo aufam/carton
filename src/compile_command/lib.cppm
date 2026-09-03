@@ -21,17 +21,12 @@ export struct CompileCommand {
         cpx::field<&CompileCommand::output>    = "output    , omitempty",
     };
 
-    void compile() const;
-
     std::string              depfile;
     std::vector<std::string> modnames;
-    bool                     done = false;
+    std::string              title;
+    bool                     is_done       = false;
+    bool                     is_precompile = false;
 
-    static bool compile_multi(
-        const std::string                            &name,
-        const std::vector<CompileCommand>            &commands,
-        const std::map<std::string, std::string>     &mod_names,
-        std::unordered_map<std::string, std::string> &hash_history,
-        bool                                          precompile = false
-    );
+    void        compile() const;
+    static void compile_multi(const std::vector<CompileCommand> &commands, bool precompile = false);
 };

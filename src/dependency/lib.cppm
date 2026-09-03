@@ -30,7 +30,6 @@ export struct Dependency {
     std::vector<std::string> flags;
     std::vector<std::string> link_flags;
     std::string              pre;
-    std::string              visibility;
 
 
     static constexpr std::tuple __field_tags__{
@@ -52,59 +51,12 @@ export struct Dependency {
         cpx::field<&Dependency::flags>            = "flags           , skipmissing , omitempty   ",
         cpx::field<&Dependency::link_flags>       = "link-flags      , skipmissing , omitempty   ",
         cpx::field<&Dependency::pre>              = "pre             , skipmissing , omitempty   ",
-        cpx::field<&Dependency::visibility>       = "visibility      , skipmissing , omitempty   ",
     };
+
+    std::string name; // only for cli
 
     static void __from_str__(Dependency &self, std::string_view str) {
         self.version = std::string(str);
-    }
-
-    std::string                 name;
-    int                         cpp_standard = 0;
-    std::vector<std::string>    public_flags;
-    std::vector<std::string>    mod_flags;
-    std::vector<std::string>    mod_names;
-    std::string                 working_dir;
-    std::string                 build_dir;
-    std::string                 feature_signature;
-    std::vector<CompileCommand> compile_commands;
-    std::vector<CompileCommand> precompile_commands;
-    CompileCommand              ar_command;
-
-    Dependency &operator+=(const Dependency &other);
-
-    bool empty() const {
-        return version.empty() && path.empty() && url.empty() && git.empty();
-    }
-
-    std::string display_name() const {
-        std::string name = this->name;
-        if (!version.empty()) {
-            name += " v" + version;
-        } else if (!tag.empty()) {
-            name += " #" + tag;
-        } else if (!branch.empty()) {
-            name += " " + branch;
-        } else if (!commit.empty()) {
-            name += " " + commit;
-        } else {
-            name += " (" + path + ")";
-        }
-        return name;
-    }
-
-    std::string build_name() const {
-        std::string name = this->name;
-        if (!version.empty()) {
-            name += "-v" + version;
-        } else if (!tag.empty()) {
-            name += "-" + tag;
-        } else if (!branch.empty()) {
-            name += "-" + branch;
-        } else if (!commit.empty()) {
-            name += "-" + commit;
-        }
-        return name;
     }
 };
 
