@@ -26,6 +26,7 @@ export struct CompileCommand {
     std::string              title;
     bool                     is_done       = false;
     bool                     is_precompile = false;
+    bool                     is_ar         = false;
 
     void        compile() const;
     static void compile_multi(const std::vector<CompileCommand> &commands, bool precompile = false);

@@ -2,7 +2,6 @@ module;
 
 #include <string>
 #include <vector>
-#include <map>
 #include <unordered_map>
 #include <cstdint>
 
@@ -12,11 +11,11 @@ import :compile_command;
 import :fingerprint;
 
 export struct Cache {
-    /* modules related */
-    std::map<std::string, std::vector<std::string>> mods;
-    std::map<std::string, std::string>              mod_paths;
-    std::map<std::string, std::string>              mod_objs;
-    std::unordered_map<std::string, std::string>    bmi_paths;
+    /// module name and its absolute module TU path
+    std::unordered_map<std::string, std::string> mod_paths;
+
+    /// module name and its absolute BMI path
+    std::unordered_map<std::string, std::string> bmi_paths;
 
     /// single version definition
     std::unordered_map<std::string, std::string> resolved_versions;

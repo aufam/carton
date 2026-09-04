@@ -39,7 +39,7 @@ static void apply(Target &self, const Dependency &dep) {
         push_unique(self.src, src);
     }
     for (auto &mod : dep.mod) {
-        push_unique(self.src, mod);
+        push_unique(self.mod, mod);
     }
 
     const auto working_dir = fs::path(self.working_dir);
@@ -118,11 +118,9 @@ std::unique_ptr<Target> Target::New(const Dependency &dep) {
 }
 
 std::unique_ptr<Target> Target::New(const std::string &working_dir, const Binary &bin) {
-    auto       target = std::make_unique<Target>();
-    const auto root   = fs::path(working_dir);
-    for (auto &src : bin.src) {
-        push_unique(target->src, (root / src).lexically_normal().string());
-    }
+    auto target         = std::make_unique<Target>();
+    target->working_dir = working_dir;
+    push_unique(target->src, bin.src);
     return target;
 }
 

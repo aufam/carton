@@ -6,6 +6,7 @@ module;
 #include <xxhash.h>
 
 module carton;
+import cpx.fmt;
 
 static uint64_t hash64(std::string_view s) {
     XXH3_state_t *state = XXH3_createState();
@@ -64,6 +65,7 @@ static std::string output_dir(const std::string &name, const Dependency &d) {
 }
 
 std::vector<Target *> Carton::configure_package(const Profile &profile, const std::string &working_dir, const Dependency &d) {
+    spdlog::debug("configure_package working_dir={:?} d={}", working_dir, d);
     resolve_package(working_dir);
 
     const auto extra_features = get_requested_features(d.features, d.default_features.value_or(true));
@@ -97,7 +99,6 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
         target.output_name = package.name;                  // for lib or executable name
         target.output_dir  = output_dir(package.name, d);
         target.edition     = package.edition;
-        target.working_dir = lib.path;
     }
 
     auto &main_target = *targets[package.name];
@@ -114,14 +115,13 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
         if (targets.count(target_name))
             continue;
 
-        auto p = resolve_dep(target_name, d);
+        auto p = resolve_dep(name, d);
 
         auto &target = *(targets[target_name] = Target::New(d));
 
         if (this->lib.path == d.path) {
             target.name        = main_target.name;
             target.output_name = target_name;
-            target.name        = main_target.name;
             target.title       = main_target.title;
             target.output_dir  = main_target.output_dir;
             target.edition     = main_target.edition;
@@ -131,7 +131,6 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
             target.output_name = name;
             target.output_dir  = output_dir(name, d);
             target.edition     = package.edition;
-            target.working_dir = d.path;
         }
 
         if (p) {
@@ -167,7 +166,7 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
             continue;
         }
 
-        auto p = resolve_dep(target_name, d);
+        auto p = resolve_dep(name, d);
 
         auto &target = *(targets[target_name] = Target::New(d));
         res.push_back(&target);
@@ -176,7 +175,6 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
         if (this->lib.path == d.path) {
             target.name        = main_target.name;
             target.output_name = target_name;
-            target.name        = main_target.name;
             target.title       = main_target.title;
             target.output_dir  = main_target.output_dir;
             target.edition     = main_target.edition;
@@ -186,7 +184,6 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
             target.output_name = name;
             target.output_dir  = output_dir(name, d);
             target.edition     = package.edition;
-            target.working_dir = d.path;
         }
 
         if (p) {

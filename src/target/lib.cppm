@@ -28,6 +28,21 @@ export struct Target {
     std::vector<std::string> modules;
     std::vector<std::string> link_flags;
 
+    static constexpr std::tuple __field_tags__ = {
+        cpx::field<&Target::name>         = "name",
+        cpx::field<&Target::title>        = "title",
+        cpx::field<&Target::working_dir>  = "working_dir",
+        cpx::field<&Target::output_name>  = "output_name",
+        cpx::field<&Target::output_dir>   = "output_dir",
+        cpx::field<&Target::edition>      = "edition",
+        cpx::field<&Target::src>          = "src",
+        cpx::field<&Target::mod>          = "mod",
+        cpx::field<&Target::flags>        = "flags",
+        cpx::field<&Target::public_flags> = "public_flags",
+        cpx::field<&Target::modules>      = "modules",
+        cpx::field<&Target::link_flags>   = "link_flags",
+    };
+
     std::vector<Target *> dependencies;
 
     Target() = default;

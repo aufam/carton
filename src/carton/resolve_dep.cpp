@@ -3,6 +3,7 @@ module;
 #include <spdlog/spdlog.h>
 
 module carton;
+import cpx.fmt;
 import cpx.toruniina_toml;
 
 static Carton &from_registry(Carton &self, const std::string &name) {
@@ -29,6 +30,7 @@ static Carton &from_registry(Carton &self, const std::string &name) {
 }
 
 Carton *Carton::resolve_dep(const std::string &name, Dependency &dep) {
+    spdlog::trace("resolve_dep before name={} dep={}", name, dep);
     Carton *res = nullptr;
 
     if (!dep.path.empty()) {
@@ -91,5 +93,7 @@ Carton *Carton::resolve_dep(const std::string &name, Dependency &dep) {
         ),
         dep.src.end()
     );
+
+    spdlog::trace("resolve_dep after name={} dep={}", name, dep);
     return res;
 }

@@ -3,12 +3,14 @@ module;
 #include <spdlog/spdlog.h>
 
 module carton;
+import cpx.fmt;
 import cpx.toruniina_toml;
 
 void Carton::resolve_package(const std::string &working_dir) {
     if (resolved)
         return;
 
+    spdlog::trace("resolve_package before working_dir={:?} lib={}", working_dir, lib);
     if (package.name.empty())
         throw ferr("{:?}: name is required", package.name);
 
@@ -74,4 +76,6 @@ void Carton::resolve_package(const std::string &working_dir) {
         ),
         lib.src.end()
     );
+
+    spdlog::trace("resolve_package after working_dir={:?} lib={}", working_dir, lib);
 }

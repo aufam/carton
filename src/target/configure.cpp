@@ -5,8 +5,10 @@ module;
 #include <vector>
 #include <algorithm>
 #include <xxhash.h>
+#include <spdlog/spdlog.h>
 
 module carton;
+import cpx.fmt;
 
 static constexpr uint64_t fingerprint_seed = 1469598103934665603ull;
 
@@ -137,8 +139,8 @@ update_fingerprint(std::unordered_map<std::string, Fingerprint> &fingerprints, C
 }
 
 static void add_bmi_flags(const Cache &cache, const std::vector<std::string> &modules, std::vector<std::string> &bmi_flags) {
-    for (const auto &module : modules) {
-        push_unique(bmi_flags, f("-fmodule-file={}='{}'", module, cache.bmi_paths.at(module)));
+    for (const auto &m : modules) {
+        push_unique(bmi_flags, f("-fmodule-file={}='{}'", m, cache.bmi_paths.at(m)));
     }
 }
 
@@ -159,7 +161,7 @@ static std::vector<std::string> collect_module_names(Target &self, const Profile
         );
     }
 
-    return sort_modules_p1689(self.working_dir, self.mod, commands, cache.mods);
+    return sort_modules_p1689(self.working_dir, self.mod, commands);
 }
 
 static CompileCommand make_module_command(
@@ -179,7 +181,7 @@ static CompileCommand make_module_command(
     cc.file          = (self.working_dir / mod_path).string();
     cc.output        = mod_path.string() + ".o";
     cc.depfile       = mod_path.string() + ".d";
-    push_unique(cc.modnames, {mod_name});
+    cc.modnames      = self.modules;
 
     auto pcm = f("{}-{}.bmi", cache.cppm_standard, mod_name);
     std::replace(pcm.begin(), pcm.end(), ':', '-');
@@ -213,8 +215,6 @@ static bool configure_modules(
     std::vector<std::string>                     &objs,
     std::unordered_map<std::string, Fingerprint> &fingerprints
 ) {
-    add_bmi_flags(cache, self.modules, bmi_flags);
-
     const auto mod_names = collect_module_names(self, profile, cache);
 
     bool recompile = false;
@@ -227,22 +227,21 @@ static bool configure_modules(
         auto pcm = f("{}-{}.bmi", cache.cppm_standard, mod_name);
         std::replace(pcm.begin(), pcm.end(), ':', '-');
 
-        cache.mod_paths[mod_name] = (build_dir / pcm).string();
-        cache.mod_objs[mod_name]  = (build_dir / cc.output).string();
+        cache.mod_paths[mod_name] = cc.file;
+        cache.bmi_paths[mod_name] = (build_dir / pcm).string();
 
         const auto fp = make_fingerprint(cache, cc);
 
         cc.is_done = update_fingerprint(fingerprints, cc, fp) && fs::exists(build_dir / cc.output);
         recompile  = recompile || !cc.is_done;
 
+        objs.push_back((build_dir / cc.output).string());
         cache.compile_commands.push_back(std::move(cc));
 
-        objs.push_back(cache.mod_objs.at(mod_name));
-
-        push_unique(bmi_flags, f("-fmodule-file={}='{}'", mod_name, cache.mod_paths.at(mod_name)));
+        push_unique(bmi_flags, f("-fmodule-file={}='{}'", mod_name, cache.bmi_paths.at(mod_name)));
+        push_unique(self.modules, mod_names[i]);
     }
 
-    push_unique(self.modules, mod_names);
     return recompile;
 }
 
@@ -271,11 +270,11 @@ static CompileCommand make_source_command(
                 "-o '{}' -c '{}' -MMD -MP -MF '{}'",
                 profile.cxx,
                 cache.common_flags,
-                profile._module_support ? cache.cppm_standard : self.edition,
+                self.edition,
                 self.working_dir,
                 self.name,
                 fmt::join(self.flags, " "),
-                fmt::join(bmi_flags, " "),
+                self.edition < 20 ? "" : f("{}", fmt::join(bmi_flags, " ")),
                 cc.output,
                 cc.file,
                 cc.depfile
@@ -346,17 +345,19 @@ static void configure_archive(
     CompileCommand cc;
 
     cc.directory = build_dir.string();
-    cc.output    = "lib" + self.name + ".a";
+    cc.output    = "lib" + self.output_name + ".a";
     cc.file      = "__dummy__.c";
     cc.command   = f("{} rcs '{}' '{}'", profile.ar, cc.output, fmt::join(objs, "' '"));
     cc.is_done   = !recompile && fs::exists(build_dir / cc.output);
     cc.title     = self.title;
+    cc.is_ar     = true;
 
     cache.compile_commands.push_back(std::move(cc));
     push_unique(self.link_flags, (build_dir / cc.output).string(), true);
 }
 
 void Target::configure(const Profile &profile, Cache &cache) {
+    spdlog::trace("target configure before {}", *this);
     const auto build_dir = fs::path(cache.directory) / "build" / profile.name / output_dir;
 
     fs::create_directories(build_dir);
@@ -364,6 +365,7 @@ void Target::configure(const Profile &profile, Cache &cache) {
 
     std::vector<std::string> objs;
     std::vector<std::string> bmi_flags;
+    add_bmi_flags(cache, modules, bmi_flags);
 
     bool recompile = false;
     if (profile._module_support && !mod.empty()) {
@@ -375,4 +377,6 @@ void Target::configure(const Profile &profile, Cache &cache) {
     configure_archive(*this, profile, cache, build_dir, objs, recompile);
 
     Fingerprint::dump(fingerprints, build_dir);
+
+    spdlog::trace("target configure after {}", *this);
 }
