@@ -11,9 +11,9 @@
         "ar": { "type": "string" },
         "modules": { "type": "string" },
         "debug": { "type": "boolean" },
-        "asan": { "type": "boolean" },
         "lto": { "type": "boolean" },
         "opt-level": { "type": "integer" },
+        "sanitize": { "type": "array", "items": { "type": "string" } },
         "flags": { "type": "array", "items": { "type": "string" } },
         "link-flags": { "type": "array", "items": { "type": "string" } }
       }

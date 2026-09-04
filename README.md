@@ -1,4 +1,4 @@
-# :carton: Carton
+# :package: Carton
 C/C++ package manager and build system
 
 ## Installation
@@ -60,7 +60,7 @@ All artifacts will be stored in:
 
 The only generated artifacts in root project directory is `./compile_commands.json` by running `carton` or its transitive (`carton build` and `carton run`)
 
-You can define global configuration file in `~/.carton/config.toml`:
+You can define global configuration file in `~/.carton/config.toml`, the defaults are:
 ```toml
 #:schema https://raw.githubusercontent.com/aufam/carton/main/config-schema.json
 
@@ -68,17 +68,19 @@ You can define global configuration file in `~/.carton/config.toml`:
 cxx = "c++"
 c = "cc"
 debug = true
-asan = true
+lto = false
 opt-level = 0
 flags = ["-fPIC", "-Wall", "-Wextra"]
+sanitize = ["address", "undefined"]
 
 [profile.release]
 cxx = "c++"
 c = "cc"
 debug = false
-asan = false
+lto = true
 opt-level = 3
 flags = ["-fPIC", "-Wall", "-Wextra"]
+sanitize = []
 ```
 
 ## Dependencies

@@ -66,24 +66,6 @@ versions = [
     "11.0.2",
     "11.0.1",
     "11.0.0",
-    "10.2.1",
-    "10.2.0",
-    "10.1.1",
-    "10.1.0",
-    "10.0.0",
-    "9.1.0",
-    "9.0.0",
-    "8.1.1",
-    "8.1.0",
-    "8.0.1",
-    "8.0.0",
-    "7.1.3",
-    "7.1.2",
-    "7.1.1",
-    "7.1.0",
-    "7.0.3",
-    "7.0.2",
-    "0.11.0",
 ]
 
 [fmt.lib]
@@ -160,17 +142,10 @@ versions = [
 [spdlog.lib]
 git = "https://github.com/gabime/spdlog"
 tag = "v{version}"
-flags = ["public:-DSPDLOG_COMPILED_LIB"]
+flags = ["public:-DSPDLOG_COMPILED_LIB", "public:-DSPDLOG_FMT_EXTERNAL"]
 
 [spdlog.dependencies]
-fmt = { version = "12.1.0", visibility = "public", optional = true }
-fmt-external-flag = { flags = ["public:-DSPDLOG_FMT_EXTERNAL"], optional = true }
-
-[spdlog.features]
-fmt = [] # already bundled in spdlog
-fmt-external = ["dep:fmt", "dep:fmt-external-flag"]
-default = ["fmt"]
-nodefault = ["fmt-external"]
+fmt = { version = "12.1.0" }
 
 
 #
@@ -776,13 +751,6 @@ inc = ["public:build"]
 mod = ["build/httplib.cppm"]
 pre = "python3 split.py -o build && python3 generate_module.py -o build"
 
-[httplib.dependencies]
-ssl = { flags = ["public:-DCPPHTTPLIB_OPENSSL_SUPPORT"], link-flags = ["-lssl", "-lcrypto"], optional = true }
-z = { flags = ["public:-DCPPHTTPLIB_ZLIB_SUPPORT"], link-flags = ["-lz"], optional = true }
-
-[httplib.features]
-full = ["ssl", "z"]
-
 
 #
 # sha256
@@ -1013,16 +981,6 @@ versions = [
 
 [onnx.lib]
 url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os}-{arch}-{version}.tgz"
-
-[onnx.dependencies]
-default = { lib = ["lib/libonnxruntime.so.{version}"] }
-cuda = {
-    url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os}-{arch}-gpu-{version}.tgz",
-    lib = [
-        "linux:lib/libonnxruntime.so.{version}",
-        "osx:lib/libonnxruntime.{version}.dylib",
-    ]
-}
 
 
 #
@@ -1787,9 +1745,10 @@ versions = [
 [ggml.lib]
 git = "https://github.com/ggml-org/ggml"
 tag = "v{version}"
-src = ["src/*"]
+src = ["src/*", "src/ggml-cpu/*", "src/ggml-cpu/arch/{arch.family}/*"]
 inc = ["public:include", "src"]
 flags = [
+    "-DGGML_USE_CPU",
     "-Wall",
     "-Wextra",
     "-Wpedantic",
@@ -1813,41 +1772,6 @@ flags = [
     "-DGGML_SCHED_MAX_COPIES=4",
     "-D_GNU_SOURCE",
 ]
-
-[ggml.dependencies]
-cpu = {
-    src = ["src/ggml-cpu/*", "src/ggml-cpu/arch/{arch.family}/*", "src/ggml-cpu/amx/*"],
-    inc = ["src/ggml-cpu"],
-    flags = ["-DGGML_USE_CPU"],
-    optional = true,
-}
-wasm = {
-    src = ["src/ggml-cpu/*", "src/ggml-cpu/arch/wasm/*"],
-    inc = ["src/ggml-cpu"],
-    flags = ["-DGGML_USE_CPU"],
-    optional = true,
-}
-blas = {
-    src = ["src/ggml-blas/*"],
-    flags = ["-DGGML_BLAS_USE_ACCELERATE"],
-    link-flags = ["osx:-framework Accelerate", "linux:-lopenblas"],
-    optional = true,
-}
-metal = {
-    src = ["src/ggml-metal/*"],
-    inc = ["src/ggml-metal"],
-    link-flags = ["-DGGML_METAL_EMBED_LIBRARY", "-framework Foundation", "-framework Metal"],
-    optional = true,
-}
-webgpu = {
-    src = ["src/ggml-webgpu/*"],
-    inc = ["tmp/ggml-webgpu/generated"],
-    pre = """
-    mkdir -p tmp/ggml-webgpu/generated
-    python3 src/ggml-webgpu/wgsl-shaders/embed_wgsl.py --input_dir src/ggml-webgpu/wgsl-shaders --output_file tmp/ggml-webgpu/generated/ggml-wgsl-shaders.hpp
-    """,
-    optional = true,
-}
 
 
 #
@@ -1917,7 +1841,7 @@ flags = [
 ]
 
 [whisper.dependencies]
-ggml = { version = "0.15.3", visibility = "public" }
+ggml = { version = "0.15.3" }
 
 
 #

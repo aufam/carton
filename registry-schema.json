@@ -136,8 +136,7 @@
         "pre": { "type": "string" },
         "features": { "type": "array", "items": { "type": "string" } },
         "optional": { "type": "boolean", "default": false },
-        "default-features": { "type": "boolean", "default": true },
-        "visibility": { "type": "string" }
+        "default-features": { "type": "boolean", "default": true }
       },
       "anyOf": [
         { "oneOf": [
