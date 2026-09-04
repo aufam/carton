@@ -194,12 +194,7 @@ void Carton::apply_placeholders() {
     const auto &version = package.version;
     const auto  edition = std::to_string(package.edition);
 
-    auto v = parse_semver(version)
-                 .or_else([&]() -> std::optional<SemVer> {
-                     throw ferr("cannot parse version: ", version);
-                     return SemVer{};
-                 })
-                 .value();
+    auto v = parse_semver(version).value_or(SemVer{});
 
     const auto version_major  = std::to_string(v.major);
     const auto version_minor  = std::to_string(v.minor);

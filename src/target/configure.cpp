@@ -112,7 +112,10 @@ static uint64_t hash_depfiles(Cache &cache, const fs::path &depfile) {
 static Fingerprint make_fingerprint(Cache &cache, const CompileCommand &cc) {
     Fingerprint fp;
 
-    fp.cmd  = f("{:016x}", hash64(cc.command));
+    fp.cmd = f("{:016x}", hash64(cc.command));
+    if (cc.file == "__dummy__.c")
+        return fp;
+
     fp.file = f("{:016x}", hash_file(cache, cc.file));
     fp.mods = f("{:016x}", hash_modules(cache, cc.modnames));
     fp.deps = f("{:016x}", hash_depfiles(cache, cc.depfile));
@@ -129,7 +132,7 @@ static std::unordered_map<std::string, Fingerprint> &fingerprint_of(Cache &self,
 
 static bool
 update_fingerprint(std::unordered_map<std::string, Fingerprint> &fingerprints, CompileCommand &cc, const Fingerprint &fp) {
-    auto &cached = fingerprints[cc.file];
+    auto &cached = fingerprints[cc.output];
     bool  done   = fp.compare(cached);
 
     if (!done)
@@ -332,35 +335,87 @@ static bool configure_sources(
 }
 
 static void configure_archive(
-    Target                         &self,
-    const Profile                  &profile,
-    Cache                          &cache,
-    const fs::path                 &build_dir,
-    const std::vector<std::string> &objs,
-    bool                            recompile
+    Target                                       &self,
+    const Profile                                &profile,
+    Cache                                        &cache,
+    const fs::path                               &build_dir,
+    const std::vector<std::string>               &objs,
+    bool                                          recompile,
+    std::unordered_map<std::string, Fingerprint> &fingerprints
 ) {
     if (objs.empty())
         return;
 
     CompileCommand cc;
 
+    cc.title = self.title;
+    cc.is_ar = true;
+
     cc.directory = build_dir.string();
     cc.output    = "lib" + self.output_name + ".a";
     cc.file      = "__dummy__.c";
     cc.command   = f("{} rcs '{}' '{}'", profile.ar, cc.output, fmt::join(objs, "' '"));
-    cc.is_done   = !recompile && fs::exists(build_dir / cc.output);
-    cc.title     = self.title;
-    cc.is_ar     = true;
 
+    const auto fp = make_fingerprint(cache, cc);
+    cc.is_done    = update_fingerprint(fingerprints, cc, fp) && !recompile && fs::exists(build_dir / cc.output);
+
+    push_unique(self.link_flags, f("{:?}", (build_dir / cc.output).string()), true);
     cache.compile_commands.push_back(std::move(cc));
-    push_unique(self.link_flags, (build_dir / cc.output).string(), true);
 }
 
-void Target::configure(const Profile &profile, Cache &cache) {
-    spdlog::trace("target configure before {}", *this);
-    const auto build_dir = fs::path(cache.directory) / "build" / profile.name / output_dir;
+static void configure_output(
+    Target                                       &self,
+    const Profile                                &profile,
+    Cache                                        &cache,
+    const fs::path                               &build_dir,
+    std::string_view                              type,
+    bool                                          recompile,
+    std::unordered_map<std::string, Fingerprint> &fingerprints
+) {
+    CompileCommand cc;
 
+    cc.title     = self.title;
+    cc.directory = build_dir.string();
+    cc.file      = "__dummy__.c";
+
+    if (type == "exe") {
+        cc.output = self.output_name;
+        cc.command =
+            f( //
+                "{} -o \"{}\" {} {}",
+                profile.cxx,
+                cc.output,
+                cache.common_link_flags,
+                fmt::join(self.link_flags, " ")
+            );
+
+        self.executable = (build_dir / cc.output).string();
+    } else if (type == "dyn") {
+        cc.output = "lib" + self.output_name + ".so";
+        cc.command =
+            f( //
+                "{} -shared -o \"{}\" {} {}",
+                profile.cxx,
+                cc.output,
+                cache.common_link_flags,
+                fmt::join(self.link_flags, " ")
+            );
+    } else {
+        return;
+    }
+
+    const auto fp = make_fingerprint(cache, cc);
+    cc.is_done    = update_fingerprint(fingerprints, cc, fp) && !recompile && fs::exists(build_dir / cc.output);
+
+    cache.compile_commands.push_back(std::move(cc));
+}
+
+void Target::configure(const Profile &profile, Cache &cache, std::string_view type) {
+    spdlog::trace("target configure before {}", *this);
+
+    const auto build_dir = fs::path(cache.directory) / "build" / profile.name / output_dir;
     fs::create_directories(build_dir);
+
     auto &fingerprints = fingerprint_of(cache, build_dir);
 
     std::vector<std::string> objs;
@@ -374,7 +429,9 @@ void Target::configure(const Profile &profile, Cache &cache) {
 
     recompile |= configure_sources(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
 
-    configure_archive(*this, profile, cache, build_dir, objs, recompile);
+    configure_archive(*this, profile, cache, build_dir, objs, recompile, fingerprints);
+
+    configure_output(*this, profile, cache, build_dir, type, recompile, fingerprints);
 
     Fingerprint::dump(fingerprints, build_dir);
 

@@ -14,21 +14,20 @@ export struct Profile {
     std::string              arch      = "native";
     std::string              modules   = "auto";
     bool                     debug     = false;
-    bool                     asan      = false;
     bool                     lto       = false;
     int                      opt_level = 0;
+    std::vector<std::string> sanitize;
     std::vector<std::string> flags;
     std::vector<std::string> link_flags;
 
     static constexpr std::tuple __field_tags__{
-        cpx::field<&Profile::name>       = "name      , skipmissing",
-        cpx::field<&Profile::cxx>        = "cxx       , skipmissing",
-        cpx::field<&Profile::c>          = "c         , skipmissing",
+        cpx::field<&Profile::cxx>        = "cxx",
+        cpx::field<&Profile::c>          = "c",
         cpx::field<&Profile::ar>         = "ar        , skipmissing",
         cpx::field<&Profile::arch>       = "arch      , skipmissing",
         cpx::field<&Profile::modules>    = "modules   , skipmissing",
         cpx::field<&Profile::debug>      = "debug     , skipmissing",
-        cpx::field<&Profile::asan>       = "asan      , skipmissing",
+        cpx::field<&Profile::sanitize>   = "sanitize  , skipmissing",
         cpx::field<&Profile::lto>        = "lto       , skipmissing",
         cpx::field<&Profile::opt_level>  = "opt-level , skipmissing",
         cpx::field<&Profile::flags>      = "flags     , skipmissing",
@@ -42,8 +41,7 @@ export struct Profile {
         Profile t;
         t.name      = "release";
         t.debug     = false;
-        t.lto       = false;
-        t.asan      = false;
+        t.lto       = true;
         t.opt_level = 3;
         t.flags     = {"-fPIC", "-Wall", "-Wextra"};
         return t;
@@ -54,8 +52,8 @@ export struct Profile {
         t.name      = "dev";
         t.debug     = true;
         t.lto       = false;
-        t.asan      = true;
         t.opt_level = 0;
+        t.sanitize  = {"address", "undefined"};
         t.flags     = {"-fPIC", "-Wall", "-Wextra"};
         return t;
     }

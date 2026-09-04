@@ -15,25 +15,15 @@ export struct Cli {
         static constexpr std::tuple __field_tags__ = {};
     };
 
-    struct Manifest {
-        bool                     release;
-        bool                     no_default_features;
-        std::vector<std::string> features;
-
-        static constexpr std::tuple __field_tags__{
-            cpx::field<&Manifest::release>             = "release",
-            cpx::field<&Manifest::no_default_features> = "no-default-features",
-            cpx::field<&Manifest::features>            = "features",
-        };
-    };
-
     struct Build {
         bool                     release;
+        bool                     static_;
         bool                     no_default_features;
         std::vector<std::string> features;
 
         static constexpr std::tuple __field_tags__{
             cpx::field<&Build::release>             = "release",
+            cpx::field<&Build::static_>             = "static",
             cpx::field<&Build::no_default_features> = "no-default-features",
             cpx::field<&Build::features>            = "features",
         };
@@ -41,24 +31,24 @@ export struct Cli {
 
     struct Run {
         bool                     release;
-        bool                     no_default_features;
-        std::vector<std::string> features;
+        bool                     static_;
+        std::string              bin;
+        std::string              example;
         std::vector<std::string> args;
 
         static constexpr std::tuple __field_tags__{
-            cpx::field<&Run::release>             = "release",
-            cpx::field<&Run::no_default_features> = "no-default-features",
-            cpx::field<&Run::features>            = "features",
-            cpx::field<&Run::args>                = "args,positional",
+            cpx::field<&Run::release> = "release",
+            cpx::field<&Run::static_> = "static",
+            cpx::field<&Run::bin>     = "bin,skipmissing",
+            cpx::field<&Run::example> = "example,skipmissing",
+            cpx::field<&Run::args>    = "args,positional",
         };
     };
 
     std::string               cache;
     spdlog::level::level_enum log_level = spdlog::level::warn;
-    std::optional<Manifest>   manifest;
-    std::optional<Build>      build;
-    std::optional<Run>        run;
     bool                      release;
+    bool                      static_;
     bool                      no_default_features;
     std::vector<std::string>  features;
 
@@ -66,13 +56,16 @@ export struct Cli {
     std::optional<Package>    init;
     std::optional<Dependency> add;
 
+    std::optional<Build> build;
+    std::optional<Run>   run;
+
     static constexpr std::tuple __field_tags__ = {
         cpx::field<&Cli::cache>               = "cache              , skipmissing , env=CARTON_CACHE",
         cpx::field<&Cli::log_level>           = "log-level          , skipmissing                   ",
-        cpx::field<&Cli::manifest>            = "manifest                                           ",
         cpx::field<&Cli::build>               = "build                                              ",
         cpx::field<&Cli::run>                 = "run                                                ",
         cpx::field<&Cli::release>             = "release                                            ",
+        cpx::field<&Cli::static_>             = "static                                             ",
         cpx::field<&Cli::no_default_features> = "no-default-features                                ",
         cpx::field<&Cli::features>            = "features                                           ",
         cpx::field<&Cli::init>                = "init                                               ",

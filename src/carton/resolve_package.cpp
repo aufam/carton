@@ -7,7 +7,7 @@ import cpx.fmt;
 import cpx.toruniina_toml;
 
 void Carton::resolve_package(const std::string &working_dir) {
-    if (resolved)
+    if (configured)
         return;
 
     spdlog::trace("resolve_package before working_dir={:?} lib={}", working_dir, lib);
@@ -55,7 +55,6 @@ void Carton::resolve_package(const std::string &working_dir) {
 
         cpx::toruniina_toml::parse_from_file(sub.string(), *this, toml_version);
         resolve_package(working_dir);
-
         return;
     }
 

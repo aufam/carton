@@ -2,8 +2,6 @@ module;
 
 #include <string>
 #include <vector>
-#include <unordered_map>
-#include <map>
 
 export module carton:compile_command;
 import cpx;

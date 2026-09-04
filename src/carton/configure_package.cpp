@@ -8,22 +8,12 @@ module;
 module carton;
 import cpx.fmt;
 
-static uint64_t hash64(std::string_view s) {
-    XXH3_state_t *state = XXH3_createState();
-    XXH3_64bits_reset(state);
-
-    XXH3_64bits_update(state, s.data(), s.size());
-    const uint64_t h = XXH3_64bits_digest(state);
-
-    XXH3_freeState(state);
-
-    return h;
-}
-
-static std::string display_name(const std::string &name, const Dependency &d) {
+static std::string display_name(const std::string &name, const Dependency &d, const Package *package = nullptr) {
     std::string res = name;
     if (!d.version.empty())
         res += " v" + d.version;
+    else if (package && !package->version.empty())
+        res += " v" + package->version;
 
     if (!d.git.empty()) {
         res += " (" + d.git;
@@ -47,31 +37,49 @@ static std::string display_name(const std::string &name, const Dependency &d) {
 static std::string output_dir(const std::string &name, const Dependency &d) {
     std::string res = name;
     if (!d.version.empty()) {
-        res += "-v" + d.version;
+        res += "@v" + d.version;
     } else if (!d.git.empty()) {
-        auto repo = fs::path(d.git).filename().string();
-        if (!d.commit.empty()) {
-            res += "@" + repo + "@" + d.commit;
-        } else if (!d.tag.empty()) {
-            res += "-" + repo + "@" + d.tag;
-        } else if (!d.branch.empty()) {
-            res += "-" + repo + "@" + d.branch;
+        fs::path git = d.git;
+        if (auto repo = git.filename().stem().string(); repo == name) {
+            res += ".git";
+        } else {
+            res += "-" + repo + ".git";
         }
+
+        if (!d.commit.empty()) {
+            res += "@" + d.commit;
+        } else if (!d.tag.empty()) {
+            res += "@" + d.tag;
+        } else if (!d.branch.empty()) {
+            res += "@" + d.branch;
+        }
+    } else if (!d.url.empty()) {
+        // TODO: needs to parse URL
+        res += "-archive@" + fs::path(d.url).filename().string();
     } else if (!d.path.empty()) {
-        res = f("{}-{:016x}", name, hash64(d.path));
+        res += f("-{:04x}", XXH3_64bits(d.path.data(), d.path.size()) & 0xffff);
     }
 
     return res;
 }
 
-std::vector<Target *> Carton::configure_package(const Profile &profile, const std::string &working_dir, const Dependency &d) {
-    spdlog::debug("configure_package working_dir={:?} d={}", working_dir, d);
+std::vector<Target *> Carton::configure_package(
+    const Profile &profile, const std::string &working_dir, const std::vector<std::string> &features, bool default_features
+) {
+    spdlog::debug(
+        "configure_package name={} working_dir={:?} features={}, default_features={}",
+        package.name,
+        working_dir,
+        features,
+        default_features
+    );
+
     resolve_package(working_dir);
 
-    const auto extra_features = get_requested_features(d.features, d.default_features.value_or(true));
+    const auto extra_features = get_requested_features(features, default_features);
 
     const bool first = targets.count(package.name) == 0;
-    if (!resolved && !first)
+    if (!configured && !first)
         throw ferr("multiple package definition of {:?}", package.name);
 
     // sort names
@@ -94,10 +102,10 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
         }
 
         auto &target       = *(targets[package.name] = Target::New(lib));
-        target.name        = package.name;                  // for path alias in macro-prefix-map
-        target.title       = display_name(package.name, d); // for display
-        target.output_name = package.name;                  // for lib or executable name
-        target.output_dir  = output_dir(package.name, d);
+        target.name        = package.name;
+        target.title       = display_name(package.name, lib, &package);
+        target.output_name = package.name;
+        target.output_dir  = output_dir(package.name, lib);
         target.edition     = package.edition;
     }
 
@@ -115,7 +123,7 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
         if (targets.count(target_name))
             continue;
 
-        auto p = resolve_dep(name, d);
+        auto [p, working_dir] = resolve_dep(name, d);
 
         auto &target = *(targets[target_name] = Target::New(d));
 
@@ -134,8 +142,8 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
         }
 
         if (p) {
-            auto deps = p->configure_package(profile, lib.path, d);
-            target.add_dependencies(deps);
+            auto deps = p->configure_package(profile, working_dir, d.features, d.default_features.value_or(true));
+            target.add_dependencies(deps, true);
         }
 
         target.configure(profile, *cache);
@@ -166,11 +174,11 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
             continue;
         }
 
-        auto p = resolve_dep(name, d);
+        auto [p, working_dir] = resolve_dep(name, d);
 
         auto &target = *(targets[target_name] = Target::New(d));
         res.push_back(&target);
-        target.add_dependency(main_target);
+        target.add_dependency(main_target, true);
 
         if (this->lib.path == d.path) {
             target.name        = main_target.name;
@@ -187,13 +195,13 @@ std::vector<Target *> Carton::configure_package(const Profile &profile, const st
         }
 
         if (p) {
-            auto deps = p->configure_package(profile, lib.path, d);
-            target.add_dependencies(deps);
+            auto deps = p->configure_package(profile, working_dir, d.features, d.default_features.value_or(true));
+            target.add_dependencies(deps, true);
         }
 
         target.configure(profile, *cache);
     }
 
-    resolved = true;
+    configured = true;
     return res;
 }

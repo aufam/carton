@@ -26,6 +26,9 @@ export struct Cache {
     /// common build flags
     std::string common_flags;
 
+    /// common link flags
+    std::string common_link_flags;
+
     /// c++ standard for all c++ modules
     int cppm_standard = 0;
 

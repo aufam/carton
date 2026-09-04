@@ -4,6 +4,7 @@ module;
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <unordered_set>
 #include <spdlog/spdlog.h>
 #include <reproc++/run.hpp>
 
@@ -42,6 +43,20 @@ static void apply(Target &self, const Dependency &dep) {
         push_unique(self.mod, mod);
     }
 
+    static const std::unordered_set<std::string_view> exts = {".cpp", ".cxx", ".cc", ".mm", ".c", ".s", ".asm", ".S", ".m"};
+
+    self.src.erase(
+        std::remove_if(
+            self.src.begin(),
+            self.src.end(),
+            [&](const std::string &path) {
+                auto ext = fs::path(path).extension().string();
+                return exts.count(ext) == 0;
+            }
+        ),
+        self.src.end()
+    );
+
     const auto working_dir = fs::path(self.working_dir);
 
     for (auto &flag : dep.flags) {
@@ -56,11 +71,12 @@ static void apply(Target &self, const Dependency &dep) {
 
     for (auto &inc : dep.inc) {
         if (inc.starts_with("public:")) {
-            auto fl = "-I" + (working_dir / inc.substr(7)).lexically_normal().string();
+            auto fl = f("-I{:?}", (working_dir / inc.substr(7)).lexically_normal().string());
             push_unique(self.flags, fl);
             push_unique(self.public_flags, fl);
         } else {
-            push_unique(self.flags, "-I" + (working_dir / inc).lexically_normal().string());
+            auto fl = f("-I{:?}", (working_dir / inc).lexically_normal().string());
+            push_unique(self.flags, fl);
         }
     }
 
@@ -77,10 +93,10 @@ static void apply(Target &self, const Dependency &dep) {
 
         if (auto path = fs::path(str); path.is_absolute()) {
             auto p = path.lexically_normal().string();
-            push_unique(self.link_flags, p);
+            push_unique(self.link_flags, f("{:?}", p));
         } else {
             auto p = (working_dir / path).lexically_normal().string();
-            push_unique(self.link_flags, p);
+            push_unique(self.link_flags, f("{:?}", p));
         }
     }
 
@@ -120,25 +136,34 @@ std::unique_ptr<Target> Target::New(const Dependency &dep) {
 std::unique_ptr<Target> Target::New(const std::string &working_dir, const Binary &bin) {
     auto target         = std::make_unique<Target>();
     target->working_dir = working_dir;
-    push_unique(target->src, bin.src);
+
+    if (fs::is_directory(bin.path)) {
+        target->src = {bin.path + "/*"};
+    } else {
+        target->src = {bin.path};
+    }
+
+    expand_path(working_dir, target->src);
     return target;
 }
 
-void Target::add_dependency(Target &other) {
+void Target::add_dependency(Target &other, bool public_) {
     if (edition < other.edition)
         ferr("{:?} cannot depend on {:?}: needs higher c++ version {}", name, other.name, other.edition);
 
     auto it = std::find_if(dependencies.begin(), dependencies.end(), [&](auto p) { return p == &other; });
     if (it == dependencies.end()) {
         push_unique(flags, other.public_flags);
-        push_unique(public_flags, other.public_flags);
+        if (public_)
+            push_unique(public_flags, other.public_flags);
+        push_unique(link_flags, other.link_flags);
         push_unique(modules, other.modules);
         dependencies.push_back(&other);
     }
 }
 
-void Target::add_dependencies(const std::vector<Target *> &deps) {
+void Target::add_dependencies(const std::vector<Target *> &deps, bool public_) {
     for (auto dep : deps) {
-        add_dependency(*dep);
+        add_dependency(*dep, public_);
     }
 }

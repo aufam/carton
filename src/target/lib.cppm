@@ -5,20 +5,30 @@ module;
 #include <memory>
 
 export module carton:target;
-import :package;
 import :profile;
 import :dependency;
-import :compile_command;
 import :binary;
 import :cache;
 import cpx;
 
 export struct Target {
+    /// for path alias in macro-prefix-map
     std::string name;
+
+    /// for display
     std::string title;
+
+    /// absolute path to working directory
     std::string working_dir;
+
+    /// lib or executable name
     std::string output_name;
+
+    /// output directory relative to build cache directory
     std::string output_dir;
+
+    /// absolute path of the executable
+    std::string executable;
 
     int                      edition = 0;
     std::vector<std::string> src;
@@ -50,8 +60,8 @@ export struct Target {
     static std::unique_ptr<Target> New(const Dependency &dep);
     static std::unique_ptr<Target> New(const std::string &working_dir, const Binary &bin);
 
-    void add_dependency(Target &other);
-    void add_dependencies(const std::vector<Target *> &others);
+    void add_dependency(Target &other, bool public_ = false);
+    void add_dependencies(const std::vector<Target *> &others, bool public_ = false);
 
-    void configure(const Profile &profile, Cache &cache);
+    void configure(const Profile &profile, Cache &cache, std::string_view type = "");
 };

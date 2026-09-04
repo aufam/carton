@@ -21,6 +21,9 @@ void CompileCommand::compile_multi(const std::vector<CompileCommand> &commands, 
         auto &cc = commands[indices[i]];
 
         if (current_title != cc.title) {
+            if (!current_title.empty())
+                print_end_progress();
+
             current_title = cc.title;
             print_status(precompile ? "Precompiling" : "Compiling", cc.title);
         }

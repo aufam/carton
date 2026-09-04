@@ -29,9 +29,11 @@ static Carton &from_registry(Carton &self, const std::string &name) {
     return *pp;
 }
 
-Carton *Carton::resolve_dep(const std::string &name, Dependency &dep) {
+std::pair<Carton *, std::string> Carton::resolve_dep(const std::string &name, Dependency &dep) {
     spdlog::trace("resolve_dep before name={} dep={}", name, dep);
-    Carton *res = nullptr;
+
+    Carton     *res = nullptr;
+    std::string working_dir;
 
     if (!dep.path.empty()) {
         spdlog::info("resolving dep={:?} path={:?}", name, dep.path);
@@ -47,9 +49,10 @@ Carton *Carton::resolve_dep(const std::string &name, Dependency &dep) {
         spdlog::info("resolving dep={:?} git={:?} tag={:?}", name, dep.git, tag);
         dep.path = git_clone(cache->directory, dep.git, tag);
     } else if (!dep.version.empty()) {
-        dep.path = lib.path;
-        auto &p  = from_registry(*this, name);
-        res      = &p;
+        dep.path          = lib.path;
+        auto &p           = from_registry(*this, name);
+        p.package.version = dep.version;
+        res               = &p;
     } else {
         dep.path = lib.path;
     }
@@ -69,9 +72,10 @@ Carton *Carton::resolve_dep(const std::string &name, Dependency &dep) {
         res = &p;
 
         // restore working dir
-        dep.path  = lib.path;
-        root      = fs::path(dep.path);
-        dirchange = false;
+        working_dir = dep.path;
+        dep.path    = lib.path;
+        root        = fs::path(dep.path);
+        dirchange   = false;
     }
 
     if (dirchange) {
@@ -95,5 +99,6 @@ Carton *Carton::resolve_dep(const std::string &name, Dependency &dep) {
     );
 
     spdlog::trace("resolve_dep after name={} dep={}", name, dep);
-    return res;
+
+    return {res, working_dir};
 }

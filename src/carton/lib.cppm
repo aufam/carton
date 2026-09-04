@@ -31,6 +31,7 @@ export struct Carton {
     Dependency   lib;
     Features     features;
     Binaries     bins;
+    Binaries     examples;
 
     static constexpr std::tuple __field_tags__{
         cpx::field<&Carton::package>      = "package",
@@ -46,7 +47,7 @@ export struct Carton {
     std::shared_ptr<Cache>                         cache;
     std::vector<std::shared_ptr<Carton>>           locals;
     std::map<std::string, std::unique_ptr<Target>> targets;
-    bool                                           resolved = false;
+    bool                                           configured = false;
 
     static int    Update();
     static int    Init(Package &args);
@@ -55,24 +56,23 @@ export struct Carton {
     int           execute(Cli &cli);
 
 private:
-    int run(const Target &target, const std::vector<std::string> &args);
+    int run(Cli::Run &);
 
     void apply_placeholders();
 
-    [[nodiscard]]
     auto
     get_requested_features(const std::vector<std::string> &features, bool default_features = true) -> std::vector<std::string>;
 
-    [[nodiscard]]
-    auto configure_package(const Profile &, const std::string &working_dir, const Dependency &) -> std::vector<Target *>;
+    auto configure_package(
+        const Profile &,
+        const std::string              &working_dir,
+        const std::vector<std::string> &features         = {},
+        bool                            default_features = true
+    ) -> std::vector<Target *>;
 
-    [[nodiscard]]
     auto configure_bins(const Profile &) -> std::vector<Target *>;
 
     void resolve_package(const std::string &working_dir);
 
-    [[nodiscard]]
-    auto resolve_dep(const std::string &name, Dependency &dep) -> Carton *;
-
-    void resolve_bin();
+    auto resolve_dep(const std::string &name, Dependency &dep) -> std::pair<Carton *, std::string>;
 };

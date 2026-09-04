@@ -21,9 +21,9 @@ export struct Fingerprint {
 
     static constexpr std::tuple __field_tags__{
         cpx::field<&Fingerprint::cmd>  = "cmd  , skipmissing",
-        cpx::field<&Fingerprint::file> = "file , skipmissing",
-        cpx::field<&Fingerprint::deps> = "deps , skipmissing",
-        cpx::field<&Fingerprint::mods> = "mods , skipmissing",
+        cpx::field<&Fingerprint::file> = "file , skipmissing , omitempty",
+        cpx::field<&Fingerprint::deps> = "deps , skipmissing , omitempty",
+        cpx::field<&Fingerprint::mods> = "mods , skipmissing , omitempty",
     };
 
     static std::unordered_map<std::string, Fingerprint> parse(const fs::path &build_dir) {
