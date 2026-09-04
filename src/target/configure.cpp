@@ -147,26 +147,6 @@ static void add_bmi_flags(const Cache &cache, const std::vector<std::string> &mo
     }
 }
 
-static std::vector<std::string> collect_module_names(Target &self, const Profile &profile, Cache &cache) {
-    std::vector<std::string> commands;
-    commands.reserve(self.mod.size());
-
-    for (fs::path mod : self.mod) {
-        commands.push_back(
-            f( //
-                "{} {} -std=c++{} -x c++-module {} -c '{}'",
-                profile._module_compiler,
-                cache.common_flags,
-                cache.cppm_standard,
-                fmt::join(self.flags, " "),
-                (self.working_dir / mod).string()
-            )
-        );
-    }
-
-    return sort_modules_p1689(self.working_dir, self.mod, commands);
-}
-
 static CompileCommand make_module_command(
     const Target                   &self,
     const Profile                  &profile,
@@ -184,7 +164,7 @@ static CompileCommand make_module_command(
     cc.file          = (self.working_dir / mod_path).string();
     cc.output        = mod_path.string() + ".o";
     cc.depfile       = mod_path.string() + ".d";
-    cc.modnames      = self.modules;
+    cc.modnames      = self.transitive_modules;
 
     auto pcm = f("{}-{}.bmi", cache.cppm_standard, mod_name);
     std::replace(pcm.begin(), pcm.end(), ':', '-');
@@ -218,14 +198,16 @@ static bool configure_modules(
     std::vector<std::string>                     &objs,
     std::unordered_map<std::string, Fingerprint> &fingerprints
 ) {
-    const auto mod_names = collect_module_names(self, profile, cache);
-
     bool recompile = false;
+
+    std::vector<std::string> transitive_names;
+
     for (size_t i = 0; i < self.mod.size(); ++i) {
         const auto &mod_path = self.mod[i];
-        const auto &mod_name = mod_names[i];
+        const auto &mod_name = self.modules[i];
 
         auto cc = make_module_command(self, profile, cache, build_dir, mod_path, mod_name, bmi_flags);
+        push_unique(cc.modnames, transitive_names);
 
         auto pcm = f("{}-{}.bmi", cache.cppm_standard, mod_name);
         std::replace(pcm.begin(), pcm.end(), ':', '-');
@@ -242,7 +224,7 @@ static bool configure_modules(
         cache.compile_commands.push_back(std::move(cc));
 
         push_unique(bmi_flags, f("-fmodule-file={}='{}'", mod_name, cache.bmi_paths.at(mod_name)));
-        push_unique(self.modules, mod_names[i]);
+        push_unique(transitive_names, mod_name);
     }
 
     return recompile;
@@ -283,8 +265,10 @@ static CompileCommand make_source_command(
                 cc.depfile
             );
 
-        if (profile._module_support)
-            cc.modnames = self.modules;
+        if (self.edition >= 20) {
+            push_unique(cc.modnames, self.transitive_modules);
+            push_unique(cc.modnames, self.modules);
+        }
 
     } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S" || ext == ".m") {
         cc.command =
@@ -420,7 +404,7 @@ void Target::configure(const Profile &profile, Cache &cache, std::string_view ty
 
     std::vector<std::string> objs;
     std::vector<std::string> bmi_flags;
-    add_bmi_flags(cache, modules, bmi_flags);
+    add_bmi_flags(cache, transitive_modules, bmi_flags);
 
     bool recompile = false;
     if (profile._module_support && !mod.empty()) {

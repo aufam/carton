@@ -101,7 +101,7 @@ std::vector<Target *> Carton::configure_package(
                 d.version = v;
         }
 
-        auto &target       = *(targets[package.name] = Target::New(lib));
+        auto &target       = *(targets[package.name] = Target::New(lib, profile, *cache));
         target.name        = package.name;
         target.title       = display_name(package.name, lib, &package);
         target.output_name = package.name;
@@ -125,7 +125,7 @@ std::vector<Target *> Carton::configure_package(
 
         auto [p, working_dir] = resolve_dep(name, d);
 
-        auto &target = *(targets[target_name] = Target::New(d));
+        auto &target = *(targets[target_name] = Target::New(d, profile, *cache));
 
         if (this->lib.path == d.path) {
             target.name        = main_target.name;
@@ -146,13 +146,11 @@ std::vector<Target *> Carton::configure_package(
             target.add_dependencies(deps, true);
         }
 
-        target.configure(profile, *cache);
         required_targets.push_back(&target);
     }
 
     if (first) {
         main_target.add_dependencies(required_targets);
-        main_target.configure(profile, *cache);
     }
 
     std::vector<Target *> res = {&main_target};
@@ -176,7 +174,7 @@ std::vector<Target *> Carton::configure_package(
 
         auto [p, working_dir] = resolve_dep(name, d);
 
-        auto &target = *(targets[target_name] = Target::New(d));
+        auto &target = *(targets[target_name] = Target::New(d, profile, *cache));
         res.push_back(&target);
         target.add_dependency(main_target, true);
 
@@ -198,8 +196,6 @@ std::vector<Target *> Carton::configure_package(
             auto deps = p->configure_package(profile, working_dir, d.features, d.default_features.value_or(true));
             target.add_dependencies(deps, true);
         }
-
-        target.configure(profile, *cache);
     }
 
     configured = true;

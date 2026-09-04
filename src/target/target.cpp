@@ -35,7 +35,27 @@ static bool check_os_continue(std::string &str) {
     return false;
 }
 
-static void apply(Target &self, const Dependency &dep) {
+static std::vector<std::string> collect_module_names(Target &self, const Profile &profile, const Cache &cache) {
+    std::vector<std::string> commands;
+    commands.reserve(self.mod.size());
+
+    for (fs::path mod : self.mod) {
+        commands.push_back(
+            f( //
+                "{} {} -std=c++{} -x c++-module {} -c '{}'",
+                profile._module_compiler,
+                cache.common_flags,
+                cache.cppm_standard,
+                fmt::join(self.flags, " "),
+                (self.working_dir / mod).string()
+            )
+        );
+    }
+
+    return sort_modules_p1689(self.working_dir, self.mod, commands);
+}
+
+static void apply(Target &self, const Dependency &dep, const Profile &profile, const Cache &cache) {
     for (auto &src : dep.src) {
         push_unique(self.src, src);
     }
@@ -124,12 +144,18 @@ static void apply(Target &self, const Dependency &dep) {
             throw ferr("pre command failed for dep={}: {}", dep.name, dep.pre);
         }
     }
+
+    if (profile._module_support) {
+        self.modules = collect_module_names(self, profile, cache);
+    } else {
+        self.mod = {};
+    }
 }
 
-std::unique_ptr<Target> Target::New(const Dependency &dep) {
+std::unique_ptr<Target> Target::New(const Dependency &dep, const Profile &profile, const Cache &cache) {
     auto target         = std::make_unique<Target>();
     target->working_dir = dep.path;
-    apply(*target, dep);
+    apply(*target, dep, profile, cache);
     return target;
 }
 
@@ -154,10 +180,14 @@ void Target::add_dependency(Target &other, bool public_) {
     auto it = std::find_if(dependencies.begin(), dependencies.end(), [&](auto p) { return p == &other; });
     if (it == dependencies.end()) {
         push_unique(flags, other.public_flags);
+        push_unique(link_flags, other.link_flags);
+
         if (public_)
             push_unique(public_flags, other.public_flags);
-        push_unique(link_flags, other.link_flags);
-        push_unique(modules, other.modules);
+
+        push_unique(transitive_modules, other.transitive_modules);
+        push_unique(transitive_modules, other.modules);
+
         dependencies.push_back(&other);
     }
 }

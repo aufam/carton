@@ -7,6 +7,13 @@ module carton;
 import cpx;
 import cpx.yy_json;
 
+static void configure_target(Target &target, const Profile &profile, Cache &cache) {
+    for (auto *t : target.dependencies) {
+        configure_target(*t, profile, cache);
+    }
+    target.configure(profile, cache);
+}
+
 int Carton::execute(Cli &cli) {
     const bool run   = cli.run.has_value();
     const bool build = cli.build.has_value();
@@ -43,8 +50,11 @@ int Carton::execute(Cli &cli) {
         );
     cache->cppm_standard = std::max(20, package.edition);
 
+    std::vector<Target *> targets;
+
     try {
-        configure_package(profile, fs::current_path().string(), features, !no_default_features);
+        auto ts = configure_package(profile, fs::current_path().string(), features, !no_default_features);
+        push_unique(targets, ts);
     } catch (std::exception &e) {
         spdlog::error("Failed to configure: {}", e.what());
         return 1;
@@ -53,10 +63,15 @@ int Carton::execute(Cli &cli) {
     const auto start = std::chrono::steady_clock::now();
 
     try {
-        configure_bins(profile);
+        auto ts = configure_bins(profile);
+        push_unique(targets, ts);
     } catch (std::exception &e) {
         spdlog::error("Failed to configure binaries: {}", e.what());
         return 1;
+    }
+
+    for (auto *t : targets) {
+        configure_target(*t, profile, *cache);
     }
 
     auto &ccs = cache->compile_commands;
