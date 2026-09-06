@@ -52,16 +52,39 @@ static std::vector<std::string> collect_module_names(Target &self, const Profile
         );
     }
 
-    return sort_modules_p1689(self.working_dir, self.mod, commands);
+    return sort_modules_p1689(profile._module_scanner, self.working_dir, self.mod, commands);
 }
 
-static void apply(Target &self, const Dependency &dep, const Profile &profile, const Cache &cache) {
-    for (auto &src : dep.src) {
-        push_unique(self.src, src);
+static void apply(Target &self, const Dependency &dep) {
+    if (!dep.pre.empty()) {
+        spdlog::info("running pre command for dep={:?} pre={:?}", dep.name, dep.pre);
+
+        reproc::options opt;
+        opt.redirect.out.type = reproc::redirect::pipe;
+        opt.redirect.err.type = reproc::redirect::pipe;
+        opt.working_directory = dep.path.c_str();
+
+        const auto cmd = "set -e\n" + dep.pre;
+
+        std::string errmsg;
+        auto [status, ec] = reproc::
+            run( //
+                std::vector<std::string_view>{"sh", "-c", cmd},
+                opt,
+                reproc::sink::null,
+                reproc::sink::string(errmsg)
+            );
+
+        if (status != 0 || ec) {
+            fmt::println(stderr, "{}", errmsg);
+            throw ferr("pre command failed for dep={}: {}", dep.name, dep.pre);
+        }
     }
-    for (auto &mod : dep.mod) {
-        push_unique(self.mod, mod);
-    }
+
+    self.src = dep.src;
+    self.mod = dep.mod;
+    expand_path(self.working_dir, self.mod);
+    expand_path(self.working_dir, self.src);
 
     static const std::unordered_set<std::string_view> exts = {".cpp", ".cxx", ".cc", ".mm", ".c", ".s", ".asm", ".S", ".m"};
 
@@ -69,9 +92,9 @@ static void apply(Target &self, const Dependency &dep, const Profile &profile, c
         std::remove_if(
             self.src.begin(),
             self.src.end(),
-            [&](const std::string &path) {
-                auto ext = fs::path(path).extension().string();
-                return exts.count(ext) == 0;
+            [&](fs::path path) {
+                auto ext = path.extension().string();
+                return exts.count(ext) == 0 || path.filename().string().starts_with("main.");
             }
         ),
         self.src.end()
@@ -119,43 +142,12 @@ static void apply(Target &self, const Dependency &dep, const Profile &profile, c
             push_unique(self.link_flags, f("{:?}", p));
         }
     }
-
-    if (!dep.pre.empty()) {
-        spdlog::info("running pre command for dep={:?} pre={:?}", dep.name, dep.pre);
-
-        reproc::options opt;
-        opt.redirect.out.type = reproc::redirect::pipe;
-        opt.redirect.err.type = reproc::redirect::pipe;
-        opt.working_directory = dep.path.c_str();
-
-        const auto cmd = "set -e\n" + dep.pre;
-
-        std::string errmsg;
-        auto [status, ec] = reproc::
-            run( //
-                std::vector<std::string_view>{"sh", "-c", cmd},
-                opt,
-                reproc::sink::null,
-                reproc::sink::string(errmsg)
-            );
-
-        if (status != 0 || ec) {
-            fmt::println(stderr, "{}", errmsg);
-            throw ferr("pre command failed for dep={}: {}", dep.name, dep.pre);
-        }
-    }
-
-    if (profile._module_support) {
-        self.modules = collect_module_names(self, profile, cache);
-    } else {
-        self.mod = {};
-    }
 }
 
-std::unique_ptr<Target> Target::New(const Dependency &dep, const Profile &profile, const Cache &cache) {
+std::unique_ptr<Target> Target::New(const Dependency &dep) {
     auto target         = std::make_unique<Target>();
     target->working_dir = dep.path;
-    apply(*target, dep, profile, cache);
+    apply(*target, dep);
     return target;
 }
 
@@ -195,5 +187,11 @@ void Target::add_dependency(Target &other, bool public_) {
 void Target::add_dependencies(const std::vector<Target *> &deps, bool public_) {
     for (auto dep : deps) {
         add_dependency(*dep, public_);
+    }
+}
+
+void Target::configure_module(const Profile &profile, const Cache &cache) {
+    if (profile._module_support) {
+        modules = collect_module_names(*this, profile, cache);
     }
 }

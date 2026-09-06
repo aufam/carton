@@ -10,7 +10,6 @@ export import :cache;
 export import :cli;
 export import :config;
 import :util;
-import :mod;
 import :p1689;
 import :fingerprint;
 import carton.fs;

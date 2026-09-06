@@ -33,6 +33,7 @@ std::vector<Target *> Carton::configure_bins(const Profile &profile) {
 
         auto deps = configure_package(profile, lib.path, bin.required_features);
         target.add_dependencies(deps);
+        target.configure(profile, *cache, "exe");
 
         res.push_back(&target);
     }

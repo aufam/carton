@@ -36,6 +36,7 @@ export struct Profile {
 
     bool        _module_support = false;
     std::string _module_compiler;
+    std::string _module_scanner;
 
     static Profile Release() {
         Profile t;

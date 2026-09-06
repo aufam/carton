@@ -20,8 +20,6 @@ int Carton::Init(Package &args) {
     }
 
     std::tuple carton = {cpx::field_ref(args) = "package"};
-    if (auto &v = args.version; v.empty())
-        v = "0.1.0";
 
     // TODO
     of << "#:schema https://raw.githubusercontent.com/aufam/carton/main/carton-schema.json\n\n";

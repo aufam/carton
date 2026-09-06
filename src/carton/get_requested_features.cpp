@@ -23,7 +23,7 @@ find_extra_features(Carton &p, const std::string &feat, std::vector<std::string>
 }
 
 std::vector<std::string> Carton::get_requested_features(const std::vector<std::string> &features, bool default_features) {
-    spdlog::info("finding extra features for {}, total_features={}", package.name, this->features.size());
+    spdlog::info("resolving package={:?} features={}", package.name, features);
 
     std::vector<std::string> extra_features;
     if (default_features)

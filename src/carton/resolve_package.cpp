@@ -65,16 +65,5 @@ void Carton::resolve_package(const std::string &working_dir) {
     if (lib.inc.empty() && fs::is_directory(root / "include"))
         lib.inc = {"public:include"};
 
-    expand_path(lib.path, lib.mod);
-    expand_path(lib.path, lib.src);
-    lib.src.erase(
-        std::remove_if(
-            lib.src.begin(),
-            lib.src.end(),
-            [](const std::string &path) { return fs::path(path).filename().string().starts_with("main."); }
-        ),
-        lib.src.end()
-    );
-
     spdlog::trace("resolve_package after working_dir={:?} lib={}", working_dir, lib);
 }

@@ -87,17 +87,6 @@ std::pair<Carton *, std::string> Carton::resolve_dep(const std::string &name, De
             dep.inc = {"public:include"};
     }
 
-    expand_path(dep.path, dep.mod);
-    expand_path(dep.path, dep.src);
-    dep.src.erase(
-        std::remove_if(
-            dep.src.begin(),
-            dep.src.end(),
-            [](const std::string &path) { return fs::path(path).filename().string().starts_with("main."); }
-        ),
-        dep.src.end()
-    );
-
     spdlog::trace("resolve_dep after name={} dep={}", name, dep);
 
     return {res, working_dir};

@@ -75,7 +75,7 @@ if [ ! -f .cache/fmt.cppm ]; then
     sed \
         -e '/^module :private;$/d' \
         -e '/^import std;$/d' \
-        -e '/^#include <algorithm>$/a\
+        -e '/^#[[:space:]]*include <algorithm>$/a\\
 #include <atomic>
 ' \
         src/fmt.cc > .cache/fmt.cppm

@@ -77,9 +77,18 @@ void Profiles::check_module_support() {
     dev._module_compiler     = resolve_compiler(dev.cxx);
     release._module_compiler = resolve_compiler(release.cxx);
 
-    // TODO: check clang support module
+    spdlog::info("profile.dev._module_compiler={}", dev._module_compiler);
+    spdlog::info("profile.release._module_compiler={}", release._module_compiler);
+
     auto create_cmd = [](const std::string &cxx) {
-        return std::vector<std::string>{"sh", "-c", f("{0} --version | grep clang > /dev/null", cxx)};
+        return std::vector<std::string>{
+            "sh",
+            "-c",
+            f("set -e\n"
+              "{0} --version | grep clang > /dev/null\n"
+              "echo 'export module test;' | {0} -std=c++20 -x c++-module -fsyntax-only -\n",
+              cxx)
+        };
     };
 
     dev._module_support     = dev.modules == "auto" && reproc::run(create_cmd(dev._module_compiler)).first == 0;
@@ -87,4 +96,26 @@ void Profiles::check_module_support() {
 
     spdlog::info("profile.dev._module_support={}", dev._module_support);
     spdlog::info("profile.release._module_support={}", release._module_support);
+
+    auto get_scanner = [](const std::string &cxx) {
+        std::string scanner;
+        reproc::run(
+            std::vector<std::string_view>{cxx, "-print-prog-name=clang-scan-deps"},
+            reproc::options{},
+            reproc::sink::string(scanner),
+            reproc::sink::null
+        );
+        if (!scanner.empty() && scanner.back() == '\n')
+            scanner.pop_back();
+        return scanner;
+    };
+
+    if (dev._module_support) {
+        dev._module_scanner = get_scanner(dev.cxx);
+        spdlog::info("profile.dev._module_scanner={}", dev._module_scanner);
+    }
+    if (release._module_support) {
+        release._module_scanner = get_scanner(release.cxx);
+        spdlog::info("profile.dev._module_scanner={}", release._module_scanner);
+    }
 }

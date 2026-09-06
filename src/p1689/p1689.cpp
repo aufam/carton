@@ -17,7 +17,8 @@ namespace {
     };
 } // namespace
 
-static Module parse_module_p1689(const fs::path &working_dir, const std::string &file, const std::string &cc) {
+static Module
+parse_module_p1689(const std::string &scanner, const fs::path &working_dir, const std::string &file, const std::string &cc) {
     std::string     working_dir_str = working_dir.string();
     reproc::options opt;
     opt.redirect.out.type = reproc::redirect::pipe;
@@ -27,7 +28,7 @@ static Module parse_module_p1689(const fs::path &working_dir, const std::string 
     std::string json;
     std::string errmsg;
     auto [status, ec] = reproc::run(
-        std::vector<std::string>{"sh", "-c", f("clang-scan-deps -format=p1689 -- {}", cc)},
+        std::vector<std::string>{"sh", "-c", f("{} -format=p1689 -- {}", scanner, cc)},
         opt,
         reproc::sink::string(json),
         reproc::sink::string(errmsg)
@@ -98,13 +99,14 @@ static std::vector<std::string> topo_sort(const Graph &g) {
     return result;
 }
 
-std::vector<std::string>
-sort_modules_p1689(const std::string &working_dir, std::vector<std::string> &files, std::vector<std::string> &ccs) {
+std::vector<std::string> sort_modules_p1689(
+    const std::string &scanner, const std::string &working_dir, std::vector<std::string> &files, std::vector<std::string> &ccs
+) {
     std::vector<Module> modules;
     modules.reserve(files.size());
 
     for (size_t i = 0; i < files.size(); ++i)
-        modules.push_back(parse_module_p1689(working_dir, files[i], ccs[i]));
+        modules.push_back(parse_module_p1689(scanner, working_dir, files[i], ccs[i]));
 
     auto graph = build_graph(modules);
     auto order = topo_sort(graph);

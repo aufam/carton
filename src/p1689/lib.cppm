@@ -7,6 +7,10 @@ module;
 export module carton:p1689;
 import cpx;
 
+export std::vector<std::string> sort_modules_p1689(
+    const std::string &scanner, const std::string &working_dir, std::vector<std::string> &files, std::vector<std::string> &ccs
+);
+
 export struct p1689 {
     struct Module {
         std::string name;

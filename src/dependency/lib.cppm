@@ -75,5 +75,12 @@ struct cpx::cli::Reflect<Dependency> {
         cpx::field<&Dependency::features>         = "features        , skipmissing , omitempty   ",
         cpx::field<&Dependency::optional>         = "optional        , skipmissing , omitempty   ",
         cpx::field<&Dependency::default_features> = "default-features, skipmissing , omitempty   ",
+        cpx::field<&Dependency::src>              = "src             , skipmissing , omitempty   ",
+        cpx::field<&Dependency::inc>              = "inc             , skipmissing , omitempty   ",
+        cpx::field<&Dependency::lib>              = "lib             , skipmissing , omitempty   ",
+        cpx::field<&Dependency::mod>              = "mod             , skipmissing , omitempty   ",
+        cpx::field<&Dependency::flags>            = "flags           , skipmissing , omitempty   ",
+        cpx::field<&Dependency::link_flags>       = "link-flags      , skipmissing , omitempty   ",
+        cpx::field<&Dependency::pre>              = "pre             , skipmissing , omitempty   ",
     };
 };

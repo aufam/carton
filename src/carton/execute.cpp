@@ -7,13 +7,6 @@ module carton;
 import cpx;
 import cpx.yy_json;
 
-static void configure_target(Target &target, const Profile &profile, Cache &cache) {
-    for (auto *t : target.dependencies) {
-        configure_target(*t, profile, cache);
-    }
-    target.configure(profile, cache);
-}
-
 int Carton::execute(Cli &cli) {
     const bool run   = cli.run.has_value();
     const bool build = cli.build.has_value();
@@ -70,16 +63,9 @@ int Carton::execute(Cli &cli) {
         return 1;
     }
 
-    for (auto *t : targets) {
-        configure_target(*t, profile, *cache);
-    }
-
     auto &ccs = cache->compile_commands;
-
-    auto _ = cpx::defer([&ccs]() {
-        auto of = std::ofstream("./compile_commands.json");
-        of << cpx::yy_json::dump(ccs, pretty_two_spaces);
-    });
+    auto  of  = std::ofstream("./compile_commands.json");
+    of << cpx::yy_json::dump(ccs, pretty_two_spaces);
 
     try {
         CompileCommand::compile_multi(ccs, true);
