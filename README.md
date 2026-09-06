@@ -30,6 +30,17 @@ cd my-project
 carton init my-project
 ```
 
+Initial `carton.toml` will be:
+```toml
+#:schema https://raw.githubusercontent.com/aufam/carton/main/carton-schema.json
+
+[package]
+edition = 17
+name = "my-project"
+
+[dependencies]
+```
+
 The project tree will be:
 ```
 .
@@ -44,6 +55,19 @@ Add a dependency (see [carton.io](https://aufam.github.io/carton) for all availa
 ```bash
 carton add dotenv
 carton add fmt
+```
+
+The `carton.toml` will become:
+```toml
+#:schema https://raw.githubusercontent.com/aufam/carton/main/carton-schema.json
+
+[package]
+edition = 17
+name = "my-project"
+
+[dependencies]
+fmt = { version = "12.2.0" }
+dotenv = { version = "1.0" }
 ```
 
 Configure, build and run:
@@ -103,12 +127,10 @@ C++ module is only supported if the compiler is clang.
 [profile.dev]
 cxx = "clang++"
 c = "clang"
-flags = ["-isystem /path/to/SDK"] # you may need this in macOS
 
 [profile.release]
 cxx = "clang++"
 c = "clang"
-flags = ["-isystem /path/to/SDK"] # you may need this in macOS
 ```
 
 
