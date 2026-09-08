@@ -62,8 +62,8 @@ export struct Target {
     static std::unique_ptr<Target> New(const Dependency &dep);
     static std::unique_ptr<Target> New(const std::string &working_dir, const Binary &bin);
 
-    void add_dependency(Target &other, bool public_ = false);
-    void add_dependencies(const std::vector<Target *> &others, bool public_ = false);
+    void add_dependency(Target &other, bool public_ = false, bool extend = false);
+    void add_dependencies(const std::vector<Target *> &others, bool public_ = false, bool extend = false);
 
     void configure_module(const Profile &profile, const Cache &cache);
     void configure(const Profile &profile, Cache &cache, std::string_view type = "");

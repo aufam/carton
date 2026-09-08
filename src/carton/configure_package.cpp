@@ -203,7 +203,6 @@ std::vector<Target *> Carton::configure_package(
 
         target.configure_module(profile, *cache);
         target.configure(profile, *cache);
-        res.push_back(&target);
     }
 
     configured = true;

@@ -14,12 +14,6 @@ int Carton::run(Cli::Run &r) {
             throw ferr("binary '{}' not found", r.bin);
 
         target = it->second.get();
-    } else if (!r.example.empty()) {
-        auto it = targets.find(package.name + ".example." + r.example);
-        if (it == targets.end())
-            throw ferr("example '{}' not found", r.example);
-
-        target = it->second.get();
     } else if (!bins.empty()) {
         target = targets.at(package.name + ".bin." + bins.front().name).get();
     }

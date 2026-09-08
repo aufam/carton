@@ -35,7 +35,7 @@ std::vector<Target *> Carton::configure_bins(const Profile &profile) {
             ferr("source file cannot be empty for binary target `{}`", bin_name);
 
         auto deps = configure_package(profile, lib.path, bin.required_features);
-        target.add_dependencies(deps);
+        target.add_dependencies(deps, false, true);
         target.configure(profile, *cache, "exe");
 
         push_unique(res, &target, true);

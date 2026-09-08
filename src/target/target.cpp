@@ -165,13 +165,13 @@ std::unique_ptr<Target> Target::New(const std::string &working_dir, const Binary
     return target;
 }
 
-void Target::add_dependency(Target &other, bool public_) {
+void Target::add_dependency(Target &other, bool public_, bool extend) {
     if (edition < other.edition)
         ferr("{:?} cannot depend on {:?}: needs higher c++ version {}", name, other.name, other.edition);
 
     auto it = std::find_if(dependencies.begin(), dependencies.end(), [&](auto p) { return p == &other; });
     if (it == dependencies.end()) {
-        push_unique(flags, other.public_flags);
+        push_unique(flags, extend ? other.flags : other.public_flags);
         push_unique(link_flags, other.link_flags);
 
         if (public_)
@@ -184,9 +184,9 @@ void Target::add_dependency(Target &other, bool public_) {
     }
 }
 
-void Target::add_dependencies(const std::vector<Target *> &deps, bool public_) {
+void Target::add_dependencies(const std::vector<Target *> &deps, bool public_, bool extend) {
     for (auto dep : deps) {
-        add_dependency(*dep, public_);
+        add_dependency(*dep, public_, extend);
     }
 }
 
