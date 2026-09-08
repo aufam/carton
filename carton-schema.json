@@ -42,6 +42,16 @@
       }
     },
 
+    "binary": {
+      "type": "object",
+      "required": ["name", "path"],
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "required-features": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
     "sourceSpec": {
       "type": "object",
       "properties": {
@@ -171,6 +181,7 @@
     "package": { "$ref": "#/$defs/package" },
 
     "lib": { "$ref": "#/$defs/sourceSpec" },
+    "bin": { "type": "array", "items": { "$ref": "#/$defs/binary" } },
 
     "dependencies": {
       "type": "object",

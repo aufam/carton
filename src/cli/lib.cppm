@@ -33,14 +33,12 @@ export struct Cli {
         bool                     release;
         bool                     static_;
         std::string              bin;
-        std::string              example;
         std::vector<std::string> args;
 
         static constexpr std::tuple __field_tags__{
             cpx::field<&Run::release> = "release",
             cpx::field<&Run::static_> = "static",
             cpx::field<&Run::bin>     = "bin,skipmissing",
-            cpx::field<&Run::example> = "example,skipmissing",
             cpx::field<&Run::args>    = "args,positional",
         };
     };

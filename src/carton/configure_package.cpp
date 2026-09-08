@@ -172,14 +172,14 @@ std::vector<Target *> Carton::configure_package(
 
         const auto target_name = package.name + "." + name;
         if (targets.count(target_name)) {
-            res.push_back(targets[target_name].get());
+            push_unique(res, targets[target_name].get(), true);
             continue;
         }
 
         auto [p, working_dir] = resolve_dep(name, d);
 
         auto &target = *(targets[target_name] = Target::New(d));
-        res.push_back(&target);
+        push_unique(res, targets[target_name].get(), true);
         target.add_dependency(main_target, true);
 
         if (this->lib.path == d.path) {

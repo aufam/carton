@@ -1,9 +1,13 @@
-cmake_minimum_required(VERSION 3.31 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
 project(carton
     VERSION     0.1.0
     LANGUAGES   C CXX
 )
+
+if(APPLE AND CMAKE_VERSION VERSION_LESS 3.31)
+    message(FATAL_ERROR "macOS builds require CMake 3.31 or newer (found ${CMAKE_VERSION})")
+endif()
 
 include(cmake/CPM.cmake)
 
@@ -128,5 +132,5 @@ target_compile_options(carton PRIVATE
 
 target_link_options(carton PRIVATE
     $<$<CONFIG:Debug>:-fsanitize=address,undefined>
-    $<$<CONFIG:Release>:-static>
+    $<$<AND:$<CONFIG:Release>,$<PLATFORM_ID:Linux>>:-static>
 )

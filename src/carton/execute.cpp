@@ -9,7 +9,7 @@ import cpx.yy_json;
 
 int Carton::execute(Cli &cli) {
     const bool run   = cli.run.has_value();
-    const bool build = cli.build.has_value();
+    const bool build = run || cli.build.has_value();
 
     const bool release = run ? cli.run->release : build ? cli.build->release : cli.release;
     const bool static_ = run ? cli.run->static_ : build ? cli.build->static_ : cli.static_;
