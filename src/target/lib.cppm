@@ -38,6 +38,7 @@ export struct Target {
     std::vector<std::string> modules;
     std::vector<std::string> transitive_modules;
     std::vector<std::string> link_flags;
+    std::vector<std::string> link_objects;
 
     static constexpr std::tuple __field_tags__ = {
         cpx::field<&Target::name>               = "name",

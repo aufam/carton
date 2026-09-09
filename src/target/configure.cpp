@@ -393,7 +393,7 @@ void Target::configure(const Profile &profile, Cache &cache, std::string_view ty
     if (profile._module_support && !mod.empty()) {
         std::vector<std::string> objs;
         recompile |= configure_modules(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
-        recompile |= configure_output(*this, profile, cache, build_dir, objs, "ar", recompile, fingerprints, false);
+        recompile |= configure_output(*this, profile, cache, build_dir, objs, "ar", recompile, fingerprints, true);
     }
 
     recompile |= configure_sources(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);

@@ -16,7 +16,7 @@ export struct Fingerprint {
     std::string mods;
 
     bool compare(const Fingerprint &other) const {
-        return cmd == other.cmd && file == other.file && mods == other.mods;
+        return cmd == other.cmd && file == other.file && deps == other.deps && mods == other.mods;
     }
 
     static constexpr std::tuple __field_tags__{
