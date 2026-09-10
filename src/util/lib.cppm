@@ -93,3 +93,19 @@ void push_unique(std::vector<T *> &vec, const std::vector<T *> &values, bool fro
     for (const auto &value : values)
         push_unique(vec, value, front);
 }
+
+export void push_back_unique(std::vector<std::string> &vec, const std::string &value) {
+    if (value.empty())
+        return;
+
+    if (auto it = std::find(vec.begin(), vec.end(), value); it != vec.end())
+        vec.erase(it);
+
+    vec.push_back(value);
+}
+
+export void push_back_unique(std::vector<std::string> &vec, const std::vector<std::string> &values) {
+    for (const auto &value : values) {
+        push_back_unique(vec, value);
+    }
+}

@@ -40,4 +40,7 @@ export struct Cache {
 
     /// clangd compile commands to be collected
     std::vector<CompileCommand> compile_commands;
+
+    /// hash map for
+    std::unordered_map<std::string, bool> recompiles;
 };

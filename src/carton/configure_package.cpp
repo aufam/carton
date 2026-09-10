@@ -10,10 +10,12 @@ import cpx.fmt;
 
 static std::string display_name(const std::string &name, const Dependency &d, const Package *package = nullptr) {
     std::string res = name;
-    if (!d.version.empty())
+    if (!d.version.empty()) {
         res += " v" + d.version;
-    else if (package && !package->version.empty())
+        return res;
+    } else if (package && !package->version.empty()) {
         res += " v" + package->version;
+    }
 
     if (!d.git.empty()) {
         res += " (" + d.git;

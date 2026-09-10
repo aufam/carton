@@ -54,6 +54,7 @@ export struct Target {
         cpx::field<&Target::modules>            = "modules",
         cpx::field<&Target::transitive_modules> = "transitive_modules",
         cpx::field<&Target::link_flags>         = "link_flags",
+        cpx::field<&Target::link_objects>       = "link_objects",
     };
 
     std::vector<Target *> dependencies;

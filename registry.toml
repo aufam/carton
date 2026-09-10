@@ -2063,3 +2063,167 @@ versions = ["0.1.0"]
 [brb.lib]
 git = "https://github.com/aufam/brb"
 tag = "v{version}"
+
+
+#
+# rapidcsv
+#
+[rapidcsv.package]
+name = "rapidcsv"
+edition = 11
+authors = ["d99kris"]
+description = "C++ CSV parser library"
+repository = "https://github.com/d99kris/rapidcsv"
+license = "BSD-3-Clause"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c-plus-plus",
+    "c-plus-plus-11",
+    "csv-parser",
+    "library",
+    "linux",
+    "macos",
+    "utf16",
+    "utf8",
+    "windows",
+]
+versions = [
+    "9.07",
+    "8.99",
+    "8.97",
+    "8.92",
+    "8.90",
+    "8.89",
+    "8.88",
+    "8.87",
+    "8.85",
+    "8.84",
+    "8.83",
+    "8.82",
+    "8.80",
+    "8.77",
+    "8.75",
+    "8.69",
+    "8.65",
+    "8.64",
+    "8.62",
+    "8.53",
+    "8.52",
+    "8.51",
+    "8.50",
+    "8.48",
+    "8.46",
+    "8.43",
+    "8.42",
+    "8.40",
+    "8.30",
+    "8.20",
+]
+
+[rapidcsv.lib]
+git = "https://github.com/d99kris/rapidcsv"
+tag = "v{version}"
+inc = ["public:src"]
+
+
+#
+# csv-parser
+#
+[csv-parser.package]
+name = "csv-parser"
+edition = 20
+authors = ["vincentlaucsb"]
+description = "A modern C++ CSV parser and serializer that doesn't make you choose between ease of use or performance."
+homepage = "https://vincentlaucsb.github.io/csv-parser/"
+repository = "https://github.com/vincentlaucsb/csv-parser"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "c-plus-plus",
+    "c-plus-plus-11",
+    "c-plus-plus-14",
+    "c-plus-plus-17",
+    "csv",
+    "csv-parser",
+    "csv-reader",
+    "json",
+    "parser",
+    "statistics",
+    "tab-separated",
+]
+versions = [
+    "5.3.0",
+    "5.2.0",
+    "5.1.0",
+    "5.0.0",
+    "4.1.0",
+    "4.0.0",
+    "3.5.1",
+    "3.5.0",
+    "3.4.1",
+    "3.4.0",
+    "3.3.0",
+    "3.2.0",
+    "3.1.0",
+    "3.0.0",
+    "2.5.2",
+    "2.5.1",
+    "2.5.0",
+    "2.4.2",
+    "2.4.1",
+    "2.4.0",
+    "2.3.0",
+    "2.2.3",
+    "2.2.2",
+    "2.2.1",
+    "2.2.0",
+    "2.1.3",
+    "2.1.2",
+]
+
+[csv-parser.lib]
+git = "https://github.com/vincentlaucsb/csv-parser"
+tag = "{version}"
+src = ["include/internal/*.cpp", "include/internal/parser/*.cpp"]
+
+
+#
+# jwt-cpp
+#
+[jwt.package]
+name = "jwt"
+edition = 11
+authors = ["Thalhammer"]
+description = "A header only library for creating and validating json web tokens in c++"
+homepage = "https://thalhammer.github.io/jwt-cpp/"
+repository = "https://github.com/Thalhammer/jwt-cpp"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = [
+    "cpp",
+    "header-only",
+    "json-web-token",
+    "jwt",
+]
+versions = [
+    "0.7.2",
+    "0.7.1",
+    "0.7.0",
+    "0.6.0",
+    "0.5.2",
+    "0.5.1",
+    "0.5.0",
+    "0.4.0",
+    "0.3.1",
+    "0.3.0",
+    "0.2.0",
+    "0.1.0",
+]
+
+[jwt.lib]
+git = "https://github.com/Thalhammer/jwt-cpp"
+tag = "v{version}"
+link-flags = ["-lcrypto"]

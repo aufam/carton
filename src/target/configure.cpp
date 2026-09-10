@@ -189,6 +189,18 @@ static std::pair<CompileCommand, std::string> make_module_command(
     return {std::move(cc), std::move(pcm)};
 }
 
+static bool output_is_stale(const fs::path &out, const std::vector<std::string> &objects, const Cache &cache) {
+    if (!fs::exists(out))
+        return true;
+
+    for (const auto &o : objects) {
+        if (cache.recompiles.at(o))
+            return true;
+    }
+
+    return false;
+}
+
 static bool configure_modules(
     Target                                       &self,
     const Profile                                &profile,
@@ -324,6 +336,7 @@ static bool configure_output(
     std::string_view                              type,
     bool                                          recompile,
     std::unordered_map<std::string, Fingerprint> &fingerprints,
+    std::vector<std::string>                     &archive_objects,
     bool                                          is_module = false
 ) {
     CompileCommand cc;
@@ -336,12 +349,13 @@ static bool configure_output(
         cc.output = self.output_name;
         cc.command =
             f( //
-                "{} -o \"{}\" {} '{}' {}",
+                "{} -o \"{}\" {} {} \"{}\" \"{}\"",
                 profile.cxx,
                 cc.output,
                 cache.common_link_flags,
-                fmt::join(objs, "' '"),
-                fmt::join(self.link_flags, " ")
+                fmt::join(self.link_flags, " "),
+                fmt::join(objs, "\" \""),
+                fmt::join(self.link_objects, "\" \"")
             );
 
         self.executable = (build_dir / cc.output).string();
@@ -349,12 +363,13 @@ static bool configure_output(
         cc.output = "lib" + self.output_name + ".so";
         cc.command =
             f( //
-                "{} -shared -o \"{}\" {} '{}' {}",
+                "{} -shared -o \"{}\" {} {} \"{}\" \"{}\"",
                 profile.cxx,
                 cc.output,
                 cache.common_link_flags,
-                fmt::join(objs, "' '"),
-                fmt::join(self.link_flags, " ")
+                fmt::join(self.link_flags, " "),
+                fmt::join(objs, "\" \""),
+                fmt::join(self.link_objects, "\" \"")
             );
     } else {
         if (objs.empty())
@@ -367,11 +382,16 @@ static bool configure_output(
         cc.output += ".a";
         cc.command = f("{} rcs '{}' '{}'", profile.ar, cc.output, fmt::join(objs, "' '"));
 
-        push_unique(self.link_flags, f("{:?}", (build_dir / cc.output).string()), true);
+        push_unique(archive_objects, f("{}", (build_dir / cc.output).string()), true);
     }
 
+    if (!recompile)
+        recompile = output_is_stale(build_dir / cc.output, self.link_objects, cache);
+
     const auto fp = make_fingerprint(cache, cc);
-    cc.is_done    = update_fingerprint(fingerprints, cc, fp) && !recompile && fs::exists(build_dir / cc.output);
+    cc.is_done    = update_fingerprint(fingerprints, cc, fp) && !recompile;
+
+    cache.recompiles[(build_dir / cc.output).string()] = !cc.is_done;
 
     cache.compile_commands.push_back(std::move(cc));
     return !cc.is_done;
@@ -386,6 +406,7 @@ void Target::configure(const Profile &profile, Cache &cache, std::string_view ty
     auto &fingerprints = fingerprint_of(cache, build_dir);
 
     std::vector<std::string> objs;
+    std::vector<std::string> archive_objects;
     std::vector<std::string> bmi_flags;
     add_bmi_flags(cache, transitive_modules, bmi_flags);
 
@@ -393,11 +414,14 @@ void Target::configure(const Profile &profile, Cache &cache, std::string_view ty
     if (profile._module_support && !mod.empty()) {
         std::vector<std::string> objs;
         recompile |= configure_modules(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
-        recompile |= configure_output(*this, profile, cache, build_dir, objs, "ar", recompile, fingerprints, true);
+        recompile |=
+            configure_output(*this, profile, cache, build_dir, objs, "ar", recompile, fingerprints, archive_objects, true);
     }
 
     recompile |= configure_sources(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
-    configure_output(*this, profile, cache, build_dir, objs, type, recompile, fingerprints);
+    configure_output(*this, profile, cache, build_dir, objs, type, recompile, fingerprints, archive_objects);
+
+    push_unique(link_objects, archive_objects, true);
 
     Fingerprint::dump(fingerprints, build_dir);
 

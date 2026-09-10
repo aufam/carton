@@ -135,11 +135,9 @@ static void apply(Target &self, const Dependency &dep) {
             continue;
 
         if (auto path = fs::path(str); path.is_absolute()) {
-            auto p = path.lexically_normal().string();
-            push_unique(self.link_flags, f("{:?}", p));
+            push_back_unique(self.link_objects, path.lexically_normal().string());
         } else {
-            auto p = (working_dir / path).lexically_normal().string();
-            push_unique(self.link_flags, f("{:?}", p));
+            push_back_unique(self.link_objects, (working_dir / path).lexically_normal().string());
         }
     }
 }
@@ -173,6 +171,7 @@ void Target::add_dependency(Target &other, bool public_, bool extend) {
     if (it == dependencies.end()) {
         push_unique(flags, extend ? other.flags : other.public_flags);
         push_unique(link_flags, other.link_flags);
+        push_back_unique(link_objects, other.link_objects);
 
         if (public_)
             push_unique(public_flags, other.public_flags);
