@@ -264,7 +264,7 @@ static CompileCommand make_source_command(
                 "-o '{}' -c '{}' -MMD -MP -MF '{}'",
                 profile.cxx,
                 cache.common_flags,
-                self.edition,
+                self.edition < 20 ? self.edition : cache.cppm_standard, // TODO: scan the file
                 self.working_dir,
                 self.name,
                 fmt::join(self.flags, " "),
@@ -410,16 +410,14 @@ void Target::configure(const Profile &profile, Cache &cache, std::string_view ty
     std::vector<std::string> bmi_flags;
     add_bmi_flags(cache, transitive_modules, bmi_flags);
 
-    bool recompile = false;
-    if (profile._module_support && !mod.empty()) {
-        std::vector<std::string> objs;
+    bool recompile  = false;
+    bool has_module = profile._module_support && !mod.empty();
+    if (has_module) {
         recompile |= configure_modules(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
-        recompile |=
-            configure_output(*this, profile, cache, build_dir, objs, "ar", recompile, fingerprints, archive_objects, true);
     }
 
     recompile |= configure_sources(*this, profile, cache, build_dir, bmi_flags, objs, fingerprints);
-    configure_output(*this, profile, cache, build_dir, objs, type, recompile, fingerprints, archive_objects);
+    configure_output(*this, profile, cache, build_dir, objs, type, recompile, fingerprints, archive_objects, has_module);
 
     push_unique(link_objects, archive_objects, true);
 
