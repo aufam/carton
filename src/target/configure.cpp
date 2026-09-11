@@ -258,26 +258,36 @@ static CompileCommand make_source_command(
     const auto ext = entry.extension();
 
     if (ext == ".cpp" || ext == ".cxx" || ext == ".cc" || ext == ".mm") {
+        int         cpp_standard = self.edition;
+        std::string flags_bmi;
+
+        if (profile._module_support && self.edition >= 20) {
+            // TODO: scan the file
+            cpp_standard = cache.cppm_standard;
+            flags_bmi    = f("{}", fmt::join(bmi_flags, " "));
+
+            cc.output  = std::to_string(cpp_standard) + "/" + cc.output;
+            cc.depfile = std::to_string(cpp_standard) + "/" + cc.depfile;
+
+            push_unique(cc.modnames, self.transitive_modules);
+            push_unique(cc.modnames, self.modules);
+        }
+
         cc.command =
             f( //
                 "{} {} -std=c++{} -fmacro-prefix-map=\"{}\"=\"{}\" {} {} "
                 "-o '{}' -c '{}' -MMD -MP -MF '{}'",
                 profile.cxx,
                 cache.common_flags,
-                self.edition < 20 ? self.edition : cache.cppm_standard, // TODO: scan the file
+                cpp_standard,
                 self.working_dir,
                 self.name,
                 fmt::join(self.flags, " "),
-                self.edition < 20 ? "" : f("{}", fmt::join(bmi_flags, " ")),
+                flags_bmi,
                 cc.output,
                 cc.file,
                 cc.depfile
             );
-
-        if (self.edition >= 20) {
-            push_unique(cc.modnames, self.transitive_modules);
-            push_unique(cc.modnames, self.modules);
-        }
 
     } else if (ext == ".c" || ext == ".s" || ext == ".asm" || ext == ".S" || ext == ".m") {
         cc.command =

@@ -32,5 +32,5 @@ void CompileCommand::compile() const {
     if (!errmsg.empty())
         fmt::println(stderr, "\n{}", errmsg);
     if (status != 0 || ec)
-        throw ferr("Failed to compile {}: command={:?}", this->file, cmd);
+        throw ferr("file={:?} command: {}", this->file, cmd);
 }

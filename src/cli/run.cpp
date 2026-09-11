@@ -30,8 +30,10 @@ int Carton::run(Cli::Run &r) {
     if (!r.args.empty())
         exe += f(" {}", fmt::join(r.args, " "));
 
+    r.args.insert(r.args.begin(), t.executable);
+
     print_status("Running", exe);
-    auto [status, ec] = reproc::run(std::vector<std::string>{"sh", "-c", exe});
+    auto [status, ec] = reproc::run(r.args);
     if (ec)
         return -1;
 
