@@ -2058,7 +2058,7 @@ edition = 20
 authors = ["aufam"]
 repository = "https://github.com/aufam/brb"
 readme = "README.md"
-versions = ["0.1.0"]
+versions = ["0.1.0", "0.1.1"]
 
 [brb.lib]
 git = "https://github.com/aufam/brb"

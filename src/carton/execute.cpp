@@ -9,7 +9,7 @@ import cpx.yy_json;
 
 int Carton::execute(Cli &cli) {
     const bool run   = cli.run.has_value();
-    const bool build = run || cli.build.has_value();
+    const bool build = cli.build.has_value();
 
     const bool release = run ? cli.run->release : build ? cli.build->release : cli.release;
     const bool static_ = run ? cli.run->static_ : build ? cli.build->static_ : cli.static_;
@@ -74,7 +74,7 @@ int Carton::execute(Cli &cli) {
         return 1;
     }
 
-    if (build)
+    if (build || run) {
         try {
             CompileCommand::compile_multi(ccs, false);
         } catch (std::exception &e) {
@@ -82,14 +82,15 @@ int Carton::execute(Cli &cli) {
             return 1;
         }
 
-    std::string profile_info = profile.opt_level == 0 ? "unoptimized" : "optimized";
-    if (profile.debug)
-        profile_info += " + debuginfo";
-    if (!profile.sanitize.empty())
-        profile_info += f(" + sanitize({})", fmt::join(profile.sanitize, ","));
+        std::string profile_info = profile.opt_level == 0 ? "unoptimized" : "optimized";
+        if (profile.debug)
+            profile_info += " + debuginfo";
+        if (!profile.sanitize.empty())
+            profile_info += f(" + sanitize({})", fmt::join(profile.sanitize, ","));
 
-    std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
-    print_status("Finished", f("`{}` profile [{}] target(s) in {:.2f}", profile.name, profile_info, elapsed.count()));
+        std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
+        print_status("Finished", f("`{}` profile [{}] target(s) in {:.2f}", profile.name, profile_info, elapsed.count()));
+    }
 
     if (run)
         try {

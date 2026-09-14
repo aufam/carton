@@ -16,9 +16,9 @@ export struct Cli {
     };
 
     struct Build {
-        bool                     release;
-        bool                     static_;
-        bool                     no_default_features;
+        bool                     release             = false;
+        bool                     static_             = false;
+        bool                     no_default_features = false;
         std::vector<std::string> features;
 
         static constexpr std::tuple __field_tags__{
@@ -30,8 +30,8 @@ export struct Cli {
     };
 
     struct Run {
-        bool                     release;
-        bool                     static_;
+        bool                     release = 0;
+        bool                     static_ = 0;
         std::string              bin;
         std::vector<std::string> args;
 
@@ -44,10 +44,10 @@ export struct Cli {
     };
 
     std::string               cache;
-    spdlog::level::level_enum log_level = spdlog::level::warn;
-    bool                      release;
-    bool                      static_;
-    bool                      no_default_features;
+    spdlog::level::level_enum log_level           = spdlog::level::warn;
+    bool                      release             = false;
+    bool                      static_             = false;
+    bool                      no_default_features = false;
     std::vector<std::string>  features;
 
     std::optional<Update>     update;
