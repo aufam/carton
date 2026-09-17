@@ -28,5 +28,6 @@ export namespace fs {
     using ::std::filesystem::weakly_canonical;
     using ::std::filesystem::operator|;
     using ::std::filesystem::operator&;
+    using ::std::filesystem::directory_iterator;
     using ::std::filesystem::last_write_time;
 } // namespace fs

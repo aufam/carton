@@ -146,6 +146,8 @@ std::vector<Target *> Carton::configure_package(
         if (p) {
             auto deps = p->configure_package(profile, working_dir, d.features, d.default_features.value_or(true));
             target.add_dependencies(deps, true);
+        } else {
+            // TODO: configure extra in this?
         }
 
         target.configure_module(profile, *cache);
@@ -159,10 +161,26 @@ std::vector<Target *> Carton::configure_package(
         main_target.configure(profile, *cache);
     }
 
-    std::vector<Target *> res = {&main_target};
+    auto res = configure_extras(profile, main_target, required_targets, nameset, extra_features);
+    push_unique(res, &main_target, true);
+
+    configured = true;
+    return res;
+}
+
+std::vector<Target *> Carton::configure_extras(
+    const Profile                  &profile,
+    Target                         &main_target,
+    const std::vector<Target *>    &required_targets,
+    const std::set<std::string>    &nameset,
+    const std::vector<std::string> &extra_features
+) {
+    auto &self = *this;
+
+    std::vector<Target *> res;
 
     for (const auto &name : nameset) {
-        auto &d = dependencies.at(name);
+        auto &d = self.dependencies.at(name);
 
         if (d.optional) {
             if (std::find(extra_features.begin(), extra_features.end(), name) == extra_features.end())
@@ -172,19 +190,20 @@ std::vector<Target *> Carton::configure_package(
                 continue;
         }
 
-        const auto target_name = package.name + "." + name;
-        if (targets.count(target_name)) {
-            push_unique(res, targets[target_name].get(), true);
+        const auto target_name = self.package.name + "." + name;
+        if (self.targets.count(target_name)) {
+            push_unique(res, self.targets[target_name].get(), true);
             continue;
         }
 
-        auto [p, working_dir] = resolve_dep(name, d);
+        auto [p, working_dir] = self.resolve_dep(name, d);
 
-        auto &target = *(targets[target_name] = Target::New(d));
-        push_unique(res, targets[target_name].get(), true);
-        target.add_dependency(main_target, true);
+        auto &target = *(self.targets[target_name] = Target::New(d));
+        push_unique(res, &target, true);
+        target.add_dependency(main_target, true, true);
+        target.add_dependencies(required_targets);
 
-        if (this->lib.path == d.path) {
+        if (self.lib.path == d.path) {
             target.name        = main_target.name;
             target.output_name = target_name;
             target.title       = main_target.title;
@@ -195,18 +214,22 @@ std::vector<Target *> Carton::configure_package(
             target.title       = display_name(name, d);
             target.output_name = name;
             target.output_dir  = output_dir(name, d);
-            target.edition     = package.edition;
+            target.edition     = self.package.edition;
         }
 
         if (p) {
             auto deps = p->configure_package(profile, working_dir, d.features, d.default_features.value_or(true));
             target.add_dependencies(deps, true);
+        } else {
+            const auto extra_features = self.get_requested_features(d.features, d.default_features.value_or(true));
+
+            auto deps = configure_extras(profile, main_target, required_targets, nameset, extra_features);
+            target.add_dependencies(deps, true, true);
         }
 
-        target.configure_module(profile, *cache);
-        target.configure(profile, *cache);
+        target.configure_module(profile, *self.cache);
+        target.configure(profile, *self.cache);
     }
 
-    configured = true;
     return res;
 }

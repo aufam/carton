@@ -3,6 +3,7 @@ module;
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <set>
 #include <map>
 #include <memory>
 
@@ -68,6 +69,14 @@ private:
         const std::string              &working_dir,
         const std::vector<std::string> &features         = {},
         bool                            default_features = true
+    ) -> std::vector<Target *>;
+
+    auto configure_extras(
+        const Profile                  &profile,
+        Target                         &main_target,
+        const std::vector<Target *>    &required_targets,
+        const std::set<std::string>    &nameset,
+        const std::vector<std::string> &extra_features
     ) -> std::vector<Target *>;
 
     auto configure_bins(const Profile &) -> std::vector<Target *>;
