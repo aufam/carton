@@ -2,10 +2,31 @@ module;
 
 #include <spdlog/spdlog.h>
 #include <chrono>
+#include <unordered_set>
 
 module carton;
 import cpx;
 import cpx.yy_json;
+
+void printtree(
+    const std::vector<Target *> &targets, std::unordered_set<Target *> &history, std::string prefix = "", bool root = true
+) {
+    for (size_t i = 0; i < targets.size(); ++i) {
+        auto *t    = targets[i];
+        bool  last = i + 1 == targets.size();
+
+        if (root && i > 0)
+            fmt::println("");
+
+        fmt::println("{}{}{}", prefix, root ? "" : (last ? "└── " : "├── "), t->output_name);
+
+        if (!history.contains(t)) {
+            history.emplace(t);
+
+            printtree(t->dependencies, history, prefix + (root ? "" : (last ? "    " : "│   ")), false);
+        }
+    }
+}
 
 int Carton::execute(Cli &cli) {
     const bool run   = cli.run.has_value();
@@ -62,6 +83,9 @@ int Carton::execute(Cli &cli) {
         spdlog::error("Failed to configure binaries: {}", e.what());
         return 1;
     }
+
+    std::unordered_set<Target *> history;
+    printtree(targets, history);
 
     auto &ccs = cache->compile_commands;
     auto  of  = std::ofstream("./compile_commands.json");

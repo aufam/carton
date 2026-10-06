@@ -127,7 +127,8 @@ std::vector<Target *> Carton::configure_package(
 
         auto [p, working_dir] = resolve_dep(name, d);
 
-        auto &target = *(targets[target_name] = Target::New(d));
+        auto &target       = *(targets[target_name] = Target::New(d));
+        bool  is_interface = target.is_interface();
 
         if (this->lib.path == d.path) {
             target.name        = main_target.name;
@@ -145,6 +146,10 @@ std::vector<Target *> Carton::configure_package(
 
         if (p) {
             auto deps = p->configure_package(profile, working_dir, d.features, d.default_features.value_or(true));
+            if (is_interface) {
+                push_unique(required_targets, deps);
+                continue;
+            }
             target.add_dependencies(deps, true);
         } else {
             // TODO: configure extra in this?
@@ -200,6 +205,8 @@ std::vector<Target *> Carton::configure_extras(
 
         auto &target = *(self.targets[target_name] = Target::New(d));
         push_unique(res, &target, true);
+        bool is_interface = target.is_interface();
+
         target.add_dependency(main_target, true, true);
         target.add_dependencies(required_targets);
 
@@ -219,11 +226,19 @@ std::vector<Target *> Carton::configure_extras(
 
         if (p) {
             auto deps = p->configure_package(profile, working_dir, d.features, d.default_features.value_or(true));
+            if (is_interface) {
+                push_unique(res, deps);
+                continue;
+            }
             target.add_dependencies(deps, true);
         } else {
             const auto extra_features = self.get_requested_features(d.features, d.default_features.value_or(true));
 
             auto deps = configure_extras(profile, main_target, required_targets, nameset, extra_features);
+            if (is_interface) {
+                push_unique(res, deps);
+                continue;
+            }
             target.add_dependencies(deps, true, true);
         }
 

@@ -40,6 +40,10 @@ export struct Target {
     std::vector<std::string> link_flags;
     std::vector<std::string> link_objects;
 
+    bool is_interface() const {
+        return src.empty() && mod.empty() && public_flags.empty() && link_flags.empty() && link_objects.empty();
+    }
+
     static constexpr std::tuple __field_tags__ = {
         cpx::field<&Target::name>               = "name",
         cpx::field<&Target::title>              = "title",

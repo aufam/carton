@@ -1746,7 +1746,7 @@ versions = [
 git = "https://github.com/ggml-org/ggml"
 tag = "v{version}"
 src = ["src/*", "src/ggml-cpu/*", "src/ggml-cpu/arch/{arch.family}/*"]
-inc = ["public:include", "src"]
+inc = ["public:include", "src", "src/ggml-cpu"]
 flags = [
     "-DGGML_USE_CPU",
     "-Wall",
@@ -2227,3 +2227,81 @@ versions = [
 git = "https://github.com/Thalhammer/jwt-cpp"
 tag = "v{version}"
 link-flags = ["-lcrypto"]
+
+
+#
+# brotli
+#
+[brotli.package]
+name = "brotli"
+edition = 11
+authors = ["google"]
+description = "Brotli compression format"
+repository = "https://github.com/google/brotli"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README"
+versions = [
+    "1.2.0",
+    "1.1.1",
+    "1.1.0",
+    "1.0.9",
+    "1.0.8",
+    "1.0.7",
+    "1.0.6",
+    "1.0.5",
+    "1.0.4",
+    "1.0.3",
+    "1.0.2",
+    "1.0.1",
+    "1.0.0",
+]
+
+[[brotli.bin]]
+name = "main"
+path = "c/tools/brotli.c"
+
+[brotli.lib]
+git = "https://github.com/google/brotli"
+tag = "v{version}"
+src = ["c/common/*.c", "c/dec/*.c", "c/enc/*.c"]
+inc = ["public:c/include"]
+
+
+#
+# zstd
+#
+[zstd.package]
+name = "zstd"
+edition = 11
+authors = ["facebook"]
+description = "Zstandard - Fast real-time compression algorithm"
+homepage = "http://www.zstd.net"
+repository = "https://github.com/facebook/zstd"
+license-file = "COPYING"
+readme = "README.md"
+versions = [
+    "1.5.7",
+    "1.5.6",
+    "1.5.5",
+    "1.5.4",
+    "1.5.2",
+    "1.5.1",
+    "1.5.0",
+    "1.4.10",
+    "1.4.9",
+    "1.4.8",
+    "1.4.7",
+]
+
+[zstd.lib]
+git = "https://github.com/facebook/zstd"
+tag = "v{version}"
+src = [
+    "lib/common/*.c",
+    "lib/compress/*.c",
+    "lib/decompress/*.c",
+    "lib/dictBuilder/*.c",
+    "lib/deprecated/*.c",
+]
+inc = ["lib"]
