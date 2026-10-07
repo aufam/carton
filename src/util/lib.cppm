@@ -94,14 +94,14 @@ void push_unique(std::vector<T *> &vec, const std::vector<T *> &values, bool fro
         push_unique(vec, value, front);
 }
 
-export void push_back_unique(std::vector<std::string> &vec, const std::string &value) {
+export void push_back_unique(std::vector<std::string> &vec, std::string value) {
     if (value.empty())
         return;
 
     if (auto it = std::find(vec.begin(), vec.end(), value); it != vec.end())
         vec.erase(it);
 
-    vec.push_back(value);
+    vec.push_back(std::move(value));
 }
 
 export void push_back_unique(std::vector<std::string> &vec, const std::vector<std::string> &values) {

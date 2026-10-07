@@ -835,6 +835,7 @@ versions = [
 url = "https://github.com/google/googletest/releases/download/v{version}/googletest-{version}.tar.gz"
 src = ["googletest/src/gtest-all.cc"]
 inc = ["public:googletest/include", "googletest"]
+flags = ["public:-Wno-character-conversion"]
 
 [gtest.dependencies]
 gtest-main = { src = ["googletest/src/gtest_main.cc"], optional = true }

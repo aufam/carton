@@ -84,9 +84,6 @@ int Carton::execute(Cli &cli) {
         return 1;
     }
 
-    std::unordered_set<Target *> history;
-    printtree(targets, history);
-
     auto &ccs = cache->compile_commands;
     auto  of  = std::ofstream("./compile_commands.json");
     of << cpx::yy_json::dump(ccs, pretty_two_spaces);
@@ -114,6 +111,11 @@ int Carton::execute(Cli &cli) {
 
         std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
         print_status("Finished", f("`{}` profile [{}] target(s) in {:.2f}", profile.name, profile_info, elapsed.count()));
+    }
+
+    if (cli.tree) {
+        std::unordered_set<Target *> history;
+        printtree(targets, history);
     }
 
     if (run)

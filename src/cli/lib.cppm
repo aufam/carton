@@ -48,6 +48,7 @@ export struct Cli {
     bool                      release             = false;
     bool                      static_             = false;
     bool                      no_default_features = false;
+    bool                      tree                = false;
     std::vector<std::string>  features;
 
     std::optional<Update>     update;
@@ -65,6 +66,7 @@ export struct Cli {
         cpx::field<&Cli::release>             = "release                                            ",
         cpx::field<&Cli::static_>             = "static                                             ",
         cpx::field<&Cli::no_default_features> = "no-default-features                                ",
+        cpx::field<&Cli::tree>                = "tree , help=print project tree                     ",
         cpx::field<&Cli::features>            = "features                                           ",
         cpx::field<&Cli::init>                = "init                                               ",
         cpx::field<&Cli::add>                 = "add                                                ",
