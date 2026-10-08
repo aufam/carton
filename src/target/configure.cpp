@@ -10,7 +10,7 @@ module;
 module carton;
 import cpx.fmt;
 
-static constexpr uint64_t fingerprint_seed = 1469598103934665603ull;
+static constexpr uint64_t fingerprint_seed = 0x1342702b2f5dd293;
 
 static uint64_t hash64(std::string_view s, XXH3_state_t *state = nullptr) {
     const bool own = !state;
@@ -35,8 +35,9 @@ static uint64_t hash64_combine(uint64_t h, uint64_t v) {
 
 static std::vector<std::string> parse_depfile(const fs::path &path) {
     std::ifstream in(path);
-    if (!in)
+    if (!in) {
         return {};
+    }
 
     std::vector<std::string> result;
     std::string              line;
@@ -118,12 +119,12 @@ static Fingerprint make_fingerprint(Cache &cache, const CompileCommand &cc) {
 
     fp.file = f("{:016x}", hash_file(cache, cc.file));
     fp.mods = f("{:016x}", hash_modules(cache, cc.modnames));
-    fp.deps = f("{:016x}", hash_depfiles(cache, cc.depfile));
+    fp.deps = f("{:016x}", hash_depfiles(cache, fs::path(cc.directory) / cc.depfile));
 
     return fp;
 }
 
-static std::unordered_map<std::string, Fingerprint> &fingerprint_of(Cache &self, const std::string &build_dir) {
+static const std::unordered_map<std::string, Fingerprint> &fingerprint_of(Cache &self, const std::string &build_dir) {
     if (auto it = self.fingerprint_map.find(build_dir); it != self.fingerprint_map.end())
         return it->second;
 
@@ -131,14 +132,13 @@ static std::unordered_map<std::string, Fingerprint> &fingerprint_of(Cache &self,
 }
 
 static bool
-update_fingerprint(std::unordered_map<std::string, Fingerprint> &fingerprints, CompileCommand &cc, const Fingerprint &fp) {
-    auto &cached = fingerprints[cc.output];
-    bool  done   = fp.compare(cached);
+update_fingerprint(const std::unordered_map<std::string, Fingerprint> &fingerprints, CompileCommand &cc, const Fingerprint &fp) {
+    if (auto it = fingerprints.find(cc.output); it != fingerprints.end()) {
+        auto &cached = it->second;
+        return fp.compare(cached);
+    }
 
-    if (!done)
-        cached = fp;
-
-    return done;
+    return false;
 }
 
 static void add_bmi_flags(const Cache &cache, const std::vector<std::string> &modules, std::vector<std::string> &bmi_flags) {
@@ -162,8 +162,8 @@ static std::pair<CompileCommand, std::string> make_module_command(
     cc.is_precompile = true;
     cc.directory     = build_dir.string();
     cc.file          = (self.working_dir / mod_path).string();
-    cc.output        = mod_path.string() + ".o";
-    cc.depfile       = mod_path.string() + ".d";
+    cc.output        = std::to_string(cache.cppm_standard) + mod_path.string() + ".o";
+    cc.depfile       = std::to_string(cache.cppm_standard) + mod_path.string() + ".d";
     cc.modnames      = self.transitive_modules;
 
     auto pcm = f("{}-{}.bmi", cache.cppm_standard, mod_name);
@@ -202,13 +202,13 @@ static bool output_is_stale(const fs::path &out, const std::vector<std::string> 
 }
 
 static bool configure_modules(
-    Target                                       &self,
-    const Profile                                &profile,
-    Cache                                        &cache,
-    const fs::path                               &build_dir,
-    std::vector<std::string>                     &bmi_flags,
-    std::vector<std::string>                     &objs,
-    std::unordered_map<std::string, Fingerprint> &fingerprints
+    Target                                             &self,
+    const Profile                                      &profile,
+    Cache                                              &cache,
+    const fs::path                                     &build_dir,
+    std::vector<std::string>                           &bmi_flags,
+    std::vector<std::string>                           &objs,
+    const std::unordered_map<std::string, Fingerprint> &fingerprints
 ) {
     bool recompile = false;
 
@@ -224,9 +224,9 @@ static bool configure_modules(
         cache.mod_paths[mod_name] = cc.file;
         cache.bmi_paths[mod_name] = (build_dir / pcm).string();
 
-        const auto fp = make_fingerprint(cache, cc);
+        cc.fp = make_fingerprint(cache, cc);
 
-        cc.is_done = update_fingerprint(fingerprints, cc, fp) && fs::exists(build_dir / cc.output);
+        cc.is_done = update_fingerprint(fingerprints, cc, cc.fp) && fs::exists(build_dir / cc.output);
         recompile  = recompile || !cc.is_done;
 
         objs.push_back((build_dir / cc.output).string());
@@ -262,7 +262,7 @@ static CompileCommand make_source_command(
         std::string flags_bmi;
 
         if (profile._module_support && self.edition >= 20) {
-            // TODO: scan the file
+            // TODO: scan the file if it is module related
             cpp_standard = cache.cppm_standard;
             flags_bmi    = f("{}", fmt::join(bmi_flags, " "));
 
@@ -309,13 +309,13 @@ static CompileCommand make_source_command(
 }
 
 static bool configure_sources(
-    Target                                       &self,
-    const Profile                                &profile,
-    Cache                                        &cache,
-    const fs::path                               &build_dir,
-    const std::vector<std::string>               &bmi_flags,
-    std::vector<std::string>                     &objs,
-    std::unordered_map<std::string, Fingerprint> &fingerprints
+    Target                                             &self,
+    const Profile                                      &profile,
+    Cache                                              &cache,
+    const fs::path                                     &build_dir,
+    const std::vector<std::string>                     &bmi_flags,
+    std::vector<std::string>                           &objs,
+    const std::unordered_map<std::string, Fingerprint> &fingerprints
 ) {
     bool recompile = false;
 
@@ -325,9 +325,9 @@ static bool configure_sources(
         if (cc.command.empty())
             continue;
 
-        const auto fp = make_fingerprint(cache, cc);
+        cc.fp = make_fingerprint(cache, cc);
 
-        cc.is_done = update_fingerprint(fingerprints, cc, fp) && fs::exists(build_dir / cc.output);
+        cc.is_done = update_fingerprint(fingerprints, cc, cc.fp) && fs::exists(build_dir / cc.output);
         recompile  = recompile || !cc.is_done;
 
         objs.push_back((build_dir / cc.output).string());
@@ -338,16 +338,16 @@ static bool configure_sources(
 }
 
 static bool configure_output(
-    Target                                       &self,
-    const Profile                                &profile,
-    Cache                                        &cache,
-    const fs::path                               &build_dir,
-    const std::vector<std::string>               &objs,
-    std::string_view                              type,
-    bool                                          recompile,
-    std::unordered_map<std::string, Fingerprint> &fingerprints,
-    std::vector<std::string>                     &archive_objects,
-    bool                                          is_module = false
+    Target                                             &self,
+    const Profile                                      &profile,
+    Cache                                              &cache,
+    const fs::path                                     &build_dir,
+    const std::vector<std::string>                     &objs,
+    std::string_view                                    type,
+    bool                                                recompile,
+    const std::unordered_map<std::string, Fingerprint> &fingerprints,
+    std::vector<std::string>                           &archive_objects,
+    bool                                                is_module = false
 ) {
     CompileCommand cc;
 
@@ -398,8 +398,8 @@ static bool configure_output(
     if (!recompile)
         recompile = output_is_stale(build_dir / cc.output, self.link_objects, cache);
 
-    const auto fp = make_fingerprint(cache, cc);
-    cc.is_done    = update_fingerprint(fingerprints, cc, fp) && !recompile;
+    cc.fp      = make_fingerprint(cache, cc);
+    cc.is_done = update_fingerprint(fingerprints, cc, cc.fp) && !recompile;
 
     cache.recompiles[(build_dir / cc.output).string()] = !cc.is_done;
 
@@ -430,8 +430,6 @@ void Target::configure(const Profile &profile, Cache &cache, std::string_view ty
     configure_output(*this, profile, cache, build_dir, objs, type, recompile, fingerprints, archive_objects, has_module);
 
     push_unique(link_objects, archive_objects, true);
-
-    Fingerprint::dump(fingerprints, build_dir);
 
     spdlog::trace("target configure after {}", *this);
 }

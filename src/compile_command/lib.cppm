@@ -2,8 +2,10 @@ module;
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 export module carton:compile_command;
+import :fingerprint;
 import cpx;
 
 export struct CompileCommand {
@@ -22,10 +24,15 @@ export struct CompileCommand {
     std::string              depfile;
     std::vector<std::string> modnames;
     std::string              title;
+    Fingerprint              fp;
     bool                     is_done       = false;
     bool                     is_precompile = false;
     bool                     is_ar         = false;
 
     void        compile() const;
-    static void compile_multi(const std::vector<CompileCommand> &commands, bool precompile = false);
+    static void compile_multi(
+        std::unordered_map<std::string, std::unordered_map<std::string, Fingerprint>> &fingerprint_map,
+        const std::vector<CompileCommand>                                             &commands,
+        bool                                                                           precompile = false
+    );
 };

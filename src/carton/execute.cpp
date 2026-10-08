@@ -66,6 +66,9 @@ int Carton::execute(Cli &cli) {
 
     std::vector<Target *> targets;
 
+    // TODO: skip download
+    const auto start = std::chrono::steady_clock::now();
+
     try {
         auto ts = configure_package(profile, fs::current_path().string(), features, !no_default_features);
         push_unique(targets, ts);
@@ -73,8 +76,6 @@ int Carton::execute(Cli &cli) {
         spdlog::error("Failed to configure: {}", e.what());
         return 1;
     }
-
-    const auto start = std::chrono::steady_clock::now();
 
     try {
         auto ts = configure_bins(profile);
@@ -88,17 +89,26 @@ int Carton::execute(Cli &cli) {
     auto  of  = std::ofstream("./compile_commands.json");
     of << cpx::yy_json::dump(ccs, pretty_two_spaces);
 
+    auto &fp_map    = cache->fingerprint_map;
+    auto  fp_update = [&]() {
+        for (auto &[dir, fp] : fp_map) {
+            Fingerprint::dump(fp, dir);
+        }
+    };
+
     try {
-        CompileCommand::compile_multi(ccs, true);
+        CompileCommand::compile_multi(fp_map, ccs, true);
     } catch (std::exception &e) {
+        fp_update();
         spdlog::error("Failed to compile modules: {}", e.what());
         return 1;
     }
 
     if (build || run) {
         try {
-            CompileCommand::compile_multi(ccs, false);
+            CompileCommand::compile_multi(fp_map, ccs, false);
         } catch (std::exception &e) {
+            fp_update();
             spdlog::error("Failed to compile: {}", e.what());
             return 1;
         }
@@ -112,6 +122,7 @@ int Carton::execute(Cli &cli) {
         std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
         print_status("Finished", f("`{}` profile [{}] target(s) in {:.2f}", profile.name, profile_info, elapsed.count()));
     }
+    fp_update();
 
     if (cli.tree) {
         std::unordered_set<Target *> history;
