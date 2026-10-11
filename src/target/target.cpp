@@ -194,3 +194,8 @@ void Target::configure_module(const Profile &profile, const Cache &cache) {
         modules = collect_module_names(*this, profile, cache);
     }
 }
+
+void Target::clean(const Profile &profile, const Cache &cache) {
+    const auto build_dir = fs::path(cache.directory) / "build" / profile.name / output_dir;
+    fs::remove_all(build_dir);
+}

@@ -27,8 +27,6 @@ void CompileCommand::compile_multi(
             indices.push_back(i);
     }
 
-    fmt::println("[DEBUG] compiling {} items", indices.size());
-
     if (indices.empty())
         return;
 

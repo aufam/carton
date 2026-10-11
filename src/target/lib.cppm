@@ -73,4 +73,6 @@ export struct Target {
 
     void configure_module(const Profile &profile, const Cache &cache);
     void configure(const Profile &profile, Cache &cache, std::string_view type = "");
+
+    void clean(const Profile &profile, const Cache &cache);
 };

@@ -89,6 +89,10 @@ int Carton::execute(Cli &cli) {
     auto  of  = std::ofstream("./compile_commands.json");
     of << cpx::yy_json::dump(ccs, pretty_two_spaces);
 
+    if (cli.clean.has_value()) {
+        targets.front()->clean(profile, *cache);
+    }
+
     auto &fp_map    = cache->fingerprint_map;
     auto  fp_update = [&]() {
         for (auto &[dir, fp] : fp_map) {

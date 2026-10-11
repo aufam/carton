@@ -85,7 +85,7 @@ git = "https://github.com/fmtlib/fmt"
 tag = "{version}"
 src = ["src/format.cc", "src/os.cc"]
 mod = [".cache/fmt.cppm"]
-flags = ["-DFMT_ATTACH_TO_GLOBAL_MODULE"]
+flags = ["-DFMT_ATTACH_TO_GLOBAL_MODULE", "-Wno-unused-result"]
 
 
 #
@@ -1678,7 +1678,7 @@ versions = [
 [boost.lib]
 url = "https://archives.boost.io/release/{version}/source/boost_{version:underscore}.tar.gz"
 inc = ["public:"]
-flags = ["public:-Wno-unused-private-field"]
+flags = ["public:-Wno-unused-private-field", "public:-Wno-pragma-clang-attribute"]
 
 [boost.dependencies]
 url = {
@@ -2305,4 +2305,4 @@ src = [
     "lib/dictBuilder/*.c",
     "lib/deprecated/*.c",
 ]
-inc = ["lib"]
+inc = ["public:lib"]
