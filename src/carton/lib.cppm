@@ -52,6 +52,7 @@ export struct Carton {
 
     static int    Update();
     static int    Init(Package &args);
+    static int    Cartonx(int argc, char **argv);
     static Carton New(const std::string &cache_dir);
     int           add(Dependency &dep);
     int           execute(Cli &cli);

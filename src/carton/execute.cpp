@@ -91,6 +91,7 @@ int Carton::execute(Cli &cli) {
 
     if (cli.clean.has_value()) {
         targets.front()->clean(profile, *cache);
+        return 0;
     }
 
     auto &fp_map    = cache->fingerprint_map;

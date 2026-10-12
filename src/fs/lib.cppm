@@ -7,6 +7,7 @@ export module carton.fs;
 export namespace fs {
     using ::std::filesystem::path;
 
+    using ::std::filesystem::absolute;
     using ::std::filesystem::begin;
     using ::std::filesystem::copy;
     using ::std::filesystem::copy_file;

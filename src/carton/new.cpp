@@ -3,7 +3,6 @@ module;
 #include <spdlog/spdlog.h>
 
 module carton;
-import cpx.toruniina_toml;
 
 constexpr auto toml_version = cpx::toruniina_toml::spec::v(1, 1, 0);
 

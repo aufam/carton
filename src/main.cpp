@@ -13,6 +13,10 @@ int main(int argc, char **argv) {
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("carton", std::move(sink)));
     spdlog::set_pattern("%^%l%$: %v");
 
+    // cartonx
+    if (std::string_view(argv[0]).ends_with("cartonx"))
+        return Carton::Cartonx(argc, argv);
+
     // cli
     Cli cli   = {};
     cli.cache = std::getenv("HOME") + std::string("/.carton");
