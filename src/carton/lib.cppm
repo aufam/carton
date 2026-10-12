@@ -50,12 +50,15 @@ export struct Carton {
     std::map<std::string, std::unique_ptr<Target>> targets;
     bool                                           configured = false;
 
-    static int    Update();
-    static int    Init(Package &args);
-    static int    Cartonx(int argc, char **argv);
+    static int Update();
+    static int Init(Package &args);
+    static int Cartonx(int argc, char **argv);
+    static int Version();
+
     static Carton New(const std::string &cache_dir);
-    int           add(Dependency &dep);
-    int           execute(Cli &cli);
+
+    int add(Dependency &dep);
+    int execute(Cli &cli);
 
 private:
     int run(Cli::Run &);

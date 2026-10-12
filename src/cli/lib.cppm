@@ -47,6 +47,10 @@ export struct Cli {
         static constexpr std::tuple __field_tags__ = {};
     };
 
+    struct Version {
+        static constexpr std::tuple __field_tags__ = {};
+    };
+
     std::string               cache;
     spdlog::level::level_enum log_level           = spdlog::level::warn;
     bool                      release             = false;
@@ -59,9 +63,10 @@ export struct Cli {
     std::optional<Package>    init;
     std::optional<Dependency> add;
 
-    std::optional<Build> build;
-    std::optional<Run>   run;
-    std::optional<Clean> clean;
+    std::optional<Build>   build;
+    std::optional<Run>     run;
+    std::optional<Clean>   clean;
+    std::optional<Version> version;
 
     static constexpr std::tuple __field_tags__ = {
         cpx::field<&Cli::cache>               = "cache              , skipmissing , env=CARTON_CACHE",
@@ -77,5 +82,6 @@ export struct Cli {
         cpx::field<&Cli::init>                = "init                                               ",
         cpx::field<&Cli::add>                 = "add                                                ",
         cpx::field<&Cli::update>              = "update                                             ",
+        cpx::field<&Cli::version>             = "version                                            ",
     };
 };

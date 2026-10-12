@@ -105,6 +105,9 @@ int Carton::Cartonx(int argc, char **argv) {
         return printhelp();
 
     const std::string_view arg1 = argv[1];
+    if (arg1 == "version")
+        return Version();
+
     if (arg1 == "--help" || arg1 == "-h" || arg1 == "help")
         return printhelp();
 

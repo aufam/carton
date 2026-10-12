@@ -23,6 +23,10 @@ int main(int argc, char **argv) {
     cpx::cli11::parse("C++ package manager and build system", argc, argv, cli);
     spdlog::set_level(cli.log_level);
 
+    // print version
+    if (cli.version.has_value())
+        return Carton::Version();
+
     // update registry
     if (auto &args = cli.update; args.has_value())
         return Carton::Update();
