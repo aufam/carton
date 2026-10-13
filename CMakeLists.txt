@@ -11,11 +11,16 @@ endif()
 
 option(CARTON_BUILD_TESTS  "Build tests" OFF)
 option(CARTON_REQUIREMENTS "Only populate requirements" OFF)
+option(CARTON_GITHUB_ACTION "Only populate requirements" OFF)
 
 if (CARTON_REQUIREMENTS)
     message(STATUS "Setting up requirements...")
 else()
     message(STATUS "CARTON_BUILD_TESTS  : ${CARTON_BUILD_TESTS}")
+endif()
+
+if (APPLE AND CARTON_GITHUB_ACTION)
+    add_compile_options("--config-system-dir=/opt/homebrew/etc/clang")
 endif()
 
 include(cmake/CPM.cmake)

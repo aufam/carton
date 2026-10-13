@@ -57,6 +57,7 @@ jobs:
       - name: Configure Debug & Tests
         run: |
           cmake -B build -G Ninja \
+            -DCARTON_GITHUB_ACTION=ON \
             -DCARTON_BUILD_TESTS=ON \
             -DCPM_USE_LOCAL_PACKAGES=OFF \
             -DCMAKE_BUILD_TYPE=Debug \
@@ -77,6 +78,7 @@ jobs:
       - name: Configure & Build Release
         run: |
           cmake -B release -G Ninja \
+            -DCARTON_GITHUB_ACTION=ON \
             -DCARTON_BUILD_TESTS=OFF \
             -DCPM_USE_LOCAL_PACKAGES=OFF \
             -DCMAKE_BUILD_TYPE=Release \
@@ -98,7 +100,7 @@ jobs:
       - name: Upload Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: carton-${{ matrix.platform }}-${{ env.CARTON_VERSION }}
+          name: carton-${{ matrix.platform }}-${{ env.CARTON_VERSION }}.tar.gz
           path: carton-${{ matrix.platform }}-${{ env.CARTON_VERSION }}.tar.gz
 
       - name: Upload Assets to GitHub Release
