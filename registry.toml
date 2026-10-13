@@ -981,7 +981,7 @@ versions = [
 ]
 
 [onnx.lib]
-url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os}-{arch}-{version}.tgz"
+url = "https://github.com/microsoft/onnxruntime/releases/download/v{version}/onnxruntime-{os.short}-{arch}-{version}.tgz"
 
 
 #

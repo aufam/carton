@@ -132,6 +132,17 @@ std::optional<SemVer> parse_semver(std::string_view s) {
 
 static constexpr std::string_view os =
 #if defined(_WIN32)
+    "windows";
+#elif defined(__APPLE__)
+    "macos";
+#elif defined(__linux__)
+    "linux";
+#else
+    "unknown";
+#endif
+
+static constexpr std::string_view os_short =
+#if defined(_WIN32)
     "win";
 #elif defined(__APPLE__)
     "osx";
@@ -163,7 +174,7 @@ static constexpr std::string_view arch =
 #elif defined(__aarch64__)
     "aarch64"; // Linux, BSD, etc.
 #else
-            "unknown";
+                "unknown";
 #endif
 
 static constexpr std::string_view arch_family =
@@ -180,6 +191,8 @@ static constexpr std::string_view arch_gnu =
     "x86_64";
 #elif defined(__aarch64__)
     arch;
+#else
+    "unknown";
 #endif
 
 static constexpr std::string_view arch_amd =
@@ -231,6 +244,7 @@ void Carton::apply_placeholders() {
         apply_params(d, "version.number", version_number);
         apply_params(d, "edition", edition);
         apply_params(d, "os", os);
+        apply_params(d, "os.short", os_short);
         apply_params(d, "os.name", os_name);
         apply_params(d, "arch", arch);
         apply_params(d, "arch.family", arch_family);
@@ -253,6 +267,7 @@ void Carton::apply_placeholders() {
             string_replace(feat, "version.number", version_number);
             string_replace(feat, "edition", edition);
             string_replace(feat, "os", os);
+            string_replace(feat, "os.short", os_short);
             string_replace(feat, "os.name", os_name);
             string_replace(feat, "arch", arch);
             string_replace(feat, "arch.family", arch_family);
