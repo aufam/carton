@@ -55,15 +55,15 @@ jobs:
           $CXX --version
 
       - name: Configure Debug & Tests
-        run: >
-          cmake -B build -G Ninja
-            -DCARTON_BUILD_TESTS=ON
-            -DCPM_USE_LOCAL_PACKAGES=OFF
-            -DCMAKE_BUILD_TYPE=Debug
-            -DCMAKE_CXX_EXTENSIONS=ON
-            -DCMAKE_CXX_STANDARD=26
-            -DCMAKE_CXX_STANDARD_REQUIRED=ON
-            -DCMAKE_C_COMPILER="$CC"
+        run: |
+          cmake -B build -G Ninja \
+            -DCARTON_BUILD_TESTS=ON \
+            -DCPM_USE_LOCAL_PACKAGES=OFF \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_EXTENSIONS=ON \
+            -DCMAKE_CXX_STANDARD=26 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+            -DCMAKE_C_COMPILER="$CC" \
             -DCMAKE_CXX_COMPILER="$CXX"
 
       - name: Build Debug Targets

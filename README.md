@@ -1,27 +1,6 @@
 # :package: Carton
 C/C++ package manager and build system
 
-## Installation
-
-```bash
-# linux
-curl -L \
-  https://github.com/aufam/carton/releases/latest/download/carton-linux-amd64 \
-  -o carton
-
-# macOS
-curl -L \
-  https://github.com/aufam/carton/releases/latest/download/carton-macos-arm64 \
-  -o carton
-
-chmod +x carton
-sudo mv carton /usr/local/bin/
-
-# download the latest registry.toml
-carton update
-```
-
-
 ## Getting Started
 Create a new empty project:
 ```bash
