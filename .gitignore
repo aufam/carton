@@ -7,7 +7,7 @@ __pycache__
 .*
 !.gitignore
 !.gitmodules
-!.gitlab-ci.yml
+!.github
 !.clang-format
 !.tombi.toml
 compile_commands.json

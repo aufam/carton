@@ -1,0 +1,110 @@
+name: CI & Release
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-26.04
+            platform: linux-x64
+          - os: macos-26-arm64
+            platform: osx-arm64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Verify Tools & Configure Clang
+        run: |
+          echo "=== Verifying System Tools ==="
+          cmake --version
+          ninja --version
+          git --version
+          curl --version
+          tar --version
+
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            LLVM_PREFIX="$(brew --prefix llvm@20)"
+            echo "CC=$LLVM_PREFIX/bin/clang" >> "$GITHUB_ENV"
+            echo "CXX=$LLVM_PREFIX/bin/clang++" >> "$GITHUB_ENV"
+          else
+            echo "CC=clang-22" >> "$GITHUB_ENV"
+            echo "CXX=clang++-22" >> "$GITHUB_ENV"
+          fi
+
+      - name: Check Compiler Version
+        run: |
+          $CC --version
+          $CXX --version
+
+      - name: Configure Debug & Tests
+        run: >
+          cmake -B build -G Ninja
+            -DCARTON_BUILD_TESTS=ON
+            -DCPM_USE_LOCAL_PACKAGES=OFF
+            -DCMAKE_BUILD_TYPE=Debug
+            -DCMAKE_CXX_EXTENSIONS=ON
+            -DCMAKE_CXX_STANDARD=26
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON
+            -DCMAKE_C_COMPILER="$CC"
+            -DCMAKE_CXX_COMPILER="$CXX"
+
+      - name: Build Debug Targets
+        run: |
+          cmake --build build --target carton_test carton_exe
+
+      - name: Run Unit Tests
+        run: |
+          ./build/carton_test
+
+      - name: Configure & Build Release
+        run: |
+          cmake -B release -G Ninja \
+            -DCARTON_BUILD_TESTS=OFF \
+            -DCPM_USE_LOCAL_PACKAGES=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_EXTENSIONS=ON \
+            -DCMAKE_CXX_STANDARD=26 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+            -DCMAKE_C_COMPILER="$CC" \
+            -DCMAKE_CXX_COMPILER="$CXX"
+          cmake --build release --target carton_exe
+
+      - name: Package Release Binaries (.tar.gz)
+        run: |
+          mkdir -p bin
+          cp release/carton bin/carton
+          ln -sf carton bin/cartonx
+          tar -czvf carton-${{ matrix.platform }}.tar.gz bin/
+          ls -la carton-${{ matrix.platform }}.tar.gz
+
+      - name: Upload Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: carton-${{ matrix.platform }}.tar.gz
+          path: carton-${{ matrix.platform }}.tar.gz
+
+      - name: Upload Assets to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: carton-${{ matrix.platform }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
