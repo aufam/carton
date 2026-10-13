@@ -37,6 +37,9 @@ jobs:
           curl --version
           tar --version
 
+          CARTON_VERSION=$(sed -nE 's/^[[:space:]]*VERSION[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' CMakeLists.txt | head -n1)
+          echo "CARTON_VERSION=$CARTON_VERSION" >> "$GITHUB_ENV"
+
           if [[ "$RUNNER_OS" == "macOS" ]]; then
             LLVM_PREFIX="$(brew --prefix llvm@20)"
             echo "CC=$LLVM_PREFIX/bin/clang" >> "$GITHUB_ENV"
@@ -89,19 +92,19 @@ jobs:
           mkdir -p bin
           cp release/carton bin/carton
           ln -sf carton bin/cartonx
-          tar -czvf carton-${{ matrix.platform }}.tar.gz bin/
-          ls -la carton-${{ matrix.platform }}.tar.gz
+          tar -czvf carton-${{ matrix.platform }}-$CARTON_VERSION.tar.gz bin/
+          ls -la carton-${{ matrix.platform }}-$CARTON_VERSION.tar.gz
 
       - name: Upload Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: carton-${{ matrix.platform }}.tar.gz
-          path: carton-${{ matrix.platform }}.tar.gz
+          name: carton-${{ matrix.platform }}-${{ env.CARTON_VERSION }}
+          path: carton-${{ matrix.platform }}-${{ env.CARTON_VERSION }}.tar.gz
 
       - name: Upload Assets to GitHub Release
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: carton-${{ matrix.platform }}.tar.gz
+          files: carton-${{ matrix.platform }}-${{ env.CARTON_VERSION }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

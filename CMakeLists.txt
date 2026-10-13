@@ -117,8 +117,10 @@ file(GLOB_RECURSE MODULE_FILES CONFIGURE_DEPENDS
 
 file(GLOB_RECURSE MODULE_IMPL_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-    exclude "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/carton/version.cpp"
+)
+
+list(FILTER MODULE_IMPL_FILES EXCLUDE REGEX
+    "^${CMAKE_CURRENT_SOURCE_DIR}/src/(main\\.cpp|version/version\\.cpp)$"
 )
 
 # lib target
@@ -131,8 +133,8 @@ target_sources(carton PUBLIC
 )
 
 # version target
-add_library(carton_version src/carton/version.cpp)
-target_link_libraries(carton_version PRIVATE -DCARTON_VERSION="${PROJECT_VERSION}")
+add_library(carton_version src/version/version.cpp)
+target_compile_options(carton_version PRIVATE -DCARTON_VERSION="${PROJECT_VERSION}")
 
 # exe target
 add_executable(carton_exe src/main.cpp)
@@ -144,17 +146,12 @@ add_library(carton_private INTERFACE)
 
 target_link_libraries(carton PRIVATE
     carton_private
-)
-
-target_link_libraries(carton_version PRIVATE
-    carton
-    carton_private
+    carton_version
 )
 
 target_link_libraries(carton_exe PRIVATE
     carton
     carton_private
-    carton_version
 )
 
 target_link_libraries(carton_private INTERFACE
@@ -191,6 +188,5 @@ if (CARTON_BUILD_TESTS)
         gtest_main
         carton
         carton_private
-        carton_version
     )
 endif()

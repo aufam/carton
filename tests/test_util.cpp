@@ -15,28 +15,28 @@ TEST(UtilTest, PushUniqueString) {
 
     // Single item added
     push_unique(vec, "alpha");
-    EXPECT_EQ(vec.size(), 1);
+    EXPECT_EQ(vec.size(), 1ul);
     EXPECT_EQ(vec[0], "alpha");
 
     // Duplicate item not added
     push_unique(vec, "alpha");
-    EXPECT_EQ(vec.size(), 1);
+    EXPECT_EQ(vec.size(), 1ul);
 
     // New item added to back
     push_unique(vec, "beta");
-    EXPECT_EQ(vec.size(), 2);
+    EXPECT_EQ(vec.size(), 2ul);
     EXPECT_EQ(vec[1], "beta");
 
     // Item added to front
     push_unique(vec, "first", true);
-    EXPECT_EQ(vec.size(), 3);
+    EXPECT_EQ(vec.size(), 3ul);
     EXPECT_EQ(vec[0], "first");
     EXPECT_EQ(vec[1], "alpha");
     EXPECT_EQ(vec[2], "beta");
 
     // Duplicate item with front=true still not added
     push_unique(vec, "beta", true);
-    EXPECT_EQ(vec.size(), 3);
+    EXPECT_EQ(vec.size(), 3ul);
 }
 
 TEST(UtilTest, PushUniqueVectorString) {
@@ -44,7 +44,7 @@ TEST(UtilTest, PushUniqueVectorString) {
     std::vector<std::string> items = {"alpha", "existing", "beta"};
 
     push_unique(vec, items);
-    EXPECT_EQ(vec.size(), 3);
+    EXPECT_EQ(vec.size(), 3ul);
     EXPECT_EQ(vec[0], "existing");
     EXPECT_EQ(vec[1], "alpha");
     EXPECT_EQ(vec[2], "beta");
@@ -59,23 +59,23 @@ TEST(UtilTest, PushUniquePointers) {
     EXPECT_TRUE(vec.empty());
 
     push_unique(vec, &a);
-    EXPECT_EQ(vec.size(), 1);
+    EXPECT_EQ(vec.size(), 1ul);
     EXPECT_EQ(vec[0], &a);
 
     // Duplicate pointer ignored
     push_unique(vec, &a);
-    EXPECT_EQ(vec.size(), 1);
+    EXPECT_EQ(vec.size(), 1ul);
 
     // Add to front
     push_unique(vec, &b, true);
-    EXPECT_EQ(vec.size(), 2);
+    EXPECT_EQ(vec.size(), 2ul);
     EXPECT_EQ(vec[0], &b);
     EXPECT_EQ(vec[1], &a);
 
     // Vector of pointers
     std::vector<int *> batch = {&a, &b, nullptr};
     push_unique(vec, batch);
-    EXPECT_EQ(vec.size(), 2);
+    EXPECT_EQ(vec.size(), 2ul);
 }
 
 TEST(UtilTest, PushBackUnique) {
@@ -83,16 +83,16 @@ TEST(UtilTest, PushBackUnique) {
 
     // Empty string ignored
     push_back_unique(vec, "");
-    EXPECT_EQ(vec.size(), 3);
+    EXPECT_EQ(vec.size(), 3ul);
 
     // New string added to back
     push_back_unique(vec, "fourth");
-    EXPECT_EQ(vec.size(), 4);
+    EXPECT_EQ(vec.size(), 4ul);
     EXPECT_EQ(vec.back(), "fourth");
 
     // Existing string moved from middle to back
     push_back_unique(vec, "second");
-    EXPECT_EQ(vec.size(), 4);
+    EXPECT_EQ(vec.size(), 4ul);
     std::vector<std::string> expected = {"first", "third", "fourth", "second"};
     EXPECT_EQ(vec, expected);
 
@@ -119,7 +119,7 @@ TEST(UtilTest, ExpandPathBasic) {
     // Valid existing directory and file
     sources = {"CMakeLists.txt"};
     expand_path(".", sources, true);
-    EXPECT_EQ(sources.size(), 1);
+    EXPECT_EQ(sources.size(), 1ul);
     EXPECT_EQ(sources[0], "CMakeLists.txt");
 
     // Glob expansion
@@ -137,7 +137,7 @@ TEST(UtilTest, ExpandPathBasic) {
     // Non-existent path with check_exist=false does not throw
     sources = {"this_file_does_not_exist_at_all.xyz"};
     EXPECT_NO_THROW(expand_path(".", sources, false));
-    EXPECT_EQ(sources.size(), 1);
+    EXPECT_EQ(sources.size(), 1ul);
     EXPECT_EQ(sources[0], "this_file_does_not_exist_at_all.xyz");
 }
 

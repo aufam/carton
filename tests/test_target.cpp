@@ -83,15 +83,15 @@ TEST(TargetTest, NewFromDependencyOsPrefix) {
 
 #if defined(__linux__)
     // "linux:-lrt" should become "-lrt"
-    EXPECT_EQ(target->link_flags.size(), 2);
-    if (target->link_flags.size() == 2) {
+    EXPECT_EQ(target->link_flags.size(), 2ul);
+    if (target->link_flags.size() == 2ul) {
         EXPECT_EQ(target->link_flags[0], "-lrt");
         EXPECT_EQ(target->link_flags[1], "-lm");
     }
 #elif defined(__APPLE__)
     // "osx:-framework Cocoa" should become "-framework Cocoa"
-    EXPECT_EQ(target->link_flags.size(), 2);
-    if (target->link_flags.size() == 2) {
+    EXPECT_EQ(target->link_flags.size(), 2ul);
+    if (target->link_flags.size() == 2ul) {
         EXPECT_EQ(target->link_flags[0], "-framework Cocoa");
         EXPECT_EQ(target->link_flags[1], "-lm");
     }
@@ -106,7 +106,7 @@ TEST(TargetTest, NewFromBinary) {
     auto target = Target::New(".", bin);
     ASSERT_NE(target, nullptr);
     EXPECT_EQ(target->working_dir, ".");
-    EXPECT_EQ(target->src.size(), 1);
+    EXPECT_EQ(target->src.size(), 1ul);
     EXPECT_EQ(target->src[0], "CMakeLists.txt");
 }
 
@@ -128,7 +128,7 @@ TEST(TargetTest, AddDependencyFlagsAndObjects) {
     // Add dependency without extend (default: only public flags inherited)
     main_target.add_dependency(dep_target, false, false);
 
-    EXPECT_EQ(main_target.dependencies.size(), 1);
+    EXPECT_EQ(main_target.dependencies.size(), 1ul);
     EXPECT_EQ(main_target.dependencies[0], &dep_target);
 
     // flags should contain public flags of dependency, but not private flags
@@ -160,7 +160,7 @@ TEST(TargetTest, AddDependencyFlagsAndObjects) {
 
     // Adding the same dependency again is a no-op (idempotent)
     main_target.add_dependency(dep_target, false, false);
-    EXPECT_EQ(main_target.dependencies.size(), 1);
+    EXPECT_EQ(main_target.dependencies.size(), 1ul);
 }
 
 TEST(TargetTest, AddDependencyWithExtendAndPublic) {
@@ -208,6 +208,6 @@ TEST(TargetTest, AddDependenciesVector) {
     std::vector<Target *> deps = {&dep1, &dep2};
     main_target.add_dependencies(deps);
 
-    EXPECT_EQ(main_target.dependencies.size(), 2);
-    EXPECT_EQ(main_target.flags.size(), 2);
+    EXPECT_EQ(main_target.dependencies.size(), 2ul);
+    EXPECT_EQ(main_target.flags.size(), 2ul);
 }

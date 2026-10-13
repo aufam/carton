@@ -3,7 +3,7 @@
 [package]
 name = "carton"
 version = "0.1.0"
-edition = 17
+edition = 23
 authors = ["aufam"]
 description = "C++ package manager and build system"
 readme = "README.md"
@@ -12,8 +12,20 @@ homepage = "<todo>"
 documentation = "<todo>"
 license = "MIT"
 
+[[bin]]
+name = "main"
+path = "src/main.cpp"
+
+[[bin]]
+name = "test"
+path = "tests/"
+required-features = ["gtest"]
+
 [dependencies]
 cpx = { version = "0.1.0", features = ["cli", "fmt", "json", "toml"] }
 spdlog = "1.17.0"
 xxhash = "0.8.3"
 reproc = "14.2.7"
+dotenv = "1.0"
+version = { src = ["src/version/version.cpp"], flags = ['-DCARTON_VERSION=\"{version}\"'] }
+gtest = { version = "1.15.2", optional = true }

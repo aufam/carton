@@ -74,7 +74,7 @@ TEST(FingerprintTest, DumpAndParseRoundtrip) {
     EXPECT_TRUE(fs::exists(temp_dir / "fingerprints.toml"));
 
     auto parsed = Fingerprint::parse(temp_dir);
-    EXPECT_EQ(parsed.size(), 2);
+    EXPECT_EQ(parsed.size(), 2ul);
     EXPECT_TRUE(parsed.contains("foo.o"));
     EXPECT_TRUE(parsed.contains("bar.o"));
 
