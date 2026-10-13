@@ -14,11 +14,11 @@ static bool check_os_continue(std::string &str) {
     if (auto pos = str.find(':'); pos != std::string::npos) {
         std::string_view os =
 #if defined(_WIN32)
-            "win:";
+            "win";
 #elif defined(__APPLE__)
-            "osx:";
+            "osx";
 #elif defined(__linux__)
-            "linux:";
+            "linux";
 #else
 #    error "unknown OS"
 #endif

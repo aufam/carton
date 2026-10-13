@@ -7,6 +7,7 @@
             "binaryDir": "${sourceDir}/build",
             "generator": "Ninja",
             "cacheVariables": {
+                "CARTON_BUILD_TESTS" : "ON",
                 "CMAKE_CXX_EXTENSIONS": "ON",
                 "CMAKE_CXX_STANDARD": "26",
                 "CMAKE_CXX_STANDARD_REQUIRED": "ON",

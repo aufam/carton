@@ -9,6 +9,15 @@ if(APPLE AND CMAKE_VERSION VERSION_LESS 3.31)
     message(FATAL_ERROR "macOS builds require CMake 3.31 or newer (found ${CMAKE_VERSION})")
 endif()
 
+option(CARTON_BUILD_TESTS  "Build tests" OFF)
+option(CARTON_REQUIREMENTS "Only populate requirements" OFF)
+
+if (CARTON_REQUIREMENTS)
+    message(STATUS "Setting up requirements...")
+else()
+    message(STATUS "CARTON_BUILD_TESTS  : ${CARTON_BUILD_TESTS}")
+endif()
+
 include(cmake/CPM.cmake)
 
 CPMAddPackage(
@@ -86,8 +95,18 @@ CPMAddPackage(
     OPTIONS         "CPX_MODULES ON"
 )
 
+if (CARTON_BUILD_TESTS)
+    CPMAddPackage(
+        NAME            googletest
+        GIT_REPOSITORY  "https://github.com/google/googletest"
+        GIT_TAG         v1.15.2
+        OPTIONS         "INSTALL_GTEST OFF"
+    )
+    target_compile_options(gtest_main PUBLIC -Wno-character-conversion)
+endif()
+
 # only setup the exeternal libraries
-if (REQUIREMENTS)
+if (CARTON_REQUIREMENTS)
     return()
 endif()
 
@@ -98,9 +117,10 @@ file(GLOB_RECURSE MODULE_FILES CONFIGURE_DEPENDS
 
 file(GLOB_RECURSE MODULE_IMPL_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    exclude "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
 )
 
-add_executable(carton)
+add_library(carton)
 target_sources(carton
     PUBLIC
     FILE_SET cxx_modules TYPE CXX_MODULES FILES
@@ -109,7 +129,19 @@ target_sources(carton
         ${MODULE_IMPL_FILES}
 )
 
+add_executable(carton_exe src/main.cpp)
+set_target_properties(carton_exe PROPERTIES OUTPUT_NAME "carton")
+
+add_library(carton_private INTERFACE)
 target_link_libraries(carton PRIVATE
+    carton_private
+)
+target_link_libraries(carton_exe PRIVATE
+    carton
+    carton_private
+)
+
+target_link_libraries(carton_private INTERFACE
     cpx_mod
     fmt
     spdlog
@@ -122,7 +154,7 @@ target_link_libraries(carton PRIVATE
     dotenv
 )
 
-target_compile_options(carton PRIVATE
+target_compile_options(carton_private INTERFACE
     -Wall
     -Wextra
     -fmacro-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=carton
@@ -130,7 +162,18 @@ target_compile_options(carton PRIVATE
     $<$<CONFIG:Debug>:-fsanitize=address,undefined>
 )
 
-target_link_options(carton PRIVATE
+target_link_options(carton_private INTERFACE
     $<$<CONFIG:Debug>:-fsanitize=address,undefined>
     $<$<AND:$<CONFIG:Release>,$<PLATFORM_ID:Linux>>:-static>
 )
+
+if (CARTON_BUILD_TESTS)
+    file(GLOB_RECURSE TESTS_SOURCES tests/*)
+    add_executable(carton_test ${TESTS_SOURCES})
+
+    target_link_libraries(carton_test PRIVATE
+        gtest_main
+        carton
+        carton_private
+    )
+endif()
