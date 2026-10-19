@@ -63,7 +63,7 @@ export struct Carton {
 private:
     int run(Cli::Run &);
 
-    void apply_placeholders();
+    void apply_placeholders(const std::string &working_dir);
 
     auto
     get_requested_features(const std::vector<std::string> &features, bool default_features = true) -> std::vector<std::string>;

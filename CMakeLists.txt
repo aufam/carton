@@ -125,7 +125,7 @@ file(GLOB_RECURSE MODULE_IMPL_FILES CONFIGURE_DEPENDS
 )
 
 list(FILTER MODULE_IMPL_FILES EXCLUDE REGEX
-    "^${CMAKE_CURRENT_SOURCE_DIR}/src/(main\\.cpp|version/version\\.cpp)$"
+    "^${CMAKE_CURRENT_SOURCE_DIR}/src/(main\\.cpp|build/build\\.cpp)$"
 )
 
 # lib target
@@ -137,9 +137,31 @@ target_sources(carton PUBLIC
         ${MODULE_IMPL_FILES}
 )
 
-# version target
-add_library(carton_version src/version/version.cpp)
-target_compile_options(carton_version PRIVATE -DCARTON_VERSION="${PROJECT_VERSION}")
+# git
+find_package(Git QUIET)
+
+if(GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE CARTON_COMMIT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} show -s --format=%cd --date=format:%Y-%m-%d HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE CARTON_COMMIT_DATE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    message(WARNING "Git executable not found. CARTON_COMMIT and CARTON_COMMIT_DATE will be empty.")
+    set(GIT_COMMIT_SHORT "")
+    set(GIT_COMMIT_DATE "")
+endif()
+
+# build info target
+add_library(carton_build src/build/build.cpp)
+target_compile_options(carton_build PRIVATE -DCARTON_VERSION="${PROJECT_VERSION}" -DCARTON_COMMIT="${CARTON_COMMIT}" -DCARTON_COMMIT_DATE="${CARTON_COMMIT_DATE}")
 
 # exe target
 add_executable(carton_exe src/main.cpp)
@@ -151,7 +173,7 @@ add_library(carton_private INTERFACE)
 
 target_link_libraries(carton PRIVATE
     carton_private
-    carton_version
+    carton_build
 )
 
 target_link_libraries(carton_exe PRIVATE

@@ -1,7 +1,8 @@
 module;
 
-#include <string>
+#include <reproc++/run.hpp>
 #include <algorithm>
+#include <map>
 
 module carton;
 
@@ -130,6 +131,38 @@ std::optional<SemVer> parse_semver(std::string_view s) {
     return ver;
 }
 
+// Runs a git command in the given working directory and returns its trimmed
+// stdout, or an empty string when git is unavailable or the command fails.
+static std::string
+git_output(std::vector<std::string_view> args, std::string_view working_dir, std::map<std::string, std::string> extra_env = {}) {
+    reproc::options options;
+    options.redirect.out.type = reproc::redirect::pipe;
+    options.redirect.err.type = reproc::redirect::discard;
+
+    std::string working_dir_str{working_dir};
+    options.working_directory = working_dir_str.c_str();
+
+    if (!extra_env.empty()) {
+        options.env.behavior = reproc::env::extend;
+        options.env.extra    = reproc::env(extra_env);
+    }
+
+    std::string output;
+    const auto [status, ec] = reproc::run(args, options, reproc::sink::string(output), reproc::sink::null);
+
+    if (status != 0 || ec) {
+        return {};
+    }
+
+    const auto end = output.find_last_not_of(" \t\r\n");
+    if (end != std::string::npos)
+        output.erase(end + 1);
+    else
+        output.clear();
+
+    return output;
+}
+
 static constexpr std::string_view os =
 #if defined(_WIN32)
     "windows";
@@ -202,7 +235,7 @@ static constexpr std::string_view arch_amd =
     arch;
 #endif
 
-void Carton::apply_placeholders() {
+void Carton::apply_placeholders(const std::string &working_dir) {
     const auto &name    = package.name;
     const auto &version = package.version;
     const auto  edition = std::to_string(package.edition);
@@ -213,6 +246,21 @@ void Carton::apply_placeholders() {
     const auto version_minor  = std::to_string(v.minor);
     const auto version_patch  = std::to_string(v.patch);
     const auto version_number = v.numberize();
+
+    const auto commit      = git_output({"git", "rev-parse", "--short", "HEAD"}, working_dir);
+    const auto commit_long = git_output({"git", "rev-parse", "HEAD"}, working_dir);
+    const auto commit_date = git_output(
+        {
+            "git",
+            "show",
+            "-s",
+            "--format=%cd",
+            "--date=format:%Y-%m-%d",
+            "HEAD",
+    },
+        working_dir,
+        {{"TZ", "UTC"}}
+    );
 
     auto apply_params = [&](Dependency &d, std::string_view key, std::string_view value) {
         string_replace(d.version, key, value);
@@ -250,6 +298,9 @@ void Carton::apply_placeholders() {
         apply_params(d, "arch.family", arch_family);
         apply_params(d, "arch.gnu", arch_gnu);
         apply_params(d, "arch.amd", arch_amd);
+        apply_params(d, "commit", commit);
+        apply_params(d, "commit.long", commit_long);
+        apply_params(d, "commit.date", commit_date);
     };
     apply_dep(lib);
 
@@ -273,6 +324,9 @@ void Carton::apply_placeholders() {
             string_replace(feat, "arch.family", arch_family);
             string_replace(feat, "arch.gnu", arch_gnu);
             string_replace(feat, "arch.amd", arch_amd);
+            string_replace(feat, "commit", commit);
+            string_replace(feat, "commit.long", commit_long);
+            string_replace(feat, "commit.date", commit_date);
         }
     }
 }

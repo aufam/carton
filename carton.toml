@@ -27,5 +27,9 @@ spdlog = "1.17.0"
 xxhash = "0.8.3"
 reproc = "14.2.7"
 dotenv = "1.0"
-version = { src = ["src/version/version.cpp"], flags = ['-DCARTON_VERSION=\"{version}\"'] }
 gtest = { version = "1.15.2", optional = true }
+
+build = {
+    src = ["src/build/*.cpp"],
+    flags = ['-DCARTON_VERSION=\"{version}\"', '-DCARTON_COMMIT=\"{commit}\"', '-DCARTON_COMMIT_DATE=\"{commit.date}\"'],
+}

@@ -25,7 +25,7 @@ void Carton::resolve_package(const std::string &working_dir) {
     default: throw ferr("{:?}: unsupported edition: {}", package.name, package.edition);
     }
 
-    apply_placeholders();
+    apply_placeholders(working_dir);
 
     if (!lib.path.empty()) {
         spdlog::info("resolving dep={:?} path={:?}", package.name, lib.path);
