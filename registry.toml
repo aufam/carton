@@ -19,7 +19,10 @@ keywords = [
     "sql-builder",
     "tag-based-reflection",
 ]
-versions = ["0.1.0"]
+versions = [
+    "0.2.0",
+    "0.1.0",
+]
 
 [cpx.lib]
 git = "https://github.com/aufam/cpx"
@@ -35,7 +38,11 @@ edition = 20
 authors = ["aufam"]
 repository = "https://github.com/aufam/brb"
 readme = "README.md"
-versions = ["0.1.0", "0.1.1"]
+versions = [
+    "0.2.0",
+    "0.1.1",
+    "0.1.0",
+]
 
 [brb.lib]
 git = "https://github.com/aufam/brb"
@@ -1725,6 +1732,15 @@ url = {
     ],
     optional = true,
 }
+process = {
+    src = [
+        "libs/process/src/*",
+        "libs/process/src/detail/*",
+        "libs/process/src/ext/*",
+        "libs/process/src/posix/*",
+    ],
+    optional = true,
+}
 
 [boost.features]
 url = ["dep:url"]
@@ -2325,3 +2341,52 @@ src = [
     "lib/deprecated/*.c",
 ]
 inc = ["public:lib"]
+
+
+#
+# ansi2html
+#
+[ansi2html.package]
+name = "ansi2html"
+edition = 11
+authors = ["mfontani"]
+description = 'A C program that converts (most) ANSI color escape (16, 256, and 24-bit) foreground and background color, and "style" codes to HTML.'
+repository = "https://github.com/mfontani/ansi2html"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+versions = [
+    "0.12.0",
+    "0.11.0",
+    "0.10.1",
+    "0.10.0",
+    "0.9.0",
+    "0.8.0",
+    "0.7.0",
+    "0.6.0",
+    "0.5.0",
+    "0.4.0",
+    "0.3.0",
+    "0.2.1",
+    "0.2.0",
+    "0.1.6",
+    "0.1.5",
+    "0.1.2",
+    "0.1.1",
+    "0.1.0",
+    "0.0.5",
+    "0.0.4",
+    "0.0.3",
+    "0.0.2",
+    "0.0.1",
+]
+
+[ansi2html.lib]
+git = "https://github.com/mfontani/ansi2html"
+tag = "v{version}"
+src = [
+    "src/*.c",
+    "src/iterm2_color_schemes/*.c",
+    "src/structs/*.c",
+]
+inc = ["public:src"]
