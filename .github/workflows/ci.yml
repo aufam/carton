@@ -44,7 +44,7 @@ jobs:
             LLVM_PREFIX="$(brew --prefix llvm@20)"
             echo "CC=$LLVM_PREFIX/bin/clang" >> "$GITHUB_ENV"
             echo "CXX=$LLVM_PREFIX/bin/clang++" >> "$GITHUB_ENV"
-            echo "ASAN_OPTIONS=detect_leaks=0;verbosity=1" >> "$GITHUB_ENV"
+            echo "ASAN_OPTIONS=detect_leaks=0:verbosity=1" >> "$GITHUB_ENV"
           else
             echo "CC=clang-22" >> "$GITHUB_ENV"
             echo "CXX=clang++-22" >> "$GITHUB_ENV"
