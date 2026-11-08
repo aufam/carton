@@ -41,9 +41,8 @@ jobs:
           echo "CARTON_VERSION=$CARTON_VERSION" >> "$GITHUB_ENV"
 
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            LLVM_PREFIX="$(brew --prefix llvm@20)"
-            echo "CC=$LLVM_PREFIX/bin/clang" >> "$GITHUB_ENV"
-            echo "CXX=$LLVM_PREFIX/bin/clang++" >> "$GITHUB_ENV"
+            echo "CC=$(xcrun --find clang)" >> "$GITHUB_ENV"
+            echo "CXX=$(xcrun --find clang++)" >> "$GITHUB_ENV"
           else
             echo "CC=clang-22" >> "$GITHUB_ENV"
             echo "CXX=clang++-22" >> "$GITHUB_ENV"
