@@ -67,7 +67,7 @@ jobs:
             -DCMAKE_CXX_STANDARD_REQUIRED=ON \
             -DCMAKE_C_COMPILER="$CC" \
             -DCMAKE_CXX_COMPILER="$CXX"
-          cmake --build release --target carton_exe
+          cmake --build release --target carton_exe carton_test
 
       - name: Run Unit Tests
         run: |
