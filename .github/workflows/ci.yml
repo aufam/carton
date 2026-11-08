@@ -72,7 +72,30 @@ jobs:
           cmake --build build --target carton_test carton_exe
 
       - name: Run Unit Tests
+        if: matrix.os == 'linux-x64'
         run: |
+          ./build/carton_test
+
+      - name: Run Unit Tests (macOS Debug)
+        if: matrix.os == 'macos-26'
+        run: |
+          set -x
+
+          echo "=== Environment ==="
+          pwd
+          uname -a
+          sw_vers
+          clang++ --version
+
+          echo "=== Binary ==="
+          ls -lh ./build/carton_test
+          file ./build/carton_test
+          otool -L ./build/carton_test
+
+          echo "=== GoogleTest discovery ==="
+          ./build/carton_test --gtest_list_tests
+
+          echo "=== Running tests ==="
           ./build/carton_test
 
       - name: Configure & Build Release
