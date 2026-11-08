@@ -59,7 +59,6 @@ jobs:
           cmake -B release -G Ninja \
             -DCARTON_GITHUB_ACTION=ON \
             -DCARTON_BUILD_TESTS=ON \
-            -DCARTON_BUILD_TESTS=OFF \
             -DCPM_USE_LOCAL_PACKAGES=OFF \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_EXTENSIONS=ON \
